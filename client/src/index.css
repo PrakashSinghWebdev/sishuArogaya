@@ -1,0 +1,108 @@
+/* ===== Sishu Arogaya Global Styles ===== */
+:root {
+  --sa-green: #1a6b3c;
+  --sa-green-light: #2d9e5f;
+  --sa-green-pale: #e8f5ee;
+  --sa-orange: #e07b39;
+  --sa-yellow: #f0c040;
+  --sa-red: #d9534f;
+  --sa-gray: #6c757d;
+}
+
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #f4f6f9;
+  color: #2c3e50;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 250px;
+  min-height: 100vh;
+  background-color: var(--sa-green);
+  color: #fff;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100;
+  transition: width 0.3s;
+}
+
+.sidebar .nav-link {
+  color: rgba(255, 255, 255, 0.85);
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  margin: 2px 8px;
+  transition: background 0.2s;
+}
+
+.sidebar .nav-link:hover,
+.sidebar .nav-link.active {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.sidebar .nav-link i {
+  width: 22px;
+}
+
+/* Main content area (offset for sidebar) */
+.main-content {
+  margin-left: 250px;
+  padding: 0;
+  min-height: 100vh;
+}
+
+/* Topbar */
+.topbar {
+  background: #fff;
+  border-bottom: 1px solid #dee2e6;
+  padding: 0.75rem 1.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 99;
+}
+
+/* Stat cards */
+.stat-card {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+  transition: transform 0.2s;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+}
+
+/* Status badges */
+.badge-healthy { background-color: #28a745; }
+.badge-moderate { background-color: #ffc107; color: #000; }
+.badge-severe { background-color: #dc3545; }
+
+/* Tables */
+.table thead th {
+  background-color: var(--sa-green);
+  color: #fff;
+  font-weight: 500;
+  border: none;
+}
+
+/* Buttons */
+.btn-sa-primary {
+  background-color: var(--sa-green);
+  border-color: var(--sa-green);
+  color: #fff;
+}
+
+.btn-sa-primary:hover {
+  background-color: var(--sa-green-light);
+  border-color: var(--sa-green-light);
+  color: #fff;
+}
+
+/* Mobile responsive: collapse sidebar */
+@media (max-width: 768px) {
+  .sidebar { width: 0; overflow: hidden; }
+  .main-content { margin-left: 0; }
+}
