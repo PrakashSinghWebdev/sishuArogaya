@@ -182,6 +182,40 @@ export default function ChildProfile() {
                       </p>
                     </div>
                   </div>
+
+                  {/* Assigned ASHA Worker */}
+                  <div className="card border-0 shadow-sm mt-4">
+                    <div className="card-body">
+                      <h5 className="fw-bold mb-3"><i className="bi bi-person-badge me-2 text-success"></i>Assigned ASHA Worker</h5>
+                      {selectedChild.ashaId ? (
+                        <div className="d-flex align-items-center gap-3 p-3 rounded-3" style={{ background: '#e8f5e9' }}>
+                          <div className="rounded-circle bg-success d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: 48, height: 48 }}>
+                            <i className="bi bi-person-badge-fill text-white fs-5"></i>
+                          </div>
+                          <div className="flex-grow-1">
+                            <div className="fw-bold fs-6">{selectedChild.ashaId.userId?.name || 'ASHA Worker'}</div>
+                            <div className="text-muted small">
+                              ID: {selectedChild.ashaId.ashaId} &nbsp;·&nbsp;
+                              {selectedChild.ashaId.block}{selectedChild.ashaId.village ? `, ${selectedChild.ashaId.village}` : ''}
+                            </div>
+                          </div>
+                          {selectedChild.ashaId.userId?.phone && (
+                            <a href={`tel:${selectedChild.ashaId.userId.phone}`} className="btn btn-success btn-sm">
+                              <i className="bi bi-telephone-fill me-1"></i>Call
+                            </a>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="d-flex align-items-center gap-3 p-3 rounded-3" style={{ background: '#fff3e0' }}>
+                          <i className="bi bi-person-x text-warning fs-4"></i>
+                          <div>
+                            <div className="fw-semibold text-warning">No ASHA Worker Assigned</div>
+                            <div className="text-muted small">An ASHA worker will be assigned by your health centre admin.</div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

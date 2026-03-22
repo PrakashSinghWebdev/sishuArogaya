@@ -121,7 +121,10 @@ const listChildren = async (req, res) => {
     if (req.query.district) filter.district = req.query.district;
     if (req.query.block) filter.block = req.query.block;
 
-    const children = await Child.find(filter).populate('parentId', 'name phone').sort('-createdAt');
+    const children = await Child.find(filter)
+      .populate('parentId', 'name phone')
+      .populate({ path: 'ashaId', select: 'ashaId district block village', populate: { path: 'userId', select: 'name phone' } })
+      .sort('-createdAt');
     res.json(children);
   } catch (err) {
     res.status(500).json({ message: err.message });

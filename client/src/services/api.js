@@ -69,6 +69,10 @@ export const ashaAPI = {
   logVisit: (data) => api.post('/asha/visit', data),
   getVisits: () => api.get('/asha/visits'),
   listWorkers: () => api.get('/asha/workers'),
+  assignChild: (data) => api.post('/asha/assign', data),
+  unassignChild: (data) => api.post('/asha/unassign', data),
+  getCheckupQueue: () => api.get('/asha/checkup-queue'),
+  toggleCheckupQueue: (data) => api.post('/asha/checkup-queue', data),
 };
 
 // ——— Admin ———

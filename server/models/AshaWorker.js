@@ -22,6 +22,7 @@ const ashaWorkerSchema = new mongoose.Schema(
     block: { type: String, required: true },
     village: { type: String },
     assignedChildren: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Child' }],
+    checkupQueue: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Child' }],
     visits: [visitSchema],
     totalVisits: { type: Number, default: 0 },
     isActive: { type: Boolean, default: true },
