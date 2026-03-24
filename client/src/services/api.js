@@ -21,7 +21,8 @@ api.interceptors.response.use(
     const isAuthEndpoint =
       requestUrl.includes('/auth/login') ||
       requestUrl.includes('/auth/verify-otp') ||
-      requestUrl.includes('/auth/register');
+      requestUrl.includes('/auth/register') ||
+      requestUrl.includes('/chatbot/');
 
     if (status === 401 && !isAuthEndpoint) {
       localStorage.removeItem('sa_token');
