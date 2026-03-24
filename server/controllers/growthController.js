@@ -25,7 +25,7 @@ const assertChildAccess = async (childId, user) => {
 // POST /api/growth/add
 const addGrowthRecord = async (req, res) => {
   try {
-    const { childId, weight, height, ageMonths, notes } = req.body;
+    const { childId, weight, height, headCircumference, ageMonths, notes } = req.body;
 
     const access = await assertChildAccess(childId, req.user);
     if (access.error) return res.status(access.error.status).json({ message: access.error.message });
@@ -40,6 +40,7 @@ const addGrowthRecord = async (req, res) => {
       ageMonths,
       weight,
       height,
+      ...(headCircumference ? { headCircumference } : {}),
       wazScore: result.waz,
       hazScore: result.haz,
       whzScore: result.whz,

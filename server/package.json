@@ -6,7 +6,10 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "seed": "node seed.js"
+    "seed": "node seed.js",
+    "seed:who": "node seedWHO.js",
+    "seed:data": "node seedFullData.js",
+    "seed:all": "node seed.js && node seedWHO.js && node seedFullData.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

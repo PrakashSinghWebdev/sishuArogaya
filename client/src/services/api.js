@@ -106,4 +106,9 @@ export const reportAPI = {
   districtExcel: (districtId) => api.get(`/reports/district/${districtId}`, { responseType: 'blob' }),
 };
 
+// ——— Chatbot ———
+export const chatbotAPI = {
+  query: (message) => api.post('/chatbot/query', { message }),
+};
+
 export default api;

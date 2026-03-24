@@ -3,25 +3,56 @@ const Vaccination = require('../models/Vaccination');
 const AshaWorker = require('../models/AshaWorker');
 const { createAuditLog } = require('../utils/auditLogger');
 
-// Vaccination schedule per India's UIP (Universal Immunisation Programme)
+// Vaccination schedule — India NIS + IAP 2020-2021 recommendations
 const VACCINE_SCHEDULE = [
-  { name: 'BCG', ageMonths: 0 },
-  { name: 'Hepatitis B (Birth)', ageMonths: 0 },
-  { name: 'OPV-0', ageMonths: 0 },
-  { name: 'OPV-1 + IPV', ageMonths: 1.5 },
-  { name: 'DPT-1 + Hep B-1', ageMonths: 1.5 },
-  { name: 'OPV-2', ageMonths: 2.5 },
-  { name: 'DPT-2 + Hep B-2', ageMonths: 2.5 },
-  { name: 'OPV-3', ageMonths: 3.5 },
-  { name: 'DPT-3 + Hep B-3', ageMonths: 3.5 },
-  { name: 'Measles-1', ageMonths: 9 },
-  { name: 'JE-1 (endemic areas)', ageMonths: 9 },
-  { name: 'Vitamin A (1st dose)', ageMonths: 9 },
-  { name: 'DPT Booster-1', ageMonths: 16 },
-  { name: 'OPV Booster', ageMonths: 16 },
-  { name: 'Measles-2', ageMonths: 16 },
-  { name: 'JE-2 (endemic areas)', ageMonths: 16 },
-  { name: 'Vitamin A (2nd dose)', ageMonths: 16 },
+  // Birth
+  { name: 'BCG',                          ageMonths: 0   },
+  { name: 'Hepatitis B (Birth Dose)',      ageMonths: 0   },
+  { name: 'OPV-0 (Birth Dose)',            ageMonths: 0   },
+  // 6 weeks (1.5 months)
+  { name: 'OPV-1',                         ageMonths: 1.5 },
+  { name: 'IPV-1 (Injectable Polio)',      ageMonths: 1.5 },
+  { name: 'DPT-1 + Hepatitis B-1',        ageMonths: 1.5 },
+  { name: 'PCV-1 (Pneumococcal)',          ageMonths: 1.5 },
+  { name: 'Rotavirus-1',                   ageMonths: 1.5 },
+  // 10 weeks (2.5 months)
+  { name: 'OPV-2',                         ageMonths: 2.5 },
+  { name: 'DPT-2 + Hepatitis B-2',        ageMonths: 2.5 },
+  { name: 'PCV-2 (Pneumococcal)',          ageMonths: 2.5 },
+  { name: 'Rotavirus-2',                   ageMonths: 2.5 },
+  // 14 weeks (3.5 months)
+  { name: 'OPV-3',                         ageMonths: 3.5 },
+  { name: 'IPV-2 (Injectable Polio)',      ageMonths: 3.5 },
+  { name: 'DPT-3 + Hepatitis B-3',        ageMonths: 3.5 },
+  { name: 'PCV-3 (Pneumococcal)',          ageMonths: 3.5 },
+  { name: 'Rotavirus-3',                   ageMonths: 3.5 },
+  // 6 months
+  { name: 'Influenza (Annual, 1st dose)',  ageMonths: 6   },
+  // 9 months
+  { name: 'Measles-Rubella (MR-1)',        ageMonths: 9   },
+  { name: 'JE-1 (Japanese Encephalitis)', ageMonths: 9   },
+  { name: 'Vitamin A (1st dose)',          ageMonths: 9   },
+  // 12 months
+  { name: 'Hepatitis A (1st dose)',        ageMonths: 12  },
+  // 15 months
+  { name: 'MMR (Measles-Mumps-Rubella)',  ageMonths: 15  },
+  { name: 'Varicella (Chickenpox)-1',      ageMonths: 15  },
+  { name: 'PCV Booster',                   ageMonths: 15  },
+  // 16-18 months
+  { name: 'DPT Booster-1',                ageMonths: 16  },
+  { name: 'OPV Booster',                  ageMonths: 16  },
+  { name: 'Measles-Rubella (MR-2)',        ageMonths: 16  },
+  { name: 'JE-2 (Japanese Encephalitis)', ageMonths: 16  },
+  { name: 'Vitamin A (2nd dose)',          ageMonths: 16  },
+  // 18 months
+  { name: 'Hepatitis A (2nd dose)',        ageMonths: 18  },
+  { name: 'Varicella (Chickenpox)-2',      ageMonths: 18  },
+  // 24 months
+  { name: 'Vitamin A (3rd dose)',          ageMonths: 24  },
+  { name: 'Typhoid Conjugate Vaccine',     ageMonths: 24  },
+  // 5 years
+  { name: 'DPT Booster-2',                ageMonths: 60  },
+  { name: 'OPV Booster-2',                ageMonths: 60  },
 ];
 
 const addMonthsToDate = (date, months) => {

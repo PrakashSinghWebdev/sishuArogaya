@@ -1,7 +1,9 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { LanguageProvider } from './context/LanguageContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import ChatBot from './components/ChatBot';
 
 // Auth
 import Login from './pages/auth/Login';
@@ -51,6 +53,7 @@ import AdminSettings from './pages/admin/SettingsConfiguration';
 
 function App() {
   return (
+    <LanguageProvider>
     <AuthProvider>
       <Router>
         <Routes>
@@ -110,8 +113,10 @@ function App() {
           {/* 404 */}
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
+        <ChatBot />
       </Router>
     </AuthProvider>
+    </LanguageProvider>
   );
 }
 

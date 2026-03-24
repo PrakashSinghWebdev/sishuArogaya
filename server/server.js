@@ -39,6 +39,7 @@ app.use('/api/admin', require('./routes/admin'));
 app.use('/api/schemes', require('./routes/schemes'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/reports', require('./routes/reports'));
+app.use('/api/chatbot', require('./routes/chatbot'));
 
 // Health check
 app.get('/api/health', (req, res) => res.json({ status: 'OK', project: 'Sishu Arogaya' }));
