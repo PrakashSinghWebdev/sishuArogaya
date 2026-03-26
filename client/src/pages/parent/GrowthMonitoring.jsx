@@ -101,6 +101,50 @@ export default function GrowthMonitoring() {
   const [tab, setTab] = useState('weight');
   const [slide, setSlide] = useState(0);
 
+  // ── Record Growth form ──
+  const [showForm,   setShowForm]   = useState(false);
+  const [formData,   setFormData]   = useState({ weight: '', height: '', headCircumference: '', notes: '' });
+  const [saving,     setSaving]     = useState(false);
+  const [saveMsg,    setSaveMsg]    = useState('');
+
+  const calcAgeMonthsNow = (dob) => {
+    if (!dob) return 0;
+    const ms = Date.now() - new Date(dob).getTime();
+    return Math.floor(ms / (1000 * 60 * 60 * 24 * 30.44));
+  };
+
+  const handleSaveGrowth = async (e) => {
+    e.preventDefault();
+    if (!selected) return;
+    if (!formData.weight && !formData.height) { setSaveMsg('⚠️ Enter at least weight or height.'); return; }
+    setSaving(true);
+    setSaveMsg('');
+    try {
+      await growthAPI.add({
+        childId: selected._id,
+        weight: formData.weight ? parseFloat(formData.weight) : undefined,
+        height: formData.height ? parseFloat(formData.height) : undefined,
+        headCircumference: formData.headCircumference ? parseFloat(formData.headCircumference) : undefined,
+        ageMonths: calcAgeMonthsNow(selected.dob) || selected.ageInMonths || 0,
+        notes: formData.notes,
+      });
+      setSaveMsg('✅ Growth record saved!');
+      setFormData({ weight: '', height: '', headCircumference: '', notes: '' });
+      // Refresh data
+      const [h, p] = await Promise.all([
+        growthAPI.getHistory(selected._id),
+        growthAPI.getPrediction(selected._id).catch(() => ({ data: null })),
+      ]);
+      setRecords(h.data);
+      setPrediction(p.data);
+      setTimeout(() => { setSaveMsg(''); setShowForm(false); }, 2000);
+    } catch (err) {
+      setSaveMsg(`⚠️ ${err.response?.data?.message || 'Failed to save. Please try again.'}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   useEffect(() => {
     childAPI.list().then((r) => {
       setChildren(r.data);
@@ -240,8 +284,10 @@ export default function GrowthMonitoring() {
             </div>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
-            <button style={{ padding: '8px 16px', borderRadius: 8, border: '1.5px solid #c5e8ef', background: '#f0fdff', color: '#0891b2', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans',sans-serif" }}>📊 Export Data</button>
-            <button style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#0891b2,#0e7490)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans',sans-serif" }}>🔔 Set Reminder</button>
+            <button
+              onClick={() => setShowForm(true)}
+              style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#0891b2,#0e7490)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans',sans-serif" }}
+            >📏 Record Growth</button>
           </div>
         </div>
       </div>

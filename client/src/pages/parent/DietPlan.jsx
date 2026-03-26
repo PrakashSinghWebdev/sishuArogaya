@@ -1,11 +1,233 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import useSelectedChild from '../../hooks/useSelectedChild';
+import { childAPI, dietAPI } from '../../services/api';
+import { useLanguage } from '../../context/LanguageContext';
+import { useSelectedChild } from '../../hooks/useSelectedChild';
 
 const C = {
   teal: '#0891b2', teal2: '#0e7490', teal3: '#cffafe', teal4: '#f0fdff',
   bg: '#f8fffe', text: '#0c2340', muted: '#4a7a8a', border: '#c5e8ef',
 };
+
+// ── Age group diet data ─────────────────────────────────────────────────────
+
+const AGE_GROUPS = [
+  { minMonths: 0,  maxMonths: 5,  label: '0 – 5 Months',  tag: 'exclusive-bf' },
+  { minMonths: 6,  maxMonths: 8,  label: '6 – 8 Months',  tag: '6-8mo' },
+  { minMonths: 9,  maxMonths: 11, label: '9 – 11 Months', tag: '9-11mo' },
+  { minMonths: 12, maxMonths: 23, label: '12 – 23 Months', tag: '12-23mo' },
+  { minMonths: 24, maxMonths: 60, label: '2 – 5 Years',   tag: '2-5yr' },
+];
+
+const DIET_PLANS = {
+  'exclusive-bf': {
+    intro: 'Exclusive breastfeeding is the ONLY food your baby needs for the first 6 months. No water, no other milk, no solid food.',
+    color: '#fce7f3',
+    tips: [
+      'Breastfeed on demand — at least 8–12 times in 24 hours',
+      'Start within 1 hour of birth. Colostrum (first yellow milk) is vital — never discard it!',
+      'No water, juice, or any other food before 6 months',
+      'Feed from both breasts at each feeding session',
+      'Night feeds are important for milk supply',
+      'Mother should eat well, drink plenty of fluids, and rest',
+    ],
+    meals: [
+      { time: 'Every 2–3 hours (day & night)', icon: '🌅', name: 'Breastfeeding Session', items: [
+        { emoji: '🥛', name: 'Breast Milk', qty: 'On demand (both sides)', note: 'The only food needed' },
+      ]},
+    ],
+    avoidFoods: ['Water (before 6 months)', 'Formula (unless medically required)', 'Cow\'s milk', 'Honey', 'Solid foods', 'Juices'],
+    warning: '⚠️ Never dilute breast milk. Never add sugar or salt. If breastfeeding is difficult, contact your ASHA worker or doctor.',
+  },
+
+  '6-8mo': {
+    intro: 'At 6 months, start soft complementary foods alongside continued breastfeeding. Begin with small amounts and gradually increase.',
+    color: '#fef9c3',
+    tips: [
+      'Continue breastfeeding — it\'s still the main nutrition source',
+      'Start with 2–3 teaspoons of soft food, once a day',
+      'Increase to 2–3 meals/day by 7–8 months',
+      'Introduce one new food at a time; wait 3 days before introducing another',
+      'Add a little ghee or oil to meals for energy',
+      'Never add salt or sugar to baby food',
+    ],
+    meals: [
+      { time: '7:00 – 8:00 AM', icon: '🌅', name: 'Morning Feed', items: [
+        { emoji: '🥛', name: 'Breast Milk', qty: 'Both sides, on demand', note: 'Always offer breast milk first' },
+      ]},
+      { time: '9:00 – 10:00 AM', icon: '🍚', name: 'First Solid Meal', items: [
+        { emoji: '🍚', name: 'Soft Dal Khichdi', qty: '2–4 tbsp (gradually increase)', note: 'Cooked until very soft' },
+        { emoji: '🍌', name: 'Mashed Ripe Banana', qty: '1–2 tbsp', note: 'Or any soft seasonal fruit' },
+      ]},
+      { time: '12:00 – 1:00 PM', icon: '☀️', name: 'Lunch', items: [
+        { emoji: '🥛', name: 'Breast Milk', qty: 'On demand', note: '' },
+        { emoji: '🥕', name: 'Mashed Cooked Vegetables', qty: '2–3 tbsp', note: 'Carrot, pumpkin, sweet potato' },
+        { emoji: '🍚', name: 'Soft Rice + Dal water', qty: '3–4 tbsp', note: 'Add ½ tsp ghee' },
+      ]},
+      { time: '4:00 – 5:00 PM', icon: '🌆', name: 'Evening Snack', items: [
+        { emoji: '🍌', name: 'Fruit Puree', qty: '2–3 tbsp', note: 'Banana, papaya, or chikoo' },
+        { emoji: '🌾', name: 'Ragi Porridge (thin)', qty: '3–4 tbsp', note: 'Cook well, thin consistency' },
+      ]},
+      { time: '7:00 – 8:00 PM', icon: '🌙', name: 'Dinner', items: [
+        { emoji: '🥛', name: 'Breast Milk', qty: 'On demand', note: '' },
+        { emoji: '🍚', name: 'Soft Khichdi / Rice porridge', qty: '3–4 tbsp', note: 'Add ghee or oil' },
+      ]},
+      { time: 'During night', icon: '🌛', name: 'Night Feed', items: [
+        { emoji: '🥛', name: 'Breast Milk', qty: 'On demand', note: 'Night feeds are important' },
+      ]},
+    ],
+    avoidFoods: ['Salt', 'Sugar', 'Honey', 'Whole nuts', 'Cow\'s milk as main drink', 'Raw eggs', 'Citrus fruits', 'Processed/packaged food'],
+    warning: '⚠️ If baby refuses a new food, try again after a few days. Never force-feed.',
+  },
+
+  '9-11mo': {
+    intro: 'By 9 months, baby can eat a wider variety of mashed or finely chopped family foods. Offer 3 meals and 2 snacks daily.',
+    color: '#dcfce7',
+    tips: [
+      'Continue breastfeeding alongside meals',
+      'Gradually increase texture: mashed → soft lumps → finely chopped',
+      'Offer 3 main meals + 2 healthy snacks daily',
+      'Encourage self-feeding with soft finger foods',
+      'Include iron-rich foods daily (dal, meat, fortified cereals)',
+      'Always add ghee or oil to meals',
+    ],
+    meals: [
+      { time: '7:00 – 8:00 AM', icon: '🌅', name: 'Breakfast', items: [
+        { emoji: '🥛', name: 'Breast Milk', qty: 'On demand', note: 'Offer before solids' },
+        { emoji: '🌾', name: 'Ragi / Oats Porridge', qty: '5–6 tbsp', note: 'With mashed banana' },
+        { emoji: '🍳', name: 'Mashed Egg Yolk', qty: '½ – 1 yolk', note: 'Well cooked, 3×/week' },
+      ]},
+      { time: '10:00 – 10:30 AM', icon: '🍎', name: 'Mid-Morning Snack', items: [
+        { emoji: '🍌', name: 'Soft Fruit (mashed)', qty: '3–4 tbsp', note: 'Banana, papaya, mango' },
+        { emoji: '🌾', name: 'Soft Biscuit / Ragi Ladoo', qty: '1–2 pieces', note: 'No-sugar variety' },
+      ]},
+      { time: '12:00 – 1:00 PM', icon: '☀️', name: 'Lunch', items: [
+        { emoji: '🍚', name: 'Dal Rice (soft, mashed)', qty: '6–8 tbsp', note: 'With ½ tsp ghee' },
+        { emoji: '🥕', name: 'Mashed / finely chopped vegetables', qty: '4–5 tbsp', note: 'Carrot, beans, pumpkin' },
+        { emoji: '🥣', name: 'Curd', qty: '2–3 tbsp', note: 'Good probiotic source' },
+      ]},
+      { time: '4:00 – 4:30 PM', icon: '🌆', name: 'Evening Snack', items: [
+        { emoji: '🥔', name: 'Soft Cooked Potato / Sweet Potato', qty: '4–5 tbsp', note: 'Mashed with a little butter' },
+        { emoji: '🥛', name: 'Breast Milk / Curd', qty: 'As desired', note: '' },
+      ]},
+      { time: '7:00 – 8:00 PM', icon: '🌙', name: 'Dinner', items: [
+        { emoji: '🫓', name: 'Soft Roti + Dal', qty: '½ roti (torn) + 4–5 tbsp dal', note: 'Dip roti in dal to soften' },
+        { emoji: '🥦', name: 'Boiled Soft Vegetables', qty: '4–5 tbsp', note: '' },
+        { emoji: '🥛', name: 'Breast Milk', qty: 'On demand', note: '' },
+      ]},
+    ],
+    avoidFoods: ['Salt (limit strictly)', 'Sugar', 'Honey', 'Whole/hard nuts', 'Round hard foods (choking hazard)', 'Cow\'s milk as main drink', 'Junk food / chips'],
+    warning: '⚠️ Watch for choking: always stay with baby during meals. Cut soft food into small pieces.',
+  },
+
+  '12-23mo': {
+    intro: 'Your toddler can eat most family foods now. Offer 3 meals + 2–3 snacks daily. Continue breastfeeding if possible.',
+    color: '#dbeafe',
+    tips: [
+      'Continue breastfeeding up to 2 years and beyond',
+      'Offer 3 meals + 2–3 snacks daily',
+      'Child needs ~1,000–1,200 kcal/day',
+      'Include iron-rich foods every day (dal, meat, green leafy vegetables)',
+      'Give cow\'s milk or curd from 1 year (not as main drink before 1 year)',
+      'Avoid processed/packaged foods, excessive salt and sugar',
+      'Let child self-feed — messy eating is normal and healthy!',
+    ],
+    meals: [
+      { time: '7:00 – 8:00 AM', icon: '🌅', name: 'Breakfast', items: [
+        { emoji: '🥛', name: 'Breast Milk / Cow\'s Milk', qty: '100–150 ml', note: 'Or curd (½ cup)' },
+        { emoji: '🌾', name: 'Ragi Dosa / Idli / Soft Paratha', qty: '1–2 small pieces', note: 'With dal or vegetable filling' },
+        { emoji: '🍳', name: 'Egg (boiled / scrambled)', qty: '1 whole egg', note: '5×/week for brain development' },
+      ]},
+      { time: '10:30 AM', icon: '🍎', name: 'Mid-Morning Snack', items: [
+        { emoji: '🍌', name: 'Fresh Fruit', qty: '½ cup (chopped)', note: 'Banana, apple, mango, papaya' },
+        { emoji: '🌾', name: 'Whole grain biscuit', qty: '1–2 pieces', note: 'Low sugar variety' },
+      ]},
+      { time: '12:30 – 1:30 PM', icon: '☀️', name: 'Lunch', items: [
+        { emoji: '🍚', name: 'Rice + Dal + Sabzi', qty: '½ cup rice + 3–4 tbsp dal + 4 tbsp sabzi', note: 'Add ghee or oil' },
+        { emoji: '🥣', name: 'Curd / Raita', qty: '3–4 tbsp', note: '' },
+        { emoji: '🥕', name: 'Cooked Vegetables (soft)', qty: '4–5 tbsp', note: 'Varied colours for nutrients' },
+      ]},
+      { time: '4:00 – 4:30 PM', icon: '🌆', name: 'Afternoon Snack', items: [
+        { emoji: '🌽', name: 'Boiled Corn / Sweet Potato', qty: 'Small portion', note: '' },
+        { emoji: '🥜', name: 'Groundnut Chutney (no whole nuts)', qty: '2 tbsp', note: 'Grind finely — not whole nuts' },
+        { emoji: '🥛', name: 'Milk or curd', qty: '100 ml', note: '' },
+      ]},
+      { time: '7:30 – 8:30 PM', icon: '🌙', name: 'Dinner', items: [
+        { emoji: '🫓', name: 'Roti (soft) + Dal / Paneer curry', qty: '1 roti + 4 tbsp', note: '' },
+        { emoji: '🥦', name: 'Cooked Green Vegetables', qty: '4–5 tbsp', note: 'Spinach, beans, peas' },
+        { emoji: '🍚', name: 'Soft Khichdi (alternate)', qty: '½ cup', note: 'If roti difficult' },
+      ]},
+      { time: 'Bedtime', icon: '🌛', name: 'Bedtime Feed', items: [
+        { emoji: '🥛', name: 'Breast Milk / Warm milk', qty: '100–150 ml', note: '' },
+      ]},
+    ],
+    avoidFoods: ['Added salt (limit)', 'Added sugar (limit)', 'Honey (before 1 yr)', 'Whole nuts (choking)', 'Junk food, chips, biscuits', 'Aerated drinks', 'Unpasteurised milk'],
+    warning: '⚠️ Never give whole nuts — grinding or nut butter is safe. Always supervise meals.',
+  },
+
+  '2-5yr': {
+    intro: 'Children 2–5 years eat regular family food. Focus on variety, iron-rich foods, and healthy snacks. 3 meals + 2 snacks daily.',
+    color: '#ede9fe',
+    tips: [
+      'Offer 3 meals + 2 snacks. Don\'t skip meals',
+      'Child needs ~1,200–1,400 kcal/day',
+      'Include protein at every meal: dal, egg, paneer, meat, milk',
+      'Fruits and vegetables: at least 2 portions daily',
+      'Whole grains (ragi, bajra, oats) are better than refined flour',
+      'Limit salt, sugar, fried food, and packaged snacks',
+      'Encourage eating with family — good for appetite and development',
+    ],
+    meals: [
+      { time: '7:30 – 8:30 AM', icon: '🌅', name: 'Breakfast', items: [
+        { emoji: '🥛', name: 'Milk', qty: '1 cup (200 ml)', note: '' },
+        { emoji: '🌾', name: 'Upma / Poha / Idli / Paratha', qty: '1–2 servings', note: 'With vegetable filling' },
+        { emoji: '🍳', name: 'Boiled Egg', qty: '1 egg', note: '5× per week' },
+      ]},
+      { time: '10:30 – 11:00 AM', icon: '🍎', name: 'Morning Snack', items: [
+        { emoji: '🍌', name: 'Seasonal Fruit', qty: '1 medium fruit or ½ cup', note: 'Apple, banana, guava, mango' },
+        { emoji: '🌰', name: 'Roasted Groundnuts / Chana', qty: 'Small handful', note: 'Healthy protein snack' },
+      ]},
+      { time: '1:00 – 2:00 PM', icon: '☀️', name: 'Lunch', items: [
+        { emoji: '🫓', name: 'Roti / Rice', qty: '2 rotis or ¾ cup rice', note: 'Whole wheat preferred' },
+        { emoji: '🫘', name: 'Dal / Rajma / Chhole', qty: '½ cup', note: 'Iron-rich legumes' },
+        { emoji: '🥬', name: 'Green Vegetable Sabzi', qty: '½ cup', note: 'Spinach, beans, broccoli' },
+        { emoji: '🥣', name: 'Curd', qty: '½ cup', note: 'Probiotics for digestion' },
+      ]},
+      { time: '4:30 – 5:00 PM', icon: '🌆', name: 'Evening Snack', items: [
+        { emoji: '🥜', name: 'Peanut Butter on Roti / Bread', qty: '1 tbsp on 1 piece', note: 'Or mixed nuts (chewed well)' },
+        { emoji: '🥛', name: 'Lassi / Buttermilk', qty: '1 glass', note: 'No added sugar' },
+      ]},
+      { time: '8:00 – 9:00 PM', icon: '🌙', name: 'Dinner', items: [
+        { emoji: '🫓', name: 'Roti + Dal/Sabzi', qty: '1–2 rotis + ½ cup each', note: '' },
+        { emoji: '🍚', name: 'Rice (if preferred)', qty: '½ cup', note: '' },
+        { emoji: '🥦', name: 'Cooked Vegetables', qty: '½ cup', note: 'Varied colours' },
+        { emoji: '🥛', name: 'Warm Milk', qty: '1 cup', note: 'Before sleep for calcium' },
+      ]},
+    ],
+    avoidFoods: ['Chips, namkeen, biscuits (limit)', 'Aerated drinks', 'Excessive sugar (sweets, candy)', 'Excessive salt', 'Fast food (occasionally only)', 'Unpasteurised products'],
+    warning: '⚠️ Iron deficiency is common at this age. Include dal, green vegetables, and vitamin C with each meal.',
+  },
+};
+
+const SUPERFOODS = [
+  { name: 'Ragi (Finger Millet)', desc: 'Rich in calcium & iron — excellent for bone development', emoji: '🌾' },
+  { name: 'Spinach (Palak)', desc: 'High in iron & folate — supports brain and blood', emoji: '🥬' },
+  { name: 'Egg Yolk', desc: 'DHA & choline for brain and eye development', emoji: '🍳' },
+  { name: 'Ghee / Sesame Oil', desc: 'Healthy fats for brain development and weight gain', emoji: '🫙' },
+  { name: 'Moong Dal', desc: 'Easily digestible protein and B vitamins', emoji: '🫘' },
+  { name: 'Banana', desc: 'Potassium, B6, instant energy — perfect first food', emoji: '🍌' },
+];
+
+function getAgeGroup(months) {
+  if (months == null) return null;
+  return AGE_GROUPS.find(g => months >= g.minMonths && months <= g.maxMonths) || AGE_GROUPS[AGE_GROUPS.length - 1];
+}
+
+function calcAgeMonths(dob) {
+  if (!dob) return null;
+  const ms = Date.now() - new Date(dob).getTime();
+  return Math.floor(ms / (1000 * 60 * 60 * 24 * 30.44));
+}
 
 const NAV = [
   ['🏠 Dashboard', '/parent/dashboard'],
@@ -18,349 +240,168 @@ const NAV = [
   ['🔔 Notifications', '/parent/notifications'],
 ];
 
-const SLIDES = [
-  'https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?w=1400&q=80&fit=crop',
-  'https://images.unsplash.com/photo-1559757175-0eb30cd8c063?w=1400&q=80&fit=crop',
-  'https://images.unsplash.com/photo-1476703993599-0035a21b17a9?w=1400&q=80&fit=crop',
-];
-
-// Recommended meal plan (6–9 months age range baseline)
-const MEAL_PLAN = [
-  {
-    id: 'morning', icon: '🌅', name: 'Morning', time: '7:00 – 8:00 AM', kcal: 220, headerBg: '#fef9c3',
-    items: [
-      { emoji: '🥛', name: 'Breast Milk / Formula', qty: '150–200 ml', kcal: 100 },
-      { emoji: '🍌', name: 'Mashed Banana', qty: '2–3 tbsp', kcal: 40 },
-      { emoji: '🍚', name: 'Soft Dal Khichdi', qty: '4–5 tbsp', kcal: 80 },
-    ],
-  },
-  {
-    id: 'midmorning', icon: '🍎', name: 'Mid-Morning Snack', time: '10:00 – 10:30 AM', kcal: 80, headerBg: '#dcfce7',
-    items: [
-      { emoji: '🍊', name: 'Seasonal Fruit Puree', qty: '3–4 tbsp', kcal: 35 },
-      { emoji: '🌾', name: 'Ragi Biscuit', qty: '2–3 pcs', kcal: 45 },
-    ],
-  },
-  {
-    id: 'lunch', icon: '☀️', name: 'Lunch', time: '12:00 – 1:00 PM', kcal: 185, headerBg: '#dbeafe',
-    items: [
-      { emoji: '🍚', name: 'Soft Rice + Dal', qty: '5–6 tbsp', kcal: 110 },
-      { emoji: '🥕', name: 'Mashed Vegetables', qty: '3–4 tbsp', kcal: 45 },
-      { emoji: '🥣', name: 'Curd', qty: '2–3 tbsp', kcal: 30 },
-    ],
-  },
-  {
-    id: 'evening', icon: '🌆', name: 'Evening Snack', time: '4:00 – 4:30 PM', kcal: 130, headerBg: '#ede9fe',
-    items: [
-      { emoji: '🌾', name: 'Suji Halwa', qty: '4–5 tbsp', kcal: 70 },
-      { emoji: '🥔', name: 'Mashed Potato', qty: '3–4 tbsp', kcal: 60 },
-    ],
-  },
-  {
-    id: 'dinner', icon: '🌙', name: 'Dinner', time: '7:00 – 8:00 PM', kcal: 235, headerBg: C.teal3,
-    items: [
-      { emoji: '🫓', name: 'Soft Roti + Dal', qty: '½ roti + 4 tbsp', kcal: 95 },
-      { emoji: '🥦', name: 'Boiled Vegetables', qty: '4–5 tbsp', kcal: 40 },
-      { emoji: '🥛', name: 'Milk', qty: '150–200 ml', kcal: 100 },
-    ],
-  },
-  {
-    id: 'bedtime', icon: '🌛', name: 'Bedtime Feed', time: '9:00 – 9:30 PM', kcal: 100, headerBg: '#fce7f3',
-    items: [
-      { emoji: '🥛', name: 'Breast Milk / Formula', qty: '120–150 ml', kcal: 100 },
-    ],
-  },
-];
-
-const TOTAL_KCAL = MEAL_PLAN.reduce((s, m) => s + m.kcal, 0);
-
-const AVOID_FOODS = [
-  { name: 'Honey', reason: 'Risk of botulism' },
-  { name: 'Whole Nuts', reason: 'Choking hazard' },
-  { name: 'Salt & Sugar', reason: 'Kidney strain' },
-  { name: 'Cow\'s Milk (as main)', reason: 'Not before 1 year' },
-  { name: 'Citrus Fruits', reason: 'Acidity risk' },
-  { name: 'Raw Egg Whites', reason: 'Allergy risk' },
-];
-
-const SUPERFOODS = [
-  { name: 'Ragi (Finger Millet)', desc: 'Rich in calcium & iron, excellent for bone development' },
-  { name: 'Spinach', desc: 'High in iron & folate, supports brain growth' },
-  { name: 'Egg Yolk', desc: 'Packed with DHA, choline for cognitive development' },
-  { name: 'Ghee', desc: 'Healthy fats for brain & weight gain' },
-  { name: 'Moong Dal', desc: 'Easily digestible protein and B vitamins' },
-];
-
-const FOODS_LIST = ['Milk', 'Banana', 'Dal Khichdi', 'Curd', 'Rice + Dal', 'Egg Yolk', 'Ragi Porridge', 'Fruit Puree', 'Paneer', 'Suji Halwa'];
-const MEAL_DEFS = [
-  ['morning', 'Morning', '7:00 – 8:00 AM'],
-  ['mid', 'Mid-Morning', '10:00 AM'],
-  ['lunch', 'Lunch', '12:00 – 1:00 PM'],
-  ['evening', 'Evening', '4:00 PM'],
-  ['dinner', 'Dinner', '7:00 – 8:00 PM'],
-];
-
-function MyDietPlan() {
-  const init = Object.fromEntries(MEAL_DEFS.map((m) => [m[0], []]));
-  const [plan, setPlan] = useState(init);
-  const [edit, setEdit] = useState(null);
-  const [title, setTitle] = useState('');
-  const [food, setFood] = useState({ name: '', qty: '', cal: '' });
-  const [saved, setSaved] = useState([]);
-  const ref = useRef(null);
-  const total = Object.values(plan).flat().reduce((sum, item) => sum + (parseInt(item.cal, 10) || 0), 0);
-
-  return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 20, alignItems: 'start' }}>
-      <div>
-        <div style={{ background: '#fff', border: `1.5px solid ${C.border}`, borderRadius: 16, padding: 24, boxShadow: '0 2px 12px rgba(8,145,178,.07)' }}>
-          <h5 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 17, fontWeight: 700, color: C.teal2, marginBottom: 16 }}>✏️ Build My Diet Plan</h5>
-          <input placeholder="Plan name (e.g. Arjun's Custom Plan)"
-            value={title} onChange={(e) => setTitle(e.target.value)}
-            style={{ width: '100%', padding: '10px 14px', border: `1.5px solid ${C.border}`, borderRadius: 10, fontSize: 14, fontFamily: 'inherit', outline: 'none', marginBottom: 16, color: C.text }} />
-
-          {MEAL_DEFS.map((meal) => (
-            <div key={meal[0]} style={{ border: `1.5px solid ${C.border}`, borderRadius: 12, padding: 16, marginBottom: 12 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: 14, color: C.text }}>{meal[1]}</div>
-                  <div style={{ fontSize: 11, color: C.muted }}>{meal[2]}</div>
-                </div>
-                <button onClick={() => setEdit(edit === meal[0] ? null : meal[0])}
-                  style={{ padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, border: `1.5px solid ${C.border}`, background: edit === meal[0] ? C.teal4 : '#fff', color: C.teal, cursor: 'pointer', fontFamily: 'inherit' }}>
-                  {edit === meal[0] ? 'Close' : '+ Add Food'}
-                </button>
-              </div>
-
-              {(plan[meal[0]] || []).map((item) => (
-                <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: C.teal4, borderRadius: 8, padding: '8px 12px', marginBottom: 6 }}>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: 13, color: C.text }}>{item.name}</div>
-                    <div style={{ fontSize: 11, color: C.muted }}>{item.qty}</div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ padding: '3px 10px', borderRadius: 100, background: C.teal3, color: C.teal2, fontSize: 11, fontWeight: 700 }}>{item.cal} kcal</span>
-                    <button onClick={() => setPlan((p) => ({ ...p, [meal[0]]: p[meal[0]].filter((x) => x.id !== item.id) }))}
-                      style={{ width: 24, height: 24, borderRadius: '50%', border: 'none', background: '#fee2e2', color: '#dc2626', cursor: 'pointer', fontSize: 14, display: 'grid', placeItems: 'center' }}>×</button>
-                  </div>
-                </div>
-              ))}
-
-              {edit === meal[0] && (
-                <div style={{ background: C.teal4, borderRadius: 10, padding: 14, marginTop: 8 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 80px', gap: 8 }}>
-                    <div style={{ position: 'relative' }}>
-                      <input ref={ref} placeholder="Food name" value={food.name}
-                        onChange={(e) => setFood((p) => ({ ...p, name: e.target.value }))}
-                        style={{ width: '100%', padding: '8px 10px', border: `1.5px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: 'inherit', outline: 'none', color: C.text }} />
-                      {food.name && (
-                        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 5 }}>
-                          {FOODS_LIST.filter((x) => x.toLowerCase().includes(food.name.toLowerCase())).slice(0, 4).map((x) => (
-                            <button key={x} onClick={() => { setFood((p) => ({ ...p, name: x })); ref.current?.focus(); }}
-                              style={{ padding: '3px 10px', borderRadius: 100, fontSize: 11, fontWeight: 600, border: `1px solid ${C.border}`, background: '#fff', color: C.teal, cursor: 'pointer', fontFamily: 'inherit' }}>{x}</button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <input placeholder="Quantity (e.g. 4 tbsp)" value={food.qty}
-                      onChange={(e) => setFood((p) => ({ ...p, qty: e.target.value }))}
-                      style={{ padding: '8px 10px', border: `1.5px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: 'inherit', outline: 'none', color: C.text }} />
-                    <input type="number" placeholder="kcal" value={food.cal}
-                      onChange={(e) => setFood((p) => ({ ...p, cal: e.target.value }))}
-                      style={{ padding: '8px 10px', border: `1.5px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: 'inherit', outline: 'none', color: C.text }} />
-                  </div>
-                  <button onClick={() => {
-                    if (!food.name.trim() || !food.qty.trim()) return;
-                    setPlan((p) => ({ ...p, [meal[0]]: [...p[meal[0]], { id: Date.now(), ...food, cal: parseInt(food.cal, 10) || 0 }] }));
-                    setFood({ name: '', qty: '', cal: '' });
-                  }} style={{ marginTop: 10, padding: '8px 18px', background: C.teal, color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
-                    + Add to {meal[1]}
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
-
-          <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-            <button onClick={() => { if (!title.trim()) return; setSaved((p) => [{ id: Date.now(), title, total }, ...p]); }}
-              style={{ padding: '10px 22px', background: C.teal, color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
-              💾 Save Plan
-            </button>
-            <button onClick={() => { setPlan(init); setTitle(''); }}
-              style={{ padding: '10px 18px', background: '#fff', color: '#dc2626', border: '1.5px solid #fca5a5', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
-              Clear
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div>
-        <div style={{ background: '#fff', border: `1.5px solid ${C.border}`, borderRadius: 16, padding: 20, boxShadow: '0 2px 12px rgba(8,145,178,.07)', marginBottom: 14 }}>
-          <h5 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 15, fontWeight: 700, color: C.teal2, marginBottom: 8 }}>Daily Summary</h5>
-          <div style={{ fontSize: 11, color: C.muted, marginBottom: 8 }}>Custom total calories</div>
-          <div style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 42, fontWeight: 700, color: C.teal, lineHeight: 1 }}>{total}</div>
-          <div style={{ fontSize: 13, color: C.muted, marginTop: 4 }}>kcal</div>
-        </div>
-        <div style={{ background: '#fff', border: `1.5px solid ${C.border}`, borderRadius: 16, padding: 20, boxShadow: '0 2px 12px rgba(8,145,178,.07)' }}>
-          <h5 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 15, fontWeight: 700, color: C.teal2, marginBottom: 12 }}>📁 Saved Plans</h5>
-          {saved.length === 0 ? (
-            <div style={{ fontSize: 13, color: C.muted }}>No saved plans yet.</div>
-          ) : saved.map((item) => (
-            <div key={item.id} style={{ border: `1.5px solid ${C.border}`, borderRadius: 10, padding: '10px 14px', marginBottom: 8 }}>
-              <div style={{ fontWeight: 700, fontSize: 13, color: C.text }}>{item.title}</div>
-              <div style={{ fontSize: 12, color: C.muted, marginTop: 3 }}>{item.total} kcal / day</div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function DietPlan() {
-  const { children, selectedChild, selectedChildId, setSelectedChild, loading } = useSelectedChild();
-  const [tab, setTab] = useState('recommended');
-  const [slide, setSlide] = useState(0);
+  const { navLinks, t } = useLanguage();
+  const { selectedChild, children, loading: childLoading } = useSelectedChild();
+  const [dietData, setDietData] = useState(null);
+  const [dietLoading, setDietLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('plan'); // 'plan' | 'superfoods'
+  const [error, setError] = useState('');
 
-  // Auto slide
-  React.useEffect(() => {
-    const t = setInterval(() => setSlide((s) => (s + 1) % SLIDES.length), 4000);
-    return () => clearInterval(t);
-  }, []);
+  // Child loading handled by hook
 
-  const ageMonths = selectedChild?.ageInMonths || 0;
-  const ageNote = ageMonths < 6 ? 'Exclusive breastfeeding recommended under 6 months'
-    : ageMonths < 12 ? 'Complementary foods + breastfeeding (6–12 months)'
-    : ageMonths < 24 ? 'Family foods + milk (12–24 months)'
-    : 'Regular family diet with nutritious additions';
+  const ageMonths = useMemo(() => {
+    if (!selectedChild) return null;
+    return selectedChild.ageInMonths ?? calcAgeMonths(selectedChild.dob);
+  }, [selectedChild]);
+
+  const ageGroup = useMemo(() => getAgeGroup(ageMonths), [ageMonths]);
+
+  // Fetch diet from API when ageGroup changes
+  useEffect(() => {
+    if (!ageGroup?.tag) return;
+    
+    const fetchDiet = async () => {
+      try {
+        setDietLoading(true);
+        setError('');
+        const res = await dietAPI.getByAgeGroup(ageGroup.tag);
+        setDietData(res.data);
+      } catch (err) {
+        setError('Failed to load diet plan');
+        console.error(err);
+      } finally {
+        setDietLoading(false);
+      }
+    };
+    
+    fetchDiet();
+  }, [ageGroup]);
+
+  const totalMeals = dietData?.meals?.length || 0;
 
   return (
     <div style={{ fontFamily: "'DM Sans', sans-serif", background: C.bg, minHeight: '100vh', color: C.text }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap');
         *{box-sizing:border-box}
-        @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
-        @keyframes spin{to{transform:rotate(360deg)}}
-        .dp-meal-card{background:#fff;border:1.5px solid ${C.border};border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(8,145,178,.07);transition:transform .2s,box-shadow .2s}
-        .dp-meal-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(8,145,178,.13)!important}
-        .dp-btn{padding:9px 18px;border-radius:10px;font-weight:600;font-size:13px;cursor:pointer;border:none;transition:all .2s;font-family:inherit}
-        .dp-btn-teal{background:${C.teal};color:#fff} .dp-btn-teal:hover{background:${C.teal2}}
-        .dp-btn-out{background:#fff;color:${C.teal};border:1.5px solid ${C.border}} .dp-btn-out:hover{background:${C.teal4}}
-        @media(max-width:900px){.dp-meal-grid{grid-template-columns:repeat(2,1fr)!important}.dp-bottom-grid{grid-template-columns:1fr!important}}
-        @media(max-width:600px){.dp-meal-grid{grid-template-columns:1fr!important}.dp-cal-grid{grid-template-columns:repeat(2,1fr)!important}.dp-nav-links{display:none!important}}
-        @media(max-width:420px){.dp-cal-grid{grid-template-columns:1fr!important}}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+        .dp-card{background:#fff;border:1.5px solid ${C.border};border-radius:16px;box-shadow:0 2px 12px rgba(8,145,178,.07);padding:20px}
+        .dp-tab{padding:9px 22px;border-radius:10px;font-weight:600;font-size:13px;cursor:pointer;border:1.5px solid ${C.border};background:#fff;color:${C.muted};transition:all .2s;font-family:inherit}
+        .dp-tab.active{background:${C.teal};color:#fff;border-color:${C.teal}}
+        .dp-nav-link{padding:5px 11px;border-radius:6px;font-size:13px;font-weight:500;color:${C.text};text-decoration:none;white-space:nowrap;transition:background .15s}
+        .dp-nav-link:hover{background:${C.teal3};color:${C.teal2}}
+        .dp-nav-link.active{background:${C.teal4};color:${C.teal};font-weight:600}
+        @media(max-width:700px){.dp-nav-links{display:none!important}.dp-grid{grid-template-columns:1fr!important}}
       `}</style>
 
       {/* Navbar */}
-      <nav style={{ position: 'sticky', top: 0, zIndex: 200, background: '#fff', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', padding: '0 24px', height: 62, boxShadow: '0 2px 12px rgba(8,145,178,.08)' }}>
-        <Link to="/parent/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', marginRight: 20, flexShrink: 0 }}>
+      <nav style={{ position: 'sticky', top: 0, zIndex: 100, background: '#fff', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', padding: '0 24px', height: 62, boxShadow: '0 2px 12px rgba(8,145,178,.08)', gap: 16 }}>
+        <Link to="/parent/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', flexShrink: 0 }}>
           <div style={{ width: 36, height: 36, background: `linear-gradient(135deg,${C.teal},${C.teal2})`, borderRadius: 9, display: 'grid', placeItems: 'center', fontSize: 18 }}>🌿</div>
-          <span style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 17, fontWeight: 700, color: C.teal2 }}>Sishu Arogaya</span>
+          <span style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 16, fontWeight: 700, color: C.teal2 }}>Sishu Arogaya</span>
         </Link>
         <div className="dp-nav-links" style={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, overflowX: 'auto' }}>
-          {NAV.map(([label, to]) => (
-            <Link key={to} to={to} style={{ padding: '6px 11px', borderRadius: 8, fontSize: 12.5, fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap', background: to === '/parent/diet-plan' ? C.teal4 : 'transparent', color: to === '/parent/diet-plan' ? C.teal : C.muted, borderBottom: to === '/parent/diet-plan' ? `2px solid ${C.teal}` : '2px solid transparent' }}>
-              {label}
-            </Link>
+          {(navLinks.length ? navLinks : NAV).map(([label, to]) => (
+            <Link key={to} to={to} className={`dp-nav-link${to === '/parent/diet-plan' ? ' active' : ''}`}>{label}</Link>
           ))}
         </div>
-        {children.length > 1 && (
-          <select value={selectedChildId} onChange={(e) => setSelectedChild(e.target.value)}
-            style={{ marginLeft: 12, padding: '6px 10px', borderRadius: 8, border: `1.5px solid ${C.border}`, fontSize: 13, color: C.text, background: '#fff', fontFamily: 'inherit' }}>
-            {children.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
+        {children.length > 1 && selectedChild && (
+          <select
+            value={selectedChild._id || ''}
+            onChange={e => {/* hook handles selection */ }}
+            style={{ padding: '7px 12px', borderRadius: 9, border: `1.5px solid ${C.border}`, fontSize: 13, color: C.text, outline: 'none', cursor: 'pointer' }}
+            disabled
+          >
+            {children.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
           </select>
         )}
       </nav>
 
-      {/* Hero */}
-      <div style={{ position: 'relative', height: 240, overflow: 'hidden' }}>
-        {SLIDES.map((src, i) => (
-          <img key={src} src={src} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: i === slide ? 1 : 0, transition: 'opacity 1s ease' }} />
-        ))}
-        <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg,${C.teal2}ee,${C.teal}bb)` }} />
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(255,255,255,.18)', border: '1px solid rgba(255,255,255,.35)', borderRadius: 100, padding: '5px 16px', fontSize: 11, fontWeight: 700, color: '#fff', letterSpacing: '.09em', textTransform: 'uppercase', marginBottom: 14 }}>🥗 Nutrition Plan</div>
-          <h1 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 'clamp(22px,3vw,36px)', fontWeight: 700, color: '#fff', textAlign: 'center', lineHeight: 1.2 }}>
-            Diet Plan for <span style={{ color: C.teal3 }}>{selectedChild?.name || 'Your Child'}</span>
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 24px 60px' }}>
+
+        {/* Header */}
+        <div style={{ marginBottom: 24, animation: 'fadeUp .4s ease' }}>
+          <h1 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 26, fontWeight: 700, color: C.text, margin: 0 }}>
+            🥗 {t('dietPlan') || 'Diet Plan'}
           </h1>
-          <p style={{ color: 'rgba(255,255,255,.75)', fontSize: 14, marginTop: 8, textAlign: 'center' }}>{ageNote}</p>
-        </div>
-        <div style={{ position: 'absolute', bottom: 14, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 6, zIndex: 3 }}>
-          {SLIDES.map((_, i) => <div key={i} onClick={() => setSlide(i)} style={{ width: i === slide ? 20 : 7, height: 7, borderRadius: 4, background: i === slide ? '#fff' : 'rgba(255,255,255,.45)', cursor: 'pointer', transition: 'all .3s' }} />)}
-        </div>
-      </div>
-
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '28px 24px 60px' }}>
-        {/* Page Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
-          <div>
-            <h2 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 24, fontWeight: 700, color: C.text, margin: 0 }}>🥗 Recommended Diet Plan</h2>
-            {selectedChild && <div style={{ fontSize: 13, color: C.muted, marginTop: 4 }}>For {selectedChild.name} · {ageMonths} months</div>}
-          </div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button className="dp-btn dp-btn-out">⬇️ Download</button>
-            <button className="dp-btn dp-btn-teal" onClick={() => setTab('myplan')}>✏️ Customise</button>
-          </div>
+          {selectedChild && ageMonths != null && (
+            <p style={{ color: C.muted, marginTop: 6, fontSize: 14 }}>
+              Showing diet plan for <strong>{selectedChild.name}</strong> — {ageGroup?.label} ({ageMonths} months old)
+            </p>
+          )}
         </div>
 
-        {loading ? (
-          <div style={{ textAlign: 'center', padding: '80px 20px' }}>
-            <div style={{ display: 'inline-block', width: 40, height: 40, border: '3px solid #c5e8ef', borderTopColor: '#0891b2', borderRadius: '50%', animation: 'spin .7s linear infinite' }} />
+        {childLoading ? (
+          <div style={{ textAlign: 'center', padding: 60, color: C.muted }}>Loading…</div>
+        ) : !selectedChild ? (
+          <div className="dp-card" style={{ textAlign: 'center', padding: 60 }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>👶</div>
+            <p style={{ color: C.muted }}>No child profile found. <Link to="/parent/child-profile" style={{ color: C.teal }}>Add a child</Link> to see their diet plan.</p>
+          </div>
+        ) : dietLoading ? (
+          <div className="dp-card" style={{ textAlign: 'center', padding: 60 }}>
+            <div style={{ display: 'inline-block', width: 40, height: 40, border: '3px solid #c5e8ef', borderTopColor: C.teal, borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+            <div style={{ marginTop: 16, color: C.muted }}>Loading diet plan...</div>
+          </div>
+        ) : error ? (
+          <div className="dp-card" style={{ textAlign: 'center', padding: 40, background: '#fee2e2', borderColor: '#fca5a5' }}>
+            <div style={{ color: '#b91c1c', fontSize: 14, fontWeight: 600, marginBottom: 8 }}>⚠️ {error}</div>
+            <button onClick={() => window.location.reload()} style={{ padding: '8px 16px', background: C.teal, color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer' }}>
+              Retry
+            </button>
+          </div>
+        ) : !dietData ? (
+          <div className="dp-card" style={{ textAlign: 'center', padding: 40, color: C.muted }}>
+            No diet plan available for this age group.
           </div>
         ) : (
           <>
-            {/* Tab Switch */}
-            <div style={{ display: 'flex', gap: 4, background: '#fff', borderRadius: 12, padding: 5, border: `1.5px solid ${C.border}`, marginBottom: 24, width: 'fit-content', boxShadow: '0 1px 4px rgba(8,145,178,.07)' }}>
-              {[['recommended', '📋 Recommended Plan'], ['myplan', '✏️ My Diet Plan']].map(([id, label]) => (
-                <button key={id} onClick={() => setTab(id)}
-                  style={{ padding: '8px 20px', borderRadius: 9, fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: 'inherit', background: tab === id ? C.teal : 'transparent', color: tab === id ? '#fff' : C.muted, transition: 'all .2s' }}>
-                  {label}
-                </button>
-              ))}
+            {/* Age group banner */}
+            <div style={{ background: dietData.color, border: `1.5px solid ${C.border}`, borderRadius: 14, padding: '16px 20px', marginBottom: 24, animation: 'fadeUp .45s ease' }}>
+              <div style={{ fontWeight: 700, fontSize: 15, color: C.text, marginBottom: 6 }}>
+                📅 {ageGroup.label} — {totalMeals} feeding sessions per day
+              </div>
+              <p style={{ margin: 0, color: C.muted, fontSize: 13, lineHeight: 1.6 }}>{dietData.intro}</p>
+              {dietData.warning && (
+                <div style={{ marginTop: 10, padding: '8px 12px', background: '#fef3c7', borderRadius: 8, fontSize: 12, color: '#92400e', fontWeight: 500 }}>
+                  {dietData.warning}
+                </div>
+              )}
             </div>
 
-            {tab === 'myplan' ? <MyDietPlan /> : (
-              <>
-                {/* Calorie Summary */}
-                <div className="dp-cal-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 12, marginBottom: 24 }}>
-                  {[
-                    { icon: '⚡', val: `${TOTAL_KCAL}`, label: 'kcal / day', color: C.teal, top: C.teal },
-                    { icon: '💪', val: '13g', label: 'Protein', color: '#16a34a', top: '#16a34a' },
-                    { icon: '🦴', val: '500mg', label: 'Calcium', color: '#d97706', top: '#f59e0b' },
-                    { icon: '🩸', val: '11mg', label: 'Iron', color: '#dc2626', top: '#ef4444' },
-                    { icon: '🍽️', val: '6', label: 'Meals / day', color: '#7c3aed', top: '#8b5cf6' },
-                  ].map(({ icon, val, label, color, top }) => (
-                    <div key={label} style={{ background: '#fff', borderRadius: 14, border: `1.5px solid ${C.border}`, padding: '18px 14px', borderTop: `3px solid ${top}`, boxShadow: '0 2px 8px rgba(8,145,178,.06)', textAlign: 'center' }}>
-                      <div style={{ fontSize: 24, marginBottom: 6 }}>{icon}</div>
-                      <div style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 22, fontWeight: 700, color, lineHeight: 1 }}>{val}</div>
-                      <div style={{ fontSize: 11, color: C.muted, marginTop: 4 }}>{label}</div>
-                    </div>
-                  ))}
-                </div>
+            {/* Tabs */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 24, animation: 'fadeUp .5s ease' }}>
+              <button className={`dp-tab${activeTab === 'plan' ? ' active' : ''}`} onClick={() => setActiveTab('plan')}>📋 Daily Meal Plan</button>
+              <button className={`dp-tab${activeTab === 'superfoods' ? ' active' : ''}`} onClick={() => setActiveTab('superfoods')}>⭐ Superfoods & Tips</button>
+            </div>
 
-                {/* Meal Cards */}
-                <div className="dp-meal-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16, marginBottom: 28 }}>
-                  {MEAL_PLAN.map((meal, idx) => (
-                    <div key={meal.id} className="dp-meal-card" style={{ animation: `fadeUp .45s ease ${idx * 0.07}s both` }}>
-                      {/* Card header */}
-                      <div style={{ background: meal.headerBg, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div style={{ fontSize: 26 }}>{meal.icon}</div>
-                        <div>
-                          <div style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 14, fontWeight: 700, color: C.text }}>{meal.name}</div>
-                          <div style={{ fontSize: 11, color: C.muted }}>{meal.time}</div>
+            {activeTab === 'plan' && (
+              <>
+                {/* Meal cards */}
+                <div style={{ display: 'grid', gap: 16, animation: 'fadeUp .55s ease' }}>
+                  {dietData.meals.map((meal, mi) => (
+                    <div key={mi} className="dp-card" style={{ padding: 0, overflow: 'hidden' }}>
+                      {/* Meal header */}
+                      <div style={{ background: dietData.color, padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span style={{ fontSize: 22 }}>{meal.icon}</span>
+                          <div>
+                            <div style={{ fontWeight: 700, fontSize: 15, color: C.text }}>{meal.name}</div>
+                            <div style={{ fontSize: 12, color: C.muted }}>🕐 {meal.time}</div>
+                          </div>
                         </div>
-                        <div style={{ marginLeft: 'auto', padding: '3px 10px', borderRadius: 100, background: C.teal3, color: C.teal2, fontSize: 11, fontWeight: 700 }}>{meal.kcal} kcal</div>
                       </div>
                       {/* Items */}
-                      <div style={{ padding: '12px 16px' }}>
-                        {meal.items.map((item, i) => (
-                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, paddingBottom: i < meal.items.length - 1 ? 8 : 0, marginBottom: i < meal.items.length - 1 ? 8 : 0, borderBottom: i < meal.items.length - 1 ? `1px solid ${C.border}` : 'none' }}>
-                            <span style={{ fontSize: 18, flexShrink: 0 }}>{item.emoji}</span>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{item.name}</div>
-                              <span style={{ display: 'inline-block', padding: '1px 8px', borderRadius: 100, background: C.teal4, color: C.muted, fontSize: 10, marginTop: 2 }}>{item.qty}</span>
+                      <div style={{ padding: '14px 20px' }}>
+                        {meal.items.map((item, ii) => (
+                          <div key={ii} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '10px 0', borderBottom: ii < meal.items.length - 1 ? `1px solid ${C.border}` : 'none' }}>
+                            <span style={{ fontSize: 22, flexShrink: 0 }}>{item.emoji}</span>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontWeight: 600, fontSize: 14, color: C.text }}>{item.name}</div>
+                              <div style={{ fontSize: 12, color: C.teal, fontWeight: 500 }}>📏 {item.qty}</div>
+                              {item.note && <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>💡 {item.note}</div>}
                             </div>
-                            <div style={{ fontSize: 11, fontWeight: 700, color: C.teal, flexShrink: 0 }}>{item.kcal} kcal</div>
                           </div>
                         ))}
                       </div>
@@ -368,55 +409,54 @@ export default function DietPlan() {
                   ))}
                 </div>
 
-                {/* Bottom 2-col */}
-                <div className="dp-bottom-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
-                  {/* Foods to Avoid */}
-                  <div style={{ background: '#fff', border: `1.5px solid ${C.border}`, borderRadius: 16, padding: 22, boxShadow: '0 2px 8px rgba(8,145,178,.06)' }}>
-                    <h5 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 16, fontWeight: 700, color: '#dc2626', marginBottom: 14 }}>🚫 Foods to Avoid</h5>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                      {AVOID_FOODS.map(({ name, reason }) => (
-                        <div key={name} style={{ background: '#fff5f5', border: '1px solid #fecaca', borderRadius: 10, padding: '10px 12px' }}>
-                          <div style={{ fontWeight: 700, fontSize: 13, color: '#991b1b' }}>⛔ {name}</div>
-                          <div style={{ fontSize: 11, color: '#b91c1c', marginTop: 3 }}>{reason}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Superfoods */}
-                  <div style={{ background: '#fff', border: `1.5px solid ${C.border}`, borderRadius: 16, padding: 22, boxShadow: '0 2px 8px rgba(8,145,178,.06)' }}>
-                    <h5 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 16, fontWeight: 700, color: C.teal2, marginBottom: 14 }}>⭐ Superfoods</h5>
-                    {SUPERFOODS.map(({ name, desc }) => (
-                      <div key={name} style={{ display: 'flex', gap: 12, padding: '10px 12px', background: C.teal4, borderRadius: 10, marginBottom: 8, border: `1px solid ${C.border}` }}>
-                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: C.teal, flexShrink: 0, marginTop: 5 }} />
-                        <div>
-                          <div style={{ fontWeight: 700, fontSize: 13, color: C.text }}>{name}</div>
-                          <div style={{ fontSize: 11, color: C.muted, marginTop: 2, lineHeight: 1.5 }}>{desc}</div>
-                        </div>
-                      </div>
+                {/* Avoid foods */}
+                <div className="dp-card" style={{ marginTop: 20, background: '#fff7ed', borderColor: '#fed7aa', animation: 'fadeUp .6s ease' }}>
+                  <h3 style={{ fontSize: 15, fontWeight: 700, color: '#c2410c', marginBottom: 12 }}>🚫 Foods to Avoid</h3>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {dietData.avoidFoods.map((f, i) => (
+                      <span key={i} style={{ padding: '5px 14px', background: '#fee2e2', color: '#b91c1c', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>
+                        ✕ {f}
+                      </span>
                     ))}
                   </div>
                 </div>
-
-                {/* WHO Guidelines */}
-                <div style={{ background: `linear-gradient(135deg,${C.teal4},#e0f7fa)`, border: `1.5px solid ${C.border}`, borderRadius: 16, padding: '20px 24px', display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-                  <div style={{ fontSize: 32, flexShrink: 0 }}>🌍</div>
-                  <div>
-                    <div style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 15, fontWeight: 700, color: C.teal2, marginBottom: 6 }}>WHO Feeding Guidelines</div>
-                    <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.7 }}>
-                      The World Health Organization recommends exclusive breastfeeding for the first 6 months of life. After 6 months, introduce safe, age-appropriate complementary foods while continuing breastfeeding up to 2 years and beyond. Ensure dietary diversity with foods from at least 5 out of 8 food groups daily.
-                    </div>
-                  </div>
-                </div>
               </>
+            )}
+
+            {activeTab === 'superfoods' && (
+              <div style={{ animation: 'fadeUp .5s ease' }}>
+                <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', marginBottom: 24 }}>
+                  {SUPERFOODS.map((sf, i) => (
+                    <div key={i} className="dp-card" style={{ padding: '16px 20px', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+                      <span style={{ fontSize: 28, flexShrink: 0 }}>{sf.emoji}</span>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: 14, color: C.text, marginBottom: 4 }}>{sf.name}</div>
+                        <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.5 }}>{sf.desc}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Tips */}
+                <div className="dp-card">
+                  <h3 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 16, fontWeight: 700, color: C.teal2, marginBottom: 14 }}>
+                    💡 Feeding Tips for {ageGroup.label}
+                  </h3>
+                  <ul style={{ margin: 0, paddingLeft: 20 }}>
+                    {dietData.tips.map((tip, i) => (
+                      <li key={i} style={{ fontSize: 13, color: C.text, lineHeight: 1.7, marginBottom: 6 }}>{tip}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
             )}
           </>
         )}
       </div>
 
-      <div style={{ background: '#0e7490', color: 'rgba(255,255,255,.45)', textAlign: 'center', padding: 14, fontSize: 12 }}>
+      <footer style={{ background: C.teal2, color: 'rgba(255,255,255,.5)', textAlign: 'center', padding: '16px 24px', fontSize: 12 }}>
         Sishu Arogaya © 2024 · Government Integrated Child Health Monitoring System · DBUU Dehradun
-      </div>
+      </footer>
     </div>
   );
 }

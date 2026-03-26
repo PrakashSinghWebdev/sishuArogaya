@@ -1,7 +1,5 @@
-import { useEffect, useRef, useState, lazy, Suspense } from 'react';
-import { chatbotAPI } from '../services/api';
-
-const HospitalMap = lazy(() => import('./HospitalMap'));
+import { useEffect, useRef, useState } from 'react';
+import { findAnswer } from '../data/chatbotKnowledge';
 
 /* ─── Suggested quick questions ─────────────────────────────────────────── */
 const SUGGESTIONS = [
@@ -99,7 +97,6 @@ function TypingDots() {
 /* ─── Main ChatBot widget ─────────────────────────────────────────────────── */
 export default function ChatBot() {
   const [open,     setOpen]     = useState(false);
-  const [showMap,  setShowMap]  = useState(false);
   const [messages, setMessages] = useState([
     {
       role: 'bot',
@@ -196,9 +193,8 @@ export default function ChatBot() {
     }]);
   }
 
-  const panelWidth  = showMap ? 860 : 380;
-  const chatWidth   = showMap ? 360 : '100%';
-  const mapWidth    = 480;
+  const panelWidth  = 400;
+  const chatWidth   = '100%';
 
   return (
     <>
@@ -297,18 +293,6 @@ export default function ChatBot() {
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 6 }}>
-                {/* Map toggle */}
-                <button
-                  className="sb-btn"
-                  onClick={() => setShowMap(v => !v)}
-                  title={showMap ? 'Hide hospital map' : 'Show hospital map'}
-                  style={{
-                    background: showMap ? 'rgba(255,255,255,.35)' : 'rgba(255,255,255,.18)',
-                    border: '1px solid rgba(255,255,255,.4)',
-                    borderRadius: 8, padding: '5px 8px',
-                    color: '#fff', cursor: 'pointer', fontSize: 14,
-                  }}
-                >🗺️</button>
                 {/* Clear */}
                 <button
                   className="sb-btn"
@@ -466,47 +450,6 @@ export default function ChatBot() {
             </div>
           </div>
 
-          {/* ── MAP COLUMN ── */}
-          {showMap && (
-            <div style={{
-              width: mapWidth,
-              borderLeft: '1px solid #c5e8ef',
-              background: '#0c2340',
-              display: 'flex',
-              flexDirection: 'column',
-              overflow: 'hidden',
-            }}>
-              {/* Map header */}
-              <div style={{
-                background: '#0c2340',
-                padding: '10px 14px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexShrink: 0,
-              }}>
-                <div>
-                  <div style={{ color: '#cffafe', fontWeight: 700, fontSize: 13 }}>🗺️ India Health Facilities</div>
-                  <div style={{ color: 'rgba(207,250,254,.6)', fontSize: 10 }}>Zoom in to see hospitals near you</div>
-                </div>
-                <button
-                  onClick={() => setShowMap(false)}
-                  style={{ background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.2)', borderRadius: 6, padding: '3px 8px', color: '#cffafe', fontSize: 12, cursor: 'pointer' }}
-                >Hide</button>
-              </div>
-
-              {/* Leaflet map */}
-              <div style={{ flex: 1, padding: '0 8px 8px' }}>
-                <Suspense fallback={
-                  <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#cffafe', fontSize: 13 }}>
-                    Loading map…
-                  </div>
-                }>
-                  <HospitalMap height="100%" />
-                </Suspense>
-              </div>
-            </div>
-          )}
         </div>
       )}
     </>

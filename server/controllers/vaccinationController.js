@@ -115,4 +115,27 @@ const getOverdue = async (req, res) => {
   }
 };
 
-module.exports = { getSchedule, updateVaccination, getOverdue };
+// PUT /api/vaccination/parent-mark-done  (parent self-report)
+const parentMarkDone = async (req, res) => {
+  try {
+    const { vaccineId } = req.body;
+    const vaccine = await Vaccination.findById(vaccineId).populate('childId');
+    if (!vaccine) return res.status(404).json({ message: 'Vaccination record not found' });
+
+    // Verify the parent owns this child
+    if (String(vaccine.childId.parentId) !== String(req.user._id)) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+
+    vaccine.status = 'done';
+    vaccine.givenDate = vaccine.givenDate || new Date();
+    vaccine.notes = (vaccine.notes || '') + ' [Self-reported by parent]';
+    await vaccine.save();
+
+    res.json(vaccine);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+module.exports = { getSchedule, updateVaccination, parentMarkDone, getOverdue };

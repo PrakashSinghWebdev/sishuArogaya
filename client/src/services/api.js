@@ -61,6 +61,7 @@ export const vaccinationAPI = {
   getSchedule: (childId) => api.get(`/vaccination/${childId}`),
   update: (data) => api.put('/vaccination/update', data),
   getOverdue: () => api.get('/vaccination/overdue'),
+  parentMarkDone: (vaccineId) => api.put('/vaccination/parent-mark-done', { vaccineId }),
 };
 
 // ——— ASHA ———
@@ -105,6 +106,12 @@ export const notificationAPI = {
 export const reportAPI = {
   childPDF: (childId) => api.get(`/reports/child/${childId}`, { responseType: 'blob' }),
   districtExcel: (districtId) => api.get(`/reports/district/${districtId}`, { responseType: 'blob' }),
+};
+
+// ——— Diet ———
+export const dietAPI = {
+  getByAgeGroup: (ageGroup) => api.get(`/diet/${ageGroup}`),
+  getByAge: (months) => api.get(`/diet/age/${months}`),
 };
 
 // ——— Chatbot ———

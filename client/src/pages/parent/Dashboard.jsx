@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { notificationAPI, schemeAPI, vaccinationAPI } from '../../services/api';
 import useSelectedChild from '../../hooks/useSelectedChild';
+
+const HospitalMap = lazy(() => import('../../components/HospitalMap'));
 
 /* ─── constants ──────────────────────────────────────────────────────────── */
 
@@ -560,36 +562,17 @@ export default function ParentDashboard() {
                 ))}
               </div>
 
-              {/* Recent Notifications */}
-              <div className="sa-card" style={{ padding: '20px 22px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              {/* Nearby Hospitals Map */}
+              <div className="sa-card" style={{ padding: 0, overflow: 'hidden', minHeight: 380 }}>
+                <div style={{ padding: '14px 18px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #c5e8ef' }}>
                   <h3 style={{ fontFamily: "'Libre Baskerville', serif", fontSize: 16, fontWeight: 700, margin: 0, color: '#0c2340' }}>
-                    🔔 Recent Notifications
+                    🏥 Nearby Hospitals
                   </h3>
-                  <Link to="/parent/notifications" style={{ fontSize: 12, color: '#0891b2', fontWeight: 600, textDecoration: 'none' }}>
-                    Open →
-                  </Link>
+                  <span style={{ fontSize: 11, color: '#4a7a8a' }}>Real-time · GPS</span>
                 </div>
-                {notifications.length === 0 ? (
-                  <div style={{ color: '#4a7a8a', fontSize: 13, padding: '20px 0', textAlign: 'center' }}>
-                    No notifications yet.
-                  </div>
-                ) : notifications.slice(0, 4).map((n) => (
-                  <div key={n._id} style={{
-                    padding: '10px 14px', marginBottom: 8,
-                    border: `1px solid ${n.isRead ? '#c5e8ef' : '#0891b2'}`,
-                    borderLeft: `4px solid ${n.isRead ? '#c5e8ef' : '#0891b2'}`,
-                    borderRadius: 10,
-                    background: n.isRead ? '#fff' : '#f0fdff',
-                  }}>
-                    <div style={{ fontWeight: 600, fontSize: 13, color: '#0c2340' }}>
-                      {n.title || 'Health Update'}
-                    </div>
-                    <div style={{ fontSize: 12, color: '#4a7a8a', marginTop: 3, lineHeight: 1.45 }}>
-                      {n.message}
-                    </div>
-                  </div>
-                ))}
+                <Suspense fallback={<div style={{ height: 340, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4a7a8a', fontSize: 13 }}>Loading map…</div>}>
+                  <HospitalMap height="340px" showSearchBar={true} />
+                </Suspense>
               </div>
             </div>
           </>

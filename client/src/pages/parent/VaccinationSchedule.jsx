@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { childAPI, vaccinationAPI } from '../../services/api';
+import { useLanguage } from '../../context/LanguageContext';
 
 function printVaccineCard(child, vaccines) {
+  const { navLinks } = useLanguage();
   const done = vaccines.filter(v => v.status === 'done' || v.status === 'completed');
   const win = window.open('', '_blank', 'width=700,height=900');
   win.document.write(`
@@ -103,19 +105,52 @@ function VaccineRow({ v, idx }) {
         {v.ageMonths != null ? `${v.ageMonths} mo` : ''}
       </div>
 
-      {/* Pill */}
-      <span style={{
-        padding: '4px 12px', borderRadius: 100, fontSize: 11, fontWeight: 700,
-        background: cfg.pillBg, color: cfg.pillColor, border: `1px solid ${cfg.border}`,
-        flexShrink: 0,
-      }}>{cfg.label}</span>
+      {/* Checkbox */}
+      <label style={{
+        display: 'flex', alignItems: 'center', gap: 6,
+        cursor: 'pointer', fontSize: 12, fontWeight: 600,
+        color: v.status === 'done' ? '#15803d' : '#0891b2',
+        flexShrink: 0, userSelect: 'none'
+      }}>
+        <input
+          type="checkbox"
+          checked={v.status === 'done'}
+          onChange={async (e) => {
+            if (e.target.checked && v.status !== 'done') {
+              try {
+                setUpdatingId(v._id);
+                await vaccinationAPI.parentMarkDone(v._id);
+                // Optimistic update
+                setVaccines(prev => prev.map(vac => 
+                  vac._id === v._id 
+                    ? {...vac, status: 'done', givenDate: new Date().toISOString()}
+                    : vac
+                ));
+              } catch(err) {
+                alert('Failed to update vaccination status. Please try again.');
+              } finally {
+                setUpdatingId(null);
+              }
+            }
+          }}
+          disabled={v.status === 'done' || updatingId === v._id}
+          style={{
+            width: 18, height: 18, accentColor: '#059669',
+            cursor: v.status === 'done' || updatingId === v._id ? 'default' : 'pointer'
+          }}
+        />
+        <span>
+          {v.status === 'done' ? '✓ Completed' : 'Mark Done'}
+        </span>
+      </label>
     </div>
   );
-}
+};
 
 export default function VaccinationSchedule() {
   const navigate = useNavigate();
   const [children, setChildren] = useState([]);
+  const [updatingId, setUpdatingId] = useState(null);
   const [selectedChild, setSelectedChild] = useState(null);
   const [vaccines, setVaccines] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -189,8 +224,9 @@ export default function VaccinationSchedule() {
           <div style={{ width: 36, height: 36, background: `linear-gradient(135deg,${C.teal},${C.teal2})`, borderRadius: 9, display: 'grid', placeItems: 'center', fontSize: 18 }}>🌿</div>
           <span style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 17, fontWeight: 700, color: C.teal2 }}>Sishu Arogaya</span>
         </Link>
+        const { navLinks } = useLanguage();
         <div className="vs-nav-links" style={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, overflowX: 'auto' }}>
-          {NAV.map(([label, to]) => (
+          {(navLinks.length ? navLinks : NAV).map(([label, to]) => (
             <Link key={to} to={to} style={{ padding: '6px 11px', borderRadius: 8, fontSize: 12.5, fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap', background: to === '/parent/vaccination' ? C.teal4 : 'transparent', color: to === '/parent/vaccination' ? C.teal : C.muted, borderBottom: to === '/parent/vaccination' ? `2px solid ${C.teal}` : '2px solid transparent' }}>
               {label}
             </Link>

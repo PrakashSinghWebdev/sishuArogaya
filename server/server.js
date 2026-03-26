@@ -40,6 +40,7 @@ app.use('/api/schemes', require('./routes/schemes'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/reports', require('./routes/reports'));
 app.use('/api/chatbot', require('./routes/chatbot'));
+app.use('/api/diet', require('./routes/diet'));
 
 // Health check
 app.get('/api/health', (req, res) => res.json({ status: 'OK', project: 'Sishu Arogaya' }));

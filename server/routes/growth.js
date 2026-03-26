@@ -4,7 +4,7 @@ const { addGrowthRecord, getGrowthHistory, getPrediction } = require('../control
 const { protect } = require('../middleware/auth');
 const { authorize } = require('../middleware/role');
 
-router.post('/add', protect, authorize('asha', 'admin'), addGrowthRecord);
+router.post('/add', protect, addGrowthRecord);
 router.get('/:childId', protect, getGrowthHistory);
 router.get('/:childId/predict', protect, getPrediction);
 
