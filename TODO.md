@@ -1,0 +1,1 @@
+# Task: use npm not npx\n\n- Verified no `npx` commands in source code (package.json, scripts, README, etc.).\n- All occurrences were in node_modules only.\n- Task complete, no changes needed.\n\nNext steps: Recent unrelated changes (diet features) exist but not part of this task.
