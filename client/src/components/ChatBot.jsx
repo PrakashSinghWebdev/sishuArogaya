@@ -136,12 +136,14 @@ export default function ChatBot() {
     setLoading(true);
 
     try {
-      const res = await chatbotAPI.query(msg);
-      setMessages(prev => [...prev, { role: 'bot', text: res.data.answer, ts: Date.now() }]);
+      // Small delay to feel natural
+      await new Promise(r => setTimeout(r, 600));
+      const answer = findAnswer(msg);
+      setMessages(prev => [...prev, { role: 'bot', text: answer, ts: Date.now() }]);
     } catch {
       setMessages(prev => [...prev, {
         role: 'bot',
-        text: '⚠️ Sorry, I could not connect to the health assistant right now. Please try again in a moment.\n\nFor urgent medical queries, please contact your ASHA worker or call 108.',
+        text: 'I had trouble finding an answer. Please try rephrasing your question.\n\nFor urgent medical queries, please contact your ASHA worker or call **108**.',
         ts: Date.now(),
       }]);
     } finally {
