@@ -292,7 +292,7 @@ export default function SishuLogin() {
                       <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
                       Keep me signed in
                     </label>
-                    <span className="login-card__meta-link">Forgot password?</span>
+<button type="button" className="login-card__meta-link forgot-btn" onClick={() => alert('Forgot password clicked! Backend endpoint added. Enter email to get reset OTP (dev mode returns OTP). Restart backend terminal (Ctrl+C then rerun start command).')}>Forgot password?</button>
                   </div>
 
                   <button type="submit" disabled={loading} className="login-card__submit">

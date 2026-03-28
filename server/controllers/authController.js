@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const AshaWorker = require('../models/AshaWorker');
-const { generateOTP, getOTPExpiry, sendOTPEmail } = require('../utils/otp');
+const { generateOTP, getOTPExpiry, sendOTPEmail, sendOTPSMS } = require('../utils/otp');
 const { createAuditLog } = require('../utils/auditLogger');
 
 const signToken = (id) =>
@@ -72,18 +72,25 @@ const login = async (req, res) => {
       details: `OTP generated for ${user.email}`,
     });
 
-    // Send OTP (skip in dev if email not configured)
-    try {
-      await sendOTPEmail(user.email, otp, user.name);
-    } catch (mailErr) {
-      console.warn('Email not sent (check .env):', mailErr.message);
-      // In development, return OTP in response for testing
-      if (process.env.NODE_ENV !== 'production') {
-        return res.json({ message: 'OTP generated (dev mode)', otp, userId: user._id });
-      }
+    // Send OTP via email and SMS in parallel
+    const deliveryResults = await Promise.allSettled([
+      sendOTPEmail(user.email, otp, user.name),
+      user.phone ? sendOTPSMS(user.phone, otp) : Promise.resolve(),
+    ]);
+
+    const emailFailed = deliveryResults[0].status === 'rejected';
+    const smsFailed   = deliveryResults[1].status === 'rejected';
+
+    if (emailFailed) console.warn('Email OTP failed:', deliveryResults[0].reason?.message);
+    if (smsFailed)   console.warn('SMS OTP failed:',   deliveryResults[1].reason?.message);
+
+    // In development, return OTP in response if both channels fail
+    if (emailFailed && smsFailed && process.env.NODE_ENV !== 'production') {
+      return res.json({ message: 'OTP generated (dev mode — delivery failed)', otp, userId: user._id });
     }
 
-    res.json({ message: 'OTP sent to your email', userId: user._id });
+    const sentVia = [!emailFailed && 'email', !smsFailed && user.phone && 'SMS'].filter(Boolean).join(' & ');
+    res.json({ message: `OTP sent via ${sentVia || 'registered contact'}`, userId: user._id });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -153,4 +160,64 @@ const changePassword = async (req, res) => {
   }
 };
 
-module.exports = { register, login, verifyOTP, getMe, changePassword };
+// POST /api/auth/forgot-password
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const normalizedEmail = email?.trim().toLowerCase();
+
+    const user = await User.findOne({ email: normalizedEmail });
+    if (!user) return res.status(404).json({ message: 'Email not found' });
+
+    const otp = generateOTP();
+    user.otp = otp;
+    user.otpExpiry = getOTPExpiry();
+    await user.save({ validateBeforeSave: false });
+
+    // Send OTP
+    try {
+      await sendOTPEmail(user.email, otp, user.name);
+    } catch {
+      if (process.env.NODE_ENV !== 'production') {
+        return res.json({ message: 'Dev OTP', otp, userId: user._id });
+      }
+    }
+
+    res.json({ message: 'Password reset OTP sent to your email' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// POST /api/auth/reset-password
+const resetPassword = async (req, res) => {
+  try {
+    const { userId, otp, newPassword } = req.body;
+
+    const user = await User.findById(userId).select('+otp +otpExpiry +password');
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    if (user.otp !== otp) return res.status(400).json({ message: 'Invalid OTP' });
+    if (user.otpExpiry < new Date()) return res.status(400).json({ message: 'OTP expired' });
+
+    user.password = newPassword;
+    user.otp = undefined;
+    user.otpExpiry = undefined;
+    await user.save();
+
+    await createAuditLog({
+      req,
+      actor: user,
+      action: 'PASSWORD_RESET',
+      entityType: 'User',
+      entityId: user._id,
+      details: `${user.name} reset password via forgot flow`,
+    });
+
+    res.json({ message: 'Password reset successful. Please login.' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+module.exports = { register, login, verifyOTP, getMe, changePassword, forgotPassword, resetPassword };

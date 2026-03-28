@@ -174,6 +174,11 @@ const updateChild = async (req, res) => {
         return res.status(403).json({ message: 'Not authorized to update this child' });
       }
     }
+    if (req.user.role === 'parent') {
+      if (String(existing.parentId) !== String(req.user._id)) {
+        return res.status(403).json({ message: 'Not authorized to update this child' });
+      }
+    }
 
     const child = await Child.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
     await createAuditLog({

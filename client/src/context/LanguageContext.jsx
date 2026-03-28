@@ -226,7 +226,6 @@ async function detectLanguage() {
     const geoData = await geoRes.json();
     const suggested = COUNTRY_LANG[geoData.countryCode] || COUNTRY_LANG['IN'];
     if (suggested && LANGUAGES.some(l => l.code === suggested)) {
-      setSuggestedLanguageState(suggested);
       return suggested;
     }
   } catch (gpsErr) {
@@ -236,7 +235,6 @@ async function detectLanguage() {
       const ipData = await ipRes.json();
       const suggested = COUNTRY_LANG[ipData.country_code] || 'English';
       if (LANGUAGES.some(l => l.code === suggested)) {
-        setSuggestedLanguageState(suggested);
         return suggested;
       }
     } catch (ipErr) {
@@ -273,7 +271,7 @@ export function LanguageProvider({ children }) {
     const browserLang = (navigator.language || 'en').split('-')[0].toLowerCase();
     for (const lang of LANGUAGES) {
       if (lang.locale.includes(browserLang) && lang.code !== language) {
-        setSuggestedLanguage(lang.code);
+        setSuggestedLanguageState(lang.code);
         break;
       }
     }
@@ -282,7 +280,7 @@ export function LanguageProvider({ children }) {
   const setLanguage = (lang) => {
     setLanguageState(lang);
     localStorage.setItem('sa_language', lang);
-    setSuggestedLanguage(null);
+    setSuggestedLanguageState(null);
   };
 
   const dismissSuggestion = () => setSuggestedLanguageState(null);

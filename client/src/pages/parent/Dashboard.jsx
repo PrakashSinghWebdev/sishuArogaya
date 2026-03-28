@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { notificationAPI, schemeAPI, vaccinationAPI } from '../../services/api';
+import { notificationAPI, schemeAPI, vaccinationAPI, growthAPI, dietAPI } from '../../services/api';
 import useSelectedChild from '../../hooks/useSelectedChild';
 
 const HospitalMap = lazy(() => import('../../components/HospitalMap'));
@@ -17,10 +17,12 @@ const SLIDES = [
 ];
 
 const QUICK_ACTIONS = [
-  { emoji: '💉', labelKey: 'bookVaccine',    to: '/parent/vaccination' },
-  { emoji: '📈', labelKey: 'logGrowth',      to: '/parent/growth'      },
-  { emoji: '🥗', labelKey: 'dietPlan',       to: '/parent/diet-plan'   },
-  { emoji: '📥', labelKey: 'downloadReport', to: '/parent/reports'     },
+  { emoji: '💉', labelKey: 'bookVaccine',    label: 'Vaccinations',    to: '/parent/vaccination' },
+  { emoji: '📈', labelKey: 'logGrowth',      label: 'Growth',          to: '/parent/growth'      },
+  { emoji: '🥗', labelKey: 'dietPlan',       label: 'Diet Plan',       to: '/parent/diet-plan'   },
+  { emoji: '📥', labelKey: 'downloadReport', label: 'Reports',         to: '/parent/reports'     },
+  { emoji: '🏛️', labelKey: 'schemes',        label: 'Govt Schemes',    to: '/parent/schemes'     },
+  { emoji: '🔔', labelKey: 'notifications',  label: 'Notifications',   to: '/parent/notifications' },
 ];
 
 /* ─── helpers ────────────────────────────────────────────────────────────── */
@@ -47,7 +49,7 @@ function ScoreCircle({ score }) {
   const r = 38;
   const circ = 2 * Math.PI * r;
   const dash = (score / 100) * circ;
-  const color = score >= 75 ? '#059669' : score >= 50 ? '#f59e0b' : '#ef4444';
+  const color = score >= 75 ? '#22c55e' : score >= 50 ? '#f59e0b' : '#ef4444';
   return (
     <div style={{ position: 'relative', width: 96, height: 96 }}>
       <svg width="96" height="96" style={{ transform: 'rotate(-90deg)' }}>
@@ -73,40 +75,80 @@ function ScoreCircle({ score }) {
   );
 }
 
+/* ─── Section header ─────────────────────────────────────────────────────── */
+
+function SectionHeader({ title, linkTo, linkLabel }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+      <h3 style={{ fontFamily: "'Libre Baskerville', serif", fontSize: 17, fontWeight: 700, margin: 0, color: '#0c2340' }}>
+        {title}
+      </h3>
+      {linkTo && (
+        <Link to={linkTo} style={{ fontSize: 12, color: '#0891b2', fontWeight: 600, textDecoration: 'none' }}>
+          {linkLabel || 'View all →'}
+        </Link>
+      )}
+    </div>
+  );
+}
+
 /* ─── main component ─────────────────────────────────────────────────────── */
 
 export default function ParentDashboard() {
   const { user } = useAuth();
   const location = useLocation();
-  const { navLinks, t } = useLanguage();
+  const { navLinks } = useLanguage();
   const { children, selectedChild, selectedChildId, setSelectedChild, loading: childLoading } = useSelectedChild();
 
   const [vaccines,      setVaccines]      = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [schemes,       setSchemes]       = useState([]);
+  const [growth,        setGrowth]        = useState([]);
+  const [prediction,    setPrediction]    = useState(null);
+  const [diet,          setDiet]          = useState(null);
   const [loading,       setLoading]       = useState(true);
   const [cur,           setCur]           = useState(0);
   const timerRef = useRef(null);
 
-  /* ── data fetching (unchanged) ── */
+  /* ── fetch notifications & schemes ── */
   useEffect(() => {
     Promise.all([
       notificationAPI.list().catch(() => ({ data: [] })),
       schemeAPI.list().catch(() => ({ data: [] })),
     ])
       .then(([n, s]) => {
-        setNotifications((n.data || []).slice(0, 5));
-        setSchemes((s.data || []).slice(0, 5));
+        setNotifications((n.data || []).slice(0, 6));
+        setSchemes((s.data || []).slice(0, 6));
       })
       .finally(() => setLoading(false));
   }, []);
 
+  /* ── fetch child-specific data ── */
   useEffect(() => {
-    if (!selectedChild?._id) { setVaccines([]); return; }
-    vaccinationAPI
-      .getSchedule(selectedChild._id)
-      .then((res) => setVaccines((res.data || []).slice(0, 7)))
+    if (!selectedChild?._id) {
+      setVaccines([]); setGrowth([]); setPrediction(null); setDiet(null);
+      return;
+    }
+    const childId = selectedChild._id;
+    const ageMonths = selectedChild.ageInMonths;
+
+    vaccinationAPI.getSchedule(childId)
+      .then((res) => setVaccines((res.data || []).slice(0, 8)))
       .catch(console.error);
+
+    growthAPI.getHistory(childId)
+      .then((res) => setGrowth((res.data || []).slice(-6).reverse()))
+      .catch(console.error);
+
+    growthAPI.getPrediction(childId)
+      .then((res) => setPrediction(res.data))
+      .catch(() => setPrediction(null));
+
+    if (ageMonths != null) {
+      dietAPI.getByAge(ageMonths)
+        .then((res) => setDiet(res.data))
+        .catch(() => setDiet(null));
+    }
   }, [selectedChild]);
 
   /* ── carousel timer ── */
@@ -115,7 +157,7 @@ export default function ParentDashboard() {
     return () => clearInterval(timerRef.current);
   }, []);
 
-  /* ── computed values (unchanged) ── */
+  /* ── computed values ── */
   const due    = vaccines.filter((v) => v.status === 'due');
   const unread = notifications.filter((n) => !n.isRead).length;
   const score  = selectedChild?.nutritionStatus === 'healthy'  ? 86
@@ -124,8 +166,8 @@ export default function ParentDashboard() {
 
   const heroText = useMemo(() => {
     if (!selectedChild) return 'Add a child profile to start tracking vaccination, growth, and nutrition updates.';
-    if (due[0])         return `${selectedChild.name} has ${due[0].vaccineName} due soon.`;
-    return `${selectedChild.name}'s health records are available and ready to monitor.`;
+    if (due[0])         return `${selectedChild.name} has ${due[0].vaccineName} due soon. Stay on top of the schedule.`;
+    return `${selectedChild.name}'s health records are up to date and ready to monitor.`;
   }, [selectedChild, due]);
 
   const firstName   = user?.name?.split(' ')[0] || 'Parent';
@@ -134,8 +176,10 @@ export default function ParentDashboard() {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   });
 
-  /* ── vaccine done count ── */
   const doneCount = vaccines.filter((v) => v.status === 'done').length;
+
+  /* ── latest growth record ── */
+  const latestGrowth = growth[0] || null;
 
   /* ─────────────────────────────────────────── render ─── */
   return (
@@ -163,12 +207,12 @@ export default function ParentDashboard() {
           white-space: nowrap;
           transition: background .15s, color .15s;
         }
-        .sa-nav-link:hover       { background: #cffafe; color: #0e7490; }
-        .sa-nav-link.active      { background: #f0fdff; color: #0e7490; font-weight: 600; }
+        .sa-nav-link:hover  { background: #cffafe; color: #0e7490; }
+        .sa-nav-link.active { background: #e0f7fa; color: #0e7490; font-weight: 600; }
 
         .sa-hero-btn {
-          display: inline-block;
-          padding: 7px 15px; border-radius: 8px;
+          display: inline-flex; align-items: center; gap: 5px;
+          padding: 7px 14px; border-radius: 8px;
           font-size: 12px; font-weight: 600;
           background: rgba(255,255,255,.92); color: #0e7490;
           border: none; text-decoration: none;
@@ -189,7 +233,7 @@ export default function ParentDashboard() {
           display: block;
         }
         .sa-card-hover:hover {
-          box-shadow: 0 6px 24px rgba(8,145,178,.15);
+          box-shadow: 0 6px 24px rgba(8,145,178,.16);
           transform: translateY(-2px);
         }
 
@@ -206,14 +250,17 @@ export default function ParentDashboard() {
         }
 
         .sa-grid4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; }
+        .sa-grid3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
         .sa-grid2 { display: grid; grid-template-columns: 1fr 1fr;      gap: 20px; }
 
-        @media (max-width: 1024px) {
+        @media (max-width: 1100px) {
           .sa-grid4 { grid-template-columns: repeat(2,1fr); }
+          .sa-grid3 { grid-template-columns: repeat(2,1fr); }
         }
         @media (max-width: 768px) {
           .sa-navlinks { display: none !important; }
           .sa-grid4    { grid-template-columns: repeat(2,1fr); }
+          .sa-grid3    { grid-template-columns: 1fr; }
           .sa-grid2    { grid-template-columns: 1fr; }
           .sa-hero-row { flex-direction: column !important; align-items: flex-start !important; }
           .sa-hero-right { align-self: flex-start; }
@@ -234,7 +281,6 @@ export default function ParentDashboard() {
         padding: '0 24px',
         gap: 16,
       }}>
-        {/* Brand */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
           <div style={{
             width: 38, height: 38, borderRadius: 10,
@@ -243,31 +289,24 @@ export default function ParentDashboard() {
             fontSize: 20,
           }}>🏥</div>
           <div>
-            <div style={{
-              fontFamily: "'Libre Baskerville', serif",
-              fontWeight: 700, fontSize: 16, color: '#0e7490', lineHeight: 1.1,
-            }}>Sishu Arogaya</div>
+            <div style={{ fontFamily: "'Libre Baskerville', serif", fontWeight: 700, fontSize: 16, color: '#0e7490', lineHeight: 1.1 }}>
+              Sishu Arogaya
+            </div>
             <div style={{ fontSize: 10, color: '#4a7a8a', lineHeight: 1 }}>Child Health Portal</div>
           </div>
         </div>
 
-        {/* Nav links */}
         <div className="sa-navlinks" style={{
           display: 'flex', alignItems: 'center',
           gap: 2, flex: 1, justifyContent: 'center', flexWrap: 'nowrap', overflow: 'hidden',
         }}>
           {navLinks.map(([label, to]) => (
-            <Link
-              key={to}
-              to={to}
-              className={`sa-nav-link${location.pathname === to ? ' active' : ''}`}
-            >
+            <Link key={to} to={to} className={`sa-nav-link${location.pathname === to ? ' active' : ''}`}>
               {label}
             </Link>
           ))}
         </div>
 
-        {/* Right: bell + avatar */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0, marginLeft: 'auto' }}>
           <Link to="/parent/notifications" style={{ position: 'relative', textDecoration: 'none', fontSize: 20, lineHeight: 1 }}>
             🔔
@@ -294,7 +333,6 @@ export default function ParentDashboard() {
 
       {/* ════════════════════════════════════ HERO ════ */}
       <div style={{ position: 'relative', height: 300, overflow: 'hidden' }}>
-        {/* Carousel slides */}
         {SLIDES.map((src, i) => (
           <div key={src} style={{
             position: 'absolute', inset: 0,
@@ -305,13 +343,11 @@ export default function ParentDashboard() {
           }} />
         ))}
 
-        {/* Gradient overlay */}
         <div style={{
           position: 'absolute', inset: 0,
-          background: 'linear-gradient(135deg,rgba(8,145,178,.92),rgba(14,116,144,.6),rgba(8,145,178,.8))',
+          background: 'linear-gradient(135deg,rgba(8,145,178,.93),rgba(14,116,144,.65),rgba(8,145,178,.82))',
         }} />
 
-        {/* Hero content */}
         <div style={{
           position: 'relative', zIndex: 2,
           maxWidth: 1280, margin: '0 auto',
@@ -320,12 +356,8 @@ export default function ParentDashboard() {
           display: 'flex', flexDirection: 'column', justifyContent: 'center',
         }}>
           <div className="sa-hero-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 24 }}>
-            {/* Left */}
             <div style={{ color: '#fff', animation: 'fadeUp .5s ease both' }}>
-              <div style={{
-                fontSize: 11, fontWeight: 700, letterSpacing: 2,
-                textTransform: 'uppercase', color: '#cffafe', marginBottom: 8,
-              }}>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', color: '#cffafe', marginBottom: 8 }}>
                 Parent Dashboard
               </div>
               <h1 style={{
@@ -339,18 +371,15 @@ export default function ParentDashboard() {
               <p style={{ color: 'rgba(255,255,255,.82)', fontSize: 14, margin: '0 0 20px', maxWidth: 480 }}>
                 {heroText}
               </p>
-
-              {/* Quick action buttons */}
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {QUICK_ACTIONS.map(({ emoji, labelKey, to }) => (
+                {QUICK_ACTIONS.slice(0, 4).map(({ emoji, label, to }) => (
                   <Link key={to} to={to} className="sa-hero-btn">
-                    {emoji} {t(labelKey)}
+                    {emoji} {label}
                   </Link>
                 ))}
               </div>
             </div>
 
-            {/* Right */}
             <div className="sa-hero-right" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
               {selectedChild && <ScoreCircle score={score} />}
               {children.length > 1 && (
@@ -374,11 +403,11 @@ export default function ParentDashboard() {
                   ))}
                 </select>
               )}
+              <div style={{ color: 'rgba(255,255,255,.7)', fontSize: 11, textAlign: 'center' }}>{today}</div>
             </div>
           </div>
         </div>
 
-        {/* Carousel dots */}
         <div style={{
           position: 'absolute', bottom: 14, left: '50%', transform: 'translateX(-50%)',
           zIndex: 3, display: 'flex', gap: 7,
@@ -407,39 +436,75 @@ export default function ParentDashboard() {
             <div className="sa-spinner" />
           </div>
         ) : !selectedChild ? (
-          /* ── Empty state ── */
-          <div className="sa-card" style={{ padding: '60px 24px', textAlign: 'center', animation: 'fadeUp .4s ease' }}>
-            <div style={{ fontSize: 64, marginBottom: 16 }}>👶</div>
-            <h2 style={{ fontFamily: "'Libre Baskerville', serif", color: '#0c2340', marginBottom: 8 }}>
-              No child profile yet
-            </h2>
-            <p style={{ color: '#4a7a8a', marginBottom: 24, maxWidth: 420, margin: '0 auto 24px' }}>
-              Add a child profile to start tracking vaccination, growth, and nutrition updates.
-            </p>
-            <Link to="/parent/child-profile" style={{
-              display: 'inline-block',
-              padding: '11px 28px', borderRadius: 9,
-              background: 'linear-gradient(135deg,#0891b2,#0e7490)',
-              color: '#fff', fontWeight: 600, fontSize: 14,
-              textDecoration: 'none',
-              boxShadow: '0 4px 14px rgba(8,145,178,.35)',
-            }}>
-              + Add Child
-            </Link>
-          </div>
-        ) : (
-          <>
-            {/* ── Section header ── */}
+
+          /* ══════════════════ WELCOME / NO CHILD STATE ══════════════════ */
+          <div style={{ animation: 'fadeUp .4s ease' }}>
             <div style={{
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              flexWrap: 'wrap', gap: 12, marginBottom: 20,
-              animation: 'fadeUp .4s ease',
+              background: 'linear-gradient(135deg,#0891b2,#0e7490)',
+              borderRadius: 18, padding: '32px 36px', marginBottom: 24,
+              color: '#fff', display: 'flex', justifyContent: 'space-between',
+              alignItems: 'center', flexWrap: 'wrap', gap: 20,
             }}>
               <div>
-                <h2 style={{ fontFamily: "'Libre Baskerville', serif", fontSize: 22, fontWeight: 700, margin: 0, color: '#0c2340' }}>
-                  Current Baby
+                <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', color: '#cffafe', marginBottom: 8 }}>
+                  Parent Portal — Home
+                </div>
+                <h2 style={{ fontFamily: "'Libre Baskerville', serif", fontSize: 26, fontWeight: 700, margin: '0 0 10px', color: '#fff' }}>
+                  Welcome, {firstName}! 👋
                 </h2>
+                <p style={{ color: 'rgba(255,255,255,.82)', fontSize: 14, margin: '0 0 20px', maxWidth: 440 }}>
+                  You're logged in. Register your child's profile to track vaccinations, growth, diet plans and health reports.
+                </p>
+                <Link to="/parent/child-profile" style={{
+                  display: 'inline-block', padding: '11px 28px', borderRadius: 9,
+                  background: '#fff', color: '#0891b2', fontWeight: 700, fontSize: 14,
+                  textDecoration: 'none', boxShadow: '0 4px 14px rgba(0,0,0,.15)',
+                }}>
+                  + Register Your Child
+                </Link>
               </div>
+              <div style={{ fontSize: 80, opacity: .3 }}>👶</div>
+            </div>
+
+            <div className="sa-grid4" style={{ marginBottom: 28 }}>
+              {[
+                { emoji: '💉', label: 'Vaccination Tracker', desc: 'Track every dose from birth to 5 years', to: '/parent/vaccination' },
+                { emoji: '📈', label: 'Growth Monitoring',   desc: 'Log weight & height with WHO z-scores', to: '/parent/growth' },
+                { emoji: '🥗', label: 'Diet Plans',          desc: 'Age-appropriate meal plans for your child', to: '/parent/diet-plan' },
+                { emoji: '🏛️', label: 'Govt Schemes',        desc: 'ICDS, PMMVY, JSY & more schemes', to: '/parent/schemes' },
+                { emoji: '📋', label: 'Health Reports',      desc: 'Download PDF health reports anytime', to: '/parent/reports' },
+                { emoji: '🔔', label: 'Notifications',       desc: 'Alerts for due vaccines & checkups', to: '/parent/notifications' },
+                { emoji: '👶', label: 'Child Profile',       desc: 'Register and manage your child', to: '/parent/child-profile' },
+                { emoji: '⚙️', label: 'Settings',            desc: 'Update your account & preferences', to: '/parent/settings' },
+              ].map(({ emoji, label, desc, to }) => (
+                <Link key={to} to={to} className="sa-card sa-card-hover" style={{ padding: '20px 16px', textDecoration: 'none', display: 'block' }}>
+                  <div style={{ fontSize: 28, marginBottom: 10 }}>{emoji}</div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: '#0c2340', marginBottom: 4 }}>{label}</div>
+                  <div style={{ fontSize: 11, color: '#4a7a8a', lineHeight: 1.5 }}>{desc}</div>
+                </Link>
+              ))}
+            </div>
+
+            <div style={{ background: '#f0fdff', border: '1.5px solid #c5e8ef', borderRadius: 14, padding: '18px 24px', display: 'flex', alignItems: 'center', gap: 16 }}>
+              <div style={{ fontSize: 28 }}>ℹ️</div>
+              <div style={{ fontSize: 13, color: '#4a7a8a', lineHeight: 1.6 }}>
+                <strong style={{ color: '#0c2340' }}>Logged in as:</strong> {user?.name} ({user?.email}) &nbsp;·&nbsp; Role: Parent<br />
+                Add your child's profile to unlock vaccination schedules, growth charts, diet plans and more.
+              </div>
+            </div>
+          </div>
+
+        ) : (
+          /* ══════════════════ FULL DASHBOARD (CHILD SELECTED) ══════════════════ */
+          <>
+            {/* ── Section header row ── */}
+            <div style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              flexWrap: 'wrap', gap: 12, marginBottom: 20, animation: 'fadeUp .4s ease',
+            }}>
+              <h2 style={{ fontFamily: "'Libre Baskerville', serif", fontSize: 22, fontWeight: 700, margin: 0, color: '#0c2340' }}>
+                {selectedChild.name}'s Dashboard
+              </h2>
               <div style={{ fontSize: 13, color: '#4a7a8a', fontWeight: 500 }}>{today}</div>
             </div>
 
@@ -448,10 +513,10 @@ export default function ParentDashboard() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                   <div style={{
-                    width: 50, height: 50, borderRadius: '50%',
+                    width: 54, height: 54, borderRadius: '50%',
                     background: 'linear-gradient(135deg,#cffafe,#0891b2)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 24,
+                    fontSize: 26,
                   }}>👶</div>
                   <div>
                     <div style={{ fontFamily: "'Libre Baskerville', serif", fontSize: 20, fontWeight: 700, color: '#0c2340' }}>
@@ -462,6 +527,7 @@ export default function ParentDashboard() {
                         calcAge(selectedChild.dob) || (selectedChild.ageInMonths != null ? `${selectedChild.ageInMonths} months` : null),
                         selectedChild.gender,
                         selectedChild.bloodGroup ? `Blood: ${selectedChild.bloodGroup}` : null,
+                        selectedChild.nutritionStatus ? `Nutrition: ${selectedChild.nutritionStatus}` : null,
                       ].filter(Boolean).join(' · ')}
                     </div>
                   </div>
@@ -471,23 +537,21 @@ export default function ParentDashboard() {
                     padding: '8px 18px', borderRadius: 8,
                     border: '1.5px solid #0891b2', color: '#0891b2',
                     fontSize: 13, fontWeight: 600, textDecoration: 'none',
-                    transition: 'background .15s',
-                  }}>{t('viewProfile')}</Link>
+                  }}>View Profile</Link>
                   <Link to="/parent/reports" style={{
                     padding: '8px 18px', borderRadius: 8,
                     border: '1.5px solid #c5e8ef', color: '#4a7a8a',
                     fontSize: 13, fontWeight: 600, textDecoration: 'none',
-                    transition: 'background .15s',
-                  }}>{t('downloadReport')}</Link>
+                  }}>Download Report</Link>
                 </div>
               </div>
             </div>
 
-            {/* ── 4-column stats ── */}
+            {/* ── Stat cards (4-col) ── */}
             <div className="sa-grid4" style={{ marginBottom: 22, animation: 'fadeUp .5s ease' }}>
               <StatCard
                 emoji="💉" accent="#0891b2"
-                label="Vaccines Completed"
+                label="Vaccines Done"
                 value={`${doneCount}/${vaccines.length}`}
                 sub={due.length > 0 ? `${due.length} due now` : 'All up to date'}
                 subColor={due.length > 0 ? '#ef4444' : '#059669'}
@@ -495,57 +559,49 @@ export default function ParentDashboard() {
               <StatCard
                 emoji="⚖️" accent="#059669"
                 label="Current Weight"
-                value={selectedChild.currentWeight ? `${selectedChild.currentWeight} kg` : 'N/A'}
-                sub={selectedChild.ageInMonths != null ? `${selectedChild.ageInMonths} months old` : 'No records yet'}
+                value={latestGrowth?.weight ? `${latestGrowth.weight} kg` : (selectedChild.currentWeight ? `${selectedChild.currentWeight} kg` : 'N/A')}
+                sub={latestGrowth ? `Recorded ${fmt(latestGrowth.date)}` : 'No record yet'}
               />
               <StatCard
                 emoji="📏" accent="#f59e0b"
                 label="Current Height"
-                value={selectedChild.currentHeight ? `${selectedChild.currentHeight} cm` : 'N/A'}
-                sub={selectedChild.gender || 'No records yet'}
+                value={latestGrowth?.height ? `${latestGrowth.height} cm` : (selectedChild.currentHeight ? `${selectedChild.currentHeight} cm` : 'N/A')}
+                sub={selectedChild.ageInMonths != null ? `Age: ${selectedChild.ageInMonths} months` : selectedChild.gender || '—'}
               />
               <StatCard
                 emoji="🔔" accent="#1d4ed8"
                 label="Unread Alerts"
                 value={String(unread)}
-                sub={`${schemes.length} schemes available`}
+                sub={`${schemes.length} govt schemes`}
                 subColor={unread > 0 ? '#ef4444' : undefined}
               />
             </div>
 
-            {/* ── Quick actions grid ── */}
-            <div className="sa-grid4" style={{ marginBottom: 28, animation: 'fadeUp .55s ease' }}>
-              {QUICK_ACTIONS.map(({ emoji, labelKey, to }) => (
-                <Link key={to} to={to} className="sa-card sa-card-hover" style={{ padding: '22px 16px', textAlign: 'center' }}>
-                  <div style={{ fontSize: 32, marginBottom: 10 }}>{emoji}</div>
-                  <div style={{ fontWeight: 700, fontSize: 14, color: '#0c2340' }}>{t(labelKey)}</div>
-                  <div style={{ fontSize: 11, color: '#4a7a8a', marginTop: 4 }}>Tap to open →</div>
+            {/* ── Quick action tiles (6-col) ── */}
+            <div className="sa-grid3" style={{ marginBottom: 28, animation: 'fadeUp .55s ease' }}>
+              {QUICK_ACTIONS.map(({ emoji, label, to }) => (
+                <Link key={to} to={to} className="sa-card sa-card-hover" style={{ padding: '20px 16px', textAlign: 'center' }}>
+                  <div style={{ fontSize: 30, marginBottom: 8 }}>{emoji}</div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: '#0c2340' }}>{label}</div>
+                  <div style={{ fontSize: 11, color: '#4a7a8a', marginTop: 3 }}>Tap to open →</div>
                 </Link>
               ))}
             </div>
 
-            {/* ── 2-column lower grid ── */}
-            <div className="sa-grid2" style={{ animation: 'fadeUp .6s ease' }}>
-              {/* Vaccination Snapshot */}
+            {/* ── 2-col grid: Vaccination + Hospital Map ── */}
+            <div className="sa-grid2" style={{ marginBottom: 24, animation: 'fadeUp .6s ease' }}>
+              {/* Vaccination snapshot */}
               <div className="sa-card" style={{ padding: '20px 22px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                  <h3 style={{ fontFamily: "'Libre Baskerville', serif", fontSize: 16, fontWeight: 700, margin: 0, color: '#0c2340' }}>
-                    💉 Vaccination Snapshot
-                  </h3>
-                  <Link to="/parent/vaccination" style={{ fontSize: 12, color: '#0891b2', fontWeight: 600, textDecoration: 'none' }}>
-                    View all →
-                  </Link>
-                </div>
+                <SectionHeader title="💉 Vaccination Schedule" linkTo="/parent/vaccination" />
                 {vaccines.length === 0 ? (
                   <div style={{ color: '#4a7a8a', fontSize: 13, padding: '20px 0', textAlign: 'center' }}>
-                    No vaccination records available yet.
+                    No vaccination records yet.
                   </div>
                 ) : vaccines.map((v) => (
                   <div key={v._id} style={{
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                     padding: '10px 14px', marginBottom: 8,
-                    border: '1px solid #c5e8ef', borderRadius: 10,
-                    gap: 10,
+                    border: '1px solid #c5e8ef', borderRadius: 10, gap: 10,
                   }}>
                     <div>
                       <div style={{ fontWeight: 600, fontSize: 13, color: '#0c2340' }}>{v.vaccineName}</div>
@@ -562,7 +618,7 @@ export default function ParentDashboard() {
                 ))}
               </div>
 
-              {/* Nearby Hospitals Map */}
+              {/* Hospital Map */}
               <div className="sa-card" style={{ padding: 0, overflow: 'hidden', minHeight: 380 }}>
                 <div style={{ padding: '14px 18px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #c5e8ef' }}>
                   <h3 style={{ fontFamily: "'Libre Baskerville', serif", fontSize: 16, fontWeight: 700, margin: 0, color: '#0c2340' }}>
@@ -570,11 +626,226 @@ export default function ParentDashboard() {
                   </h3>
                   <span style={{ fontSize: 11, color: '#4a7a8a' }}>Real-time · GPS</span>
                 </div>
-                <Suspense fallback={<div style={{ height: 340, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4a7a8a', fontSize: 13 }}>Loading map…</div>}>
+                <Suspense fallback={
+                  <div style={{ height: 340, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4a7a8a', fontSize: 13 }}>
+                    Loading map…
+                  </div>
+                }>
                   <HospitalMap height="340px" showSearchBar={true} />
                 </Suspense>
               </div>
             </div>
+
+            {/* ── Growth Monitoring ── */}
+            <div className="sa-card" style={{ padding: '20px 22px', marginBottom: 24, animation: 'fadeUp .65s ease' }}>
+              <SectionHeader title="📈 Growth Monitoring" linkTo="/parent/growth" />
+              {growth.length === 0 ? (
+                <div style={{ color: '#4a7a8a', fontSize: 13, padding: '12px 0', textAlign: 'center' }}>
+                  No growth records yet. <Link to="/parent/growth" style={{ color: '#0891b2', fontWeight: 600 }}>Log first entry →</Link>
+                </div>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                    <thead>
+                      <tr style={{ background: '#f0fdff' }}>
+                        {['Date', 'Weight (kg)', 'Height (cm)', 'Age (mo)', 'Weight Z', 'Height Z', 'Status'].map(h => (
+                          <th key={h} style={{ padding: '8px 12px', textAlign: 'left', color: '#4a7a8a', fontWeight: 600, fontSize: 11, borderBottom: '1px solid #c5e8ef', whiteSpace: 'nowrap' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {growth.map((g, i) => (
+                        <tr key={g._id || i} style={{ borderBottom: '1px solid #f0fdff' }}>
+                          <td style={{ padding: '9px 12px', color: '#0c2340', fontWeight: 500 }}>{fmt(g.date || g.createdAt)}</td>
+                          <td style={{ padding: '9px 12px', color: '#059669', fontWeight: 600 }}>{g.weight ?? '—'}</td>
+                          <td style={{ padding: '9px 12px', color: '#0891b2', fontWeight: 600 }}>{g.height ?? '—'}</td>
+                          <td style={{ padding: '9px 12px', color: '#4a7a8a' }}>{g.ageInMonths ?? '—'}</td>
+                          <td style={{ padding: '9px 12px', color: '#4a7a8a' }}>{g.weightForAgeZ != null ? g.weightForAgeZ.toFixed(2) : '—'}</td>
+                          <td style={{ padding: '9px 12px', color: '#4a7a8a' }}>{g.heightForAgeZ != null ? g.heightForAgeZ.toFixed(2) : '—'}</td>
+                          <td style={{ padding: '9px 12px' }}>
+                            <span className={
+                              g.nutritionStatus === 'healthy'  ? 'sa-badge-done'
+                              : g.nutritionStatus === 'moderate' ? 'sa-badge-due'
+                              : g.nutritionStatus              ? 'sa-badge-upcoming'
+                              : ''
+                            }>
+                              {g.nutritionStatus || '—'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* ── AI Prediction ── */}
+            {prediction && (
+              <div style={{
+                background: 'linear-gradient(135deg,#0891b2,#0e7490)',
+                borderRadius: 16, padding: '22px 28px', marginBottom: 24,
+                animation: 'fadeUp .7s ease',
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                flexWrap: 'wrap', gap: 16,
+              }}>
+                <div style={{ color: '#fff' }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', color: '#cffafe', marginBottom: 6 }}>
+                    AI-Powered Prediction
+                  </div>
+                  <h3 style={{ fontFamily: "'Libre Baskerville', serif", fontSize: 18, fontWeight: 700, margin: '0 0 8px', color: '#fff' }}>
+                    🤖 Growth Forecast for {selectedChild.name}
+                  </h3>
+                  <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+                    {prediction.predictedWeight != null && (
+                      <div>
+                        <div style={{ fontSize: 11, color: '#cffafe', marginBottom: 2 }}>Predicted Weight</div>
+                        <div style={{ fontSize: 22, fontWeight: 700, color: '#f7c948' }}>{prediction.predictedWeight} kg</div>
+                      </div>
+                    )}
+                    {prediction.predictedHeight != null && (
+                      <div>
+                        <div style={{ fontSize: 11, color: '#cffafe', marginBottom: 2 }}>Predicted Height</div>
+                        <div style={{ fontSize: 22, fontWeight: 700, color: '#f7c948' }}>{prediction.predictedHeight} cm</div>
+                      </div>
+                    )}
+                    {prediction.riskLevel && (
+                      <div>
+                        <div style={{ fontSize: 11, color: '#cffafe', marginBottom: 2 }}>Risk Level</div>
+                        <div style={{ fontSize: 18, fontWeight: 700, color: prediction.riskLevel === 'low' ? '#86efac' : prediction.riskLevel === 'moderate' ? '#fde68a' : '#fca5a5' }}>
+                          {prediction.riskLevel.charAt(0).toUpperCase() + prediction.riskLevel.slice(1)}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  {prediction.recommendation && (
+                    <p style={{ color: 'rgba(255,255,255,.8)', fontSize: 13, margin: '12px 0 0', maxWidth: 500 }}>
+                      {prediction.recommendation}
+                    </p>
+                  )}
+                </div>
+                <div style={{ fontSize: 64, opacity: .25 }}>🧠</div>
+              </div>
+            )}
+
+            {/* ── 2-col: Alerts + Diet Plan ── */}
+            <div className="sa-grid2" style={{ marginBottom: 24, animation: 'fadeUp .72s ease' }}>
+              {/* Alerts / Notifications */}
+              <div className="sa-card" style={{ padding: '20px 22px' }}>
+                <SectionHeader title="🔔 Recent Alerts" linkTo="/parent/notifications" />
+                {notifications.length === 0 ? (
+                  <div style={{ color: '#4a7a8a', fontSize: 13, padding: '12px 0', textAlign: 'center' }}>No alerts yet.</div>
+                ) : notifications.map((n) => (
+                  <div key={n._id} style={{
+                    padding: '10px 14px', marginBottom: 8,
+                    borderRadius: 10,
+                    border: `1px solid ${n.isRead ? '#c5e8ef' : '#bae6fd'}`,
+                    background: n.isRead ? '#fff' : '#f0fdff',
+                    display: 'flex', gap: 12, alignItems: 'flex-start',
+                  }}>
+                    <div style={{ fontSize: 18, flexShrink: 0 }}>
+                      {n.type === 'vaccine' ? '💉' : n.type === 'growth' ? '📈' : n.type === 'diet' ? '🥗' : '📣'}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, fontSize: 13, color: '#0c2340', marginBottom: 2 }}>{n.title || n.message}</div>
+                      {n.title && n.message && (
+                        <div style={{ fontSize: 12, color: '#4a7a8a' }}>{n.message}</div>
+                      )}
+                      <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>{fmt(n.createdAt)}</div>
+                    </div>
+                    {!n.isRead && (
+                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#0891b2', flexShrink: 0, marginTop: 4 }} />
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Diet Plan */}
+              <div className="sa-card" style={{ padding: '20px 22px' }}>
+                <SectionHeader title="🥗 Diet Plan" linkTo="/parent/diet-plan" />
+                {!diet ? (
+                  <div style={{ color: '#4a7a8a', fontSize: 13, padding: '12px 0', textAlign: 'center' }}>
+                    {selectedChild.ageInMonths != null
+                      ? 'Loading diet plan…'
+                      : 'Set child age to view diet plan.'}
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ marginBottom: 12 }}>
+                      <span style={{ fontSize: 12, color: '#0891b2', fontWeight: 600, background: '#e0f7fa', padding: '2px 10px', borderRadius: 20 }}>
+                        {diet.ageGroup || `${selectedChild.ageInMonths} months`}
+                      </span>
+                    </div>
+                    {(diet.meals || []).slice(0, 4).map((meal, i) => (
+                      <div key={i} style={{
+                        padding: '10px 14px', marginBottom: 8,
+                        border: '1px solid #c5e8ef', borderRadius: 10,
+                        display: 'flex', alignItems: 'center', gap: 12,
+                      }}>
+                        <span style={{ fontSize: 20 }}>
+                          {meal.type === 'breakfast' ? '🌅' : meal.type === 'lunch' ? '🍽️' : meal.type === 'dinner' ? '🌙' : meal.type === 'snack' ? '🍎' : '🥛'}
+                        </span>
+                        <div>
+                          <div style={{ fontWeight: 600, fontSize: 13, color: '#0c2340', textTransform: 'capitalize' }}>
+                            {meal.type || meal.name}
+                          </div>
+                          <div style={{ fontSize: 11, color: '#4a7a8a', marginTop: 2 }}>
+                            {meal.items ? meal.items.join(', ') : meal.description || ''}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {diet.notes && (
+                      <div style={{ fontSize: 12, color: '#4a7a8a', background: '#f0fdff', borderRadius: 8, padding: '10px 12px', marginTop: 4 }}>
+                        💡 {diet.notes}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* ── Government Schemes ── */}
+            {schemes.length > 0 && (
+              <div style={{ marginBottom: 24, animation: 'fadeUp .76s ease' }}>
+                <SectionHeader title="🏛️ Government Schemes" linkTo="/parent/schemes" />
+                <div className="sa-grid3">
+                  {schemes.map((s) => (
+                    <div key={s._id} className="sa-card" style={{ padding: '18px 20px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                        <div style={{
+                          width: 38, height: 38, borderRadius: 9,
+                          background: 'linear-gradient(135deg,#e0f7fa,#cffafe)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: 18, flexShrink: 0,
+                        }}>🏛️</div>
+                        <div style={{ fontWeight: 700, fontSize: 13, color: '#0c2340', lineHeight: 1.3 }}>{s.name}</div>
+                      </div>
+                      {s.description && (
+                        <div style={{ fontSize: 12, color: '#4a7a8a', lineHeight: 1.6, marginBottom: 10 }}>
+                          {s.description.length > 100 ? s.description.slice(0, 100) + '…' : s.description}
+                        </div>
+                      )}
+                      {s.eligibility && (
+                        <div style={{ fontSize: 11, color: '#0891b2', fontWeight: 500 }}>
+                          Eligibility: {s.eligibility}
+                        </div>
+                      )}
+                      {s.benefit && (
+                        <div style={{
+                          marginTop: 8, padding: '6px 12px', borderRadius: 7,
+                          background: '#f7c948', color: '#0c2340', fontSize: 12, fontWeight: 600,
+                          display: 'inline-block',
+                        }}>
+                          {s.benefit}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
           </>
         )}
       </div>
@@ -582,7 +853,7 @@ export default function ParentDashboard() {
       {/* ════════════════════════════════════ FOOTER ════ */}
       <footer style={{
         background: '#0e7490',
-        color: 'rgba(255,255,255,.45)',
+        color: 'rgba(255,255,255,.5)',
         textAlign: 'center',
         padding: '18px 24px',
         fontSize: 12,

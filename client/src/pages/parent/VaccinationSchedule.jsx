@@ -4,7 +4,6 @@ import { childAPI, vaccinationAPI } from '../../services/api';
 import { useLanguage } from '../../context/LanguageContext';
 
 function printVaccineCard(child, vaccines) {
-  const { navLinks } = useLanguage();
   const done = vaccines.filter(v => v.status === 'done' || v.status === 'completed');
   const win = window.open('', '_blank', 'width=700,height=900');
   win.document.write(`
@@ -68,7 +67,7 @@ function fmt(d) {
   return Number.isNaN(x.getTime()) ? 'TBD' : x.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
-function VaccineRow({ v, idx }) {
+function VaccineRow({ v, idx, updatingId, setUpdatingId, setVaccines }) {
   const cfg = STATUS_CFG[v.status] || STATUS_CFG.upcoming;
   const isDue = v.status === 'due';
 
@@ -149,6 +148,7 @@ function VaccineRow({ v, idx }) {
 
 export default function VaccinationSchedule() {
   const navigate = useNavigate();
+  const { navLinks } = useLanguage();
   const [children, setChildren] = useState([]);
   const [updatingId, setUpdatingId] = useState(null);
   const [selectedChild, setSelectedChild] = useState(null);
@@ -174,17 +174,28 @@ export default function VaccinationSchedule() {
 
   useEffect(() => {
     childAPI.list()
-      .then((r) => { setChildren(r.data); if (r.data[0]) setSelectedChild(r.data[0]); })
-      .catch(console.error)
+      .then((r) => { 
+        setChildren(r.data || []);
+        if (r.data && r.data[0]) setSelectedChild(r.data[0]); 
+      })
+      .catch(err => {
+        console.error('Child list failed:', err);
+        // Fallback empty
+        setChildren([]);
+      })
       .finally(() => setLoading(false));
-  }, []);
+  }, []); 
 
   useEffect(() => {
     if (!selectedChild) return;
     setLoading(true);
     vaccinationAPI.getSchedule(selectedChild._id)
-      .then((r) => setVaccines(r.data))
-      .catch(console.error)
+      .then((r) => setVaccines(r.data || []))
+      .catch(err => {
+        console.error('Vaccination schedule failed:', err);
+        // Fallback empty schedule
+        setVaccines([]);
+      })
       .finally(() => setLoading(false));
   }, [selectedChild]);
 
@@ -224,7 +235,6 @@ export default function VaccinationSchedule() {
           <div style={{ width: 36, height: 36, background: `linear-gradient(135deg,${C.teal},${C.teal2})`, borderRadius: 9, display: 'grid', placeItems: 'center', fontSize: 18 }}>🌿</div>
           <span style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 17, fontWeight: 700, color: C.teal2 }}>Sishu Arogaya</span>
         </Link>
-        const { navLinks } = useLanguage();
         <div className="vs-nav-links" style={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, overflowX: 'auto' }}>
           {(navLinks.length ? navLinks : NAV).map(([label, to]) => (
             <Link key={to} to={to} style={{ padding: '6px 11px', borderRadius: 8, fontSize: 12.5, fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap', background: to === '/parent/vaccination' ? C.teal4 : 'transparent', color: to === '/parent/vaccination' ? C.teal : C.muted, borderBottom: to === '/parent/vaccination' ? `2px solid ${C.teal}` : '2px solid transparent' }}>
@@ -331,10 +341,17 @@ export default function VaccinationSchedule() {
               <div style={{ textAlign: 'center', padding: '60px 20px' }}>
                 <div style={{ display: 'inline-block', width: 40, height: 40, border: '3px solid #c5e8ef', borderTopColor: '#0891b2', borderRadius: '50%', animation: 'spin .7s linear infinite' }} />
               </div>
+            ) : vaccines.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '60px 20px', color: C.muted }}>
+                <div style={{ fontSize: 48, marginBottom: 16 }}>💉</div>
+                <h4 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 20, marginBottom: 12 }}>No Vaccination Data</h4>
+                <p>No vaccination records found. This is normal for new child profiles.</p>
+                <p style={{ fontSize: 13, marginTop: 8 }}>Vaccination schedule will auto-populate as your child grows. Mark vaccines as "Done" when administered.</p>
+              </div>
             ) : filtered.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px 20px', color: C.muted, fontSize: 14 }}>No vaccines found for this filter.</div>
+              <div style={{ textAlign: 'center', padding: '40px 20px', color: C.muted, fontSize: 14 }}>No vaccines match this filter.</div>
             ) : (
-              filtered.map((v, i) => <VaccineRow key={v._id} v={v} idx={i} />)
+              filtered.map((v, i) => <VaccineRow key={v._id} v={v} idx={i} updatingId={updatingId} setUpdatingId={setUpdatingId} setVaccines={setVaccines} />)
             )}
           </div>
 

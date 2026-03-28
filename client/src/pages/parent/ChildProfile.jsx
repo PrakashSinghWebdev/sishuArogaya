@@ -56,12 +56,21 @@ function InfoRow({ icon, label, value }) {
 export default function ChildProfile() {
   const { children, selectedChild, selectedChildId, setSelectedChild, setChildren, loading } = useSelectedChild();
   const [showForm, setShowForm] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [updating, setUpdating] = useState(false);
   const [error, setError] = useState('');
   const [slide, setSlide] = useState(0);
   const slideRef = useRef(null);
   const [form, setForm] = useState({
     name: '', dob: '', gender: 'male', bloodGroup: 'Unknown', birthWeight: '', birthHeight: '',
+  });
+  const [editForm, setEditForm] = useState({
+    currentWeight: selectedChild?.currentWeight || '',
+    currentHeight: selectedChild?.currentHeight || '',
+    headCircumference: selectedChild?.headCircumference || '',
+    nutritionStatus: selectedChild?.nutritionStatus || 'healthy',
+    medicalNotes: selectedChild?.medicalNotes || '',
   });
 
   useEffect(() => {
@@ -88,6 +97,37 @@ export default function ChildProfile() {
       setSubmitting(false);
     }
   };
+
+  const handleUpdate = async (e) => {
+    e.preventDefault();
+    setUpdating(true);
+    setError('');
+    try {
+      await childAPI.update(selectedChild._id, editForm);
+      const refreshed = await childAPI.get(selectedChild._id);
+      setChildren(prev => prev.map(c => c._id === selectedChild._id ? refreshed.data : c));
+      setSelectedChild(refreshed.data);
+      setShowEditForm(false);
+      alert('Health status updated successfully!');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Update failed.');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  // Sync editForm when selectedChild changes
+  useEffect(() => {
+    if (selectedChild) {
+      setEditForm({
+        currentWeight: selectedChild.currentWeight || '',
+        currentHeight: selectedChild.currentHeight || '',
+        headCircumference: selectedChild.headCircumference || '',
+        nutritionStatus: selectedChild.nutritionStatus || 'healthy',
+        medicalNotes: selectedChild.medicalNotes || '',
+      });
+    }
+  }, [selectedChild]);
 
   const [dlLoading, setDlLoading] = useState(false);
   const [reminderMsg, setReminderMsg] = useState('');
@@ -196,10 +236,19 @@ export default function ChildProfile() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
           <h2 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 24, fontWeight: 700, color: C.text, margin: 0 }}>👶 Child Profile</h2>
           <div style={{ display: 'flex', gap: 10 }}>
-            <button className="cp-btn cp-btn-out" onClick={() => setShowForm((v) => !v)}>{showForm ? '✕ Close' : '✏️ Edit / Add Child'}</button>
-            <button className="cp-btn cp-btn-teal" onClick={handleDownload} disabled={dlLoading || !selectedChild}>
-              {dlLoading ? '⏳ Downloading…' : '⬇️ Download'}
+            <button className="cp-btn cp-btn-out" onClick={() => setShowForm(true)} style={{ background: '#fef3c7', color: '#92400e', borderColor: '#fed7aa' }}>
+              ➕ Add New Child
             </button>
+            {selectedChild && (
+              <button className="cp-btn cp-btn-teal" onClick={() => setShowEditForm(!showEditForm)}>
+                ✏️ {showEditForm ? 'Cancel Edit' : 'Edit Health Status'}
+              </button>
+            )}
+            {selectedChild && (
+              <button className="cp-btn cp-btn-out" onClick={handleDownload} disabled={dlLoading}>
+                {dlLoading ? '⏳ Downloading…' : '⬇️ Download Report'}
+              </button>
+            )}
           </div>
         </div>
 
@@ -209,10 +258,57 @@ export default function ChildProfile() {
           </div>
         ) : (
           <>
+            {/* Edit Health Status Form */}
+            {showEditForm && selectedChild && (
+              <div className="cp-card" style={{ animation: 'fadeUp .4s ease', marginBottom: 24 }}>
+                <h5 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 17, fontWeight: 700, color: C.teal2, marginBottom: 16 }}>✏️ Update {selectedChild.name}'s Health Status</h5>
+                {error && <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '10px 14px', borderRadius: 8, marginBottom: 14, fontSize: 13 }}>{error}</div>}
+                <form onSubmit={handleUpdate}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 14 }}>
+                    <div>
+                      <label style={{ fontSize: 12, fontWeight: 600, color: C.muted, display: 'block', marginBottom: 5 }}>Current Weight (kg)</label>
+                      <input type="number" step="0.1" value={editForm.currentWeight} onChange={e => setEditForm({...editForm, currentWeight: e.target.value})}
+                        style={{ width: '100%', padding: '9px 12px', border: `1.5px solid ${C.border}`, borderRadius: 9, fontSize: 13 }} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 12, fontWeight: 600, color: C.muted, display: 'block', marginBottom: 5 }}>Current Height (cm)</label>
+                      <input type="number" step="0.1" value={editForm.currentHeight} onChange={e => setEditForm({...editForm, currentHeight: e.target.value})}
+                        style={{ width: '100%', padding: '9px 12px', border: `1.5px solid ${C.border}`, borderRadius: 9, fontSize: 13 }} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 12, fontWeight: 600, color: C.muted, display: 'block', marginBottom: 5 }}>Head Circumference (cm)</label>
+                      <input type="number" step="0.1" value={editForm.headCircumference} onChange={e => setEditForm({...editForm, headCircumference: e.target.value})}
+                        style={{ width: '100%', padding: '9px 12px', border: `1.5px solid ${C.border}`, borderRadius: 9, fontSize: 13 }} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 12, fontWeight: 600, color: C.muted, display: 'block', marginBottom: 5 }}>Nutrition Status</label>
+                      <select value={editForm.nutritionStatus} onChange={e => setEditForm({...editForm, nutritionStatus: e.target.value})}
+                        style={{ width: '100%', padding: '9px 12px', border: `1.5px solid ${C.border}`, borderRadius: 9, fontSize: 13 }}>
+                        <option value="healthy">Healthy</option>
+                        <option value="moderate">Moderate Malnutrition</option>
+                        <option value="severe">Severe Malnutrition</option>
+                      </select>
+                    </div>
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <label style={{ fontSize: 12, fontWeight: 600, color: C.muted, display: 'block', marginBottom: 5 }}>Medical Notes</label>
+                      <textarea rows="3" value={editForm.medicalNotes} onChange={e => setEditForm({...editForm, medicalNotes: e.target.value})}
+                        style={{ width: '100%', padding: '9px 12px', border: `1.5px solid ${C.border}`, borderRadius: 9, fontSize: 13, fontFamily: 'inherit' }} />
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 10, marginTop: 18, justifyContent: 'flex-end' }}>
+                    <button type="submit" className="cp-btn cp-btn-teal" disabled={updating}>
+                      {updating ? 'Updating...' : '💾 Save Changes'}
+                    </button>
+                    <button type="button" className="cp-btn cp-btn-out" onClick={() => { setShowEditForm(false); setError(''); }}>Cancel</button>
+                  </div>
+                </form>
+              </div>
+            )}
+
             {/* Add Child Form */}
             {showForm && (
               <div className="cp-card" style={{ animation: 'fadeUp .4s ease', marginBottom: 24 }}>
-                <h5 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 17, fontWeight: 700, color: C.teal2, marginBottom: 16 }}>➕ Register a Child</h5>
+                <h5 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 17, fontWeight: 700, color: C.teal2, marginBottom: 16 }}>➕ Register New Child</h5>
                 {error && <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '10px 14px', borderRadius: 8, marginBottom: 14, fontSize: 13 }}>{error}</div>}
                 <form onSubmit={handleSubmit}>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 14 }}>

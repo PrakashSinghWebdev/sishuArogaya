@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { reportAPI } from '../../services/api';
 import useSelectedChild from '../../hooks/useSelectedChild';
 
@@ -190,10 +191,10 @@ export default function HealthReports() {
 
       {/* Navbar */}
       <nav className="topnav">
-        <a className="nav-brand" href="/parent/dashboard">🌿 Sishu Arogaya</a>
+        <Link className="nav-brand" to="/parent/dashboard">🌿 Sishu Arogaya</Link>
         <div className="navlinks">
           {NAV.map(([label, href]) => (
-            <a key={href} href={href} className={href === '/parent/reports' ? 'active' : ''}>{label}</a>
+            <Link key={href} to={href} className={href === '/parent/reports' ? 'active' : ''}>{label}</Link>
           ))}
         </div>
       </nav>
