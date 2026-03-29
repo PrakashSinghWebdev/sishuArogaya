@@ -9,12 +9,22 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (token) {
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      fetchMe();
-    } else {
-      setLoading(false);
-    }
+    const checkAuth = async () => {
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+      try {
+        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        await fetchMe();
+      } catch {
+        logout();
+      } finally {
+        // Ensure loading always clears, even on race conditions
+        setLoading(false);
+      }
+    };
+    checkAuth();
   }, [token]);
 
   const fetchMe = async () => {

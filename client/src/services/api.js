@@ -26,7 +26,7 @@ api.interceptors.response.use(
 
     if (status === 401 && !isAuthEndpoint) {
       localStorage.removeItem('sa_token');
-      window.location.href = '/login';
+      // Removed aggressive redirect - let AuthContext handle logout & navigation
     }
     return Promise.reject(error);
   }

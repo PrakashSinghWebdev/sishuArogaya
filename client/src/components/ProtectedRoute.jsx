@@ -5,9 +5,15 @@ import { useAuth } from '../context/AuthContext';
 const ProtectedRoute = ({ allowedRoles = [] }) => {
   const { user, token, loading } = useAuth();
   const location = useLocation();
+  const [loadTimeout, setLoadTimeout] = useState(false);
 
-  // Still loading auth state — show nothing (prevents flash redirect)
-  if (loading) {
+  useEffect(() => {
+    const timeout = setTimeout(() => setLoadTimeout(true), 5000); // 5s fallback
+    return () => clearTimeout(timeout);
+  }, []);
+
+  // Still loading auth state — show spinner
+  if (loading || loadTimeout === false) {
     return (
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
