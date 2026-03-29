@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ashaAPI, notificationAPI } from '../../services/api';
+import { useLanguage } from '../../context/LanguageContext';
 
 // ─── Color tokens ─────────────────────────────────────────────────────────────
 const C = {
@@ -8,23 +9,11 @@ const C = {
   light: '#cffafe', border: '#c5e8ef', text: '#0c2340', muted: '#4a7a8a',
 };
 
-// ─── NAV ──────────────────────────────────────────────────────────────────────
-const NAV = [
-  ['🏠 Dashboard',      '/asha/dashboard'],
-  ['👶 Children',       '/asha/children'],
-  ['📝 Log Visit',      '/asha/log-visit'],
-  ['💉 Vaccines',       '/asha/vaccination-tracker'],
-  ['📈 Growth',         '/asha/growth-records'],
-  ['🚨 Malnutrition',   '/asha/malnutrition-report'],
-  ['📋 Visits',         '/asha/visit-history'],
-  ['🔔 Alerts',         '/asha/notifications'],
-];
-
-// ─── Status helper ────────────────────────────────────────────────────────────
-const SS = {
-  healthy:  { bg:'#f0fdf4', border:'#6ee7b7', color:'#059669', bbg:'#d1fae5', grad:'linear-gradient(90deg,#059669,#34d399)', label:'✓ Healthy'  },
-  moderate: { bg:'#fffbeb', border:'#fcd34d', color:'#92400e', bbg:'#fef3c7', grad:'linear-gradient(90deg,#f59e0b,#fbbf24)', label:'⚠ Moderate' },
-  severe:   { bg:'#fff1f2', border:'#fca5a5', color:'#991b1b', bbg:'#fee2e2', grad:'linear-gradient(90deg,#ef4444,#f87171)', label:'🚨 Severe'   },
+// ─── Status helper (labels moved inside component for i18n) ───────────────────
+const SS_STYLES = {
+  healthy:  { bg:'#f0fdf4', border:'#6ee7b7', color:'#059669', bbg:'#d1fae5', grad:'linear-gradient(90deg,#059669,#34d399)' },
+  moderate: { bg:'#fffbeb', border:'#fcd34d', color:'#92400e', bbg:'#fef3c7', grad:'linear-gradient(90deg,#f59e0b,#fbbf24)' },
+  severe:   { bg:'#fff1f2', border:'#fca5a5', color:'#991b1b', bbg:'#fee2e2', grad:'linear-gradient(90deg,#ef4444,#f87171)' },
 };
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -96,7 +85,7 @@ const visitTypeBadge = (type) => {
 };
 
 // ─── Navbar ───────────────────────────────────────────────────────────────────
-function Navbar({ unread }) {
+function Navbar({ unread, navItems, portalLabel }) {
   const nav = useNavigate();
   const path = window.location.pathname;
   const logout = () => { localStorage.removeItem('sa_token'); window.location.href = '/login'; };
@@ -112,11 +101,11 @@ function Navbar({ unread }) {
         <span style={{ fontSize:26 }}>🏥</span>
         <div>
           <div style={{ fontWeight:800, fontSize:15, color:C.text, lineHeight:1.2 }}>Sishu Arogaya</div>
-          <div style={{ fontSize:11, color:C.muted, fontWeight:500 }}>ASHA Worker Portal</div>
+          <div style={{ fontSize:11, color:C.muted, fontWeight:500 }}>{portalLabel}</div>
         </div>
       </div>
       <div style={{ display:'flex', gap:2, flex:1, overflowX:'auto' }}>
-        {NAV.map(([label, href]) => (
+        {navItems.map(([label, href]) => (
           <a key={href} href={href}
             className={`an-nav-link${path === href ? ' active' : ''}`}
             onClick={e => { e.preventDefault(); nav(href); }}
@@ -163,9 +152,9 @@ function StatCard({ label, value, accent, icon }) {
 }
 
 // ─── Timeline item ────────────────────────────────────────────────────────────
-function TimelineItem({ visit, index }) {
+function TimelineItem({ visit, index, ss }) {
   const outcome = (visit.outcome || 'healthy').toLowerCase();
-  const s = SS[outcome] || SS.healthy;
+  const s = ss[outcome] || ss.healthy;
   const dateStr = visit.visitDate || visit.createdAt;
   const { day, month, year } = dateBadgeParts(dateStr);
   const childName = visit.childId?.name || visit.childName || 'Unknown Child';
@@ -247,6 +236,23 @@ function TimelineItem({ visit, index }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 const VisitHistoryLog = () => {
+  const { t } = useLanguage();
+  const NAV = [
+    [`🏠 ${t('dashboard')}`,         '/asha/dashboard'],
+    [`👶 ${t('myChildren')}`,         '/asha/children'],
+    [`📝 ${t('logVisit')}`,           '/asha/log-visit'],
+    [`💉 ${t('vaccinationTracker')}`, '/asha/vaccination-tracker'],
+    [`📈 ${t('growthRecords')}`,      '/asha/growth-records'],
+    [`🚨 ${t('malnutritionReport')}`, '/asha/malnutrition-report'],
+    [`📋 ${t('visitHistory')}`,       '/asha/visit-history'],
+    [`🔔 ${t('notifications')}`,      '/asha/notifications'],
+  ];
+  const SS = {
+    healthy:  { ...SS_STYLES.healthy,  label: `✓ ${t('healthy')}`  },
+    moderate: { ...SS_STYLES.moderate, label: `⚠ ${t('moderate')}` },
+    severe:   { ...SS_STYLES.severe,   label: `🚨 ${t('severe')}`  },
+  };
+
   const [visits, setVisits]   = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState('');
@@ -290,20 +296,20 @@ const VisitHistoryLog = () => {
   }, [visits, filter, search]);
 
   const FILTERS = [
-    { key:'all',      label:`All (${total})` },
-    { key:'healthy',  label:`✓ Healthy (${healthy})` },
-    { key:'moderate', label:`⚠ Moderate (${moderate})` },
-    { key:'severe',   label:`🚨 Severe (${severe})` },
+    { key:'all',      label:`${t('all')} (${total})` },
+    { key:'healthy',  label:`✓ ${t('healthy')} (${healthy})` },
+    { key:'moderate', label:`⚠ ${t('moderate')} (${moderate})` },
+    { key:'severe',   label:`🚨 ${t('severe')} (${severe})` },
   ];
 
   return (
     <>
-      <Navbar unread={unread} />
+      <Navbar unread={unread} navItems={NAV} portalLabel={t('ashaPortal')} />
       <div style={{ background:C.bg, minHeight:'100vh', padding:'28px 24px' }}>
 
         {/* Header */}
         <div style={{ marginBottom:24 }}>
-          <h1 style={{ fontSize:22, fontWeight:800, color:C.text, margin:0 }}>📋 Visit History</h1>
+          <h1 style={{ fontSize:22, fontWeight:800, color:C.text, margin:0 }}>📋 {t('visitHistory')}</h1>
           <p style={{ fontSize:13, color:C.muted, margin:'4px 0 0' }}>
             Complete log of all home visits conducted in your area
           </p>
@@ -311,10 +317,10 @@ const VisitHistoryLog = () => {
 
         {/* Stat cards */}
         <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:14, marginBottom:24 }}>
-          <StatCard label="Total Visits"       value={total}    accent={C.primary} icon="📋" />
-          <StatCard label="Healthy Outcomes"   value={healthy}  accent="#059669"   icon="✅" />
-          <StatCard label="Moderate Outcomes"  value={moderate} accent="#f59e0b"   icon="⚠️" />
-          <StatCard label="Severe Outcomes"    value={severe}   accent="#ef4444"   icon="🚨" />
+          <StatCard label={t('visitHistory')}                      value={total}    accent={C.primary} icon="📋" />
+          <StatCard label={`${t('healthy')} Outcomes`}           value={healthy}  accent="#059669"   icon="✅" />
+          <StatCard label={`${t('moderate')} Outcomes`}          value={moderate} accent="#f59e0b"   icon="⚠️" />
+          <StatCard label={`${t('severe')} Outcomes`}            value={severe}   accent="#ef4444"   icon="🚨" />
         </div>
 
         {/* Search + filters */}
@@ -328,7 +334,7 @@ const VisitHistoryLog = () => {
               }}>🔍</span>
               <input
                 className="vh-search"
-                placeholder="Search by child name, visit type, notes…"
+                placeholder={t('searchByName')}
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
@@ -377,7 +383,7 @@ const VisitHistoryLog = () => {
                 {total === 0 ? '📋' : '🔍'}
               </div>
               <div style={{ fontWeight:700, fontSize:15, color:C.text, marginBottom:6 }}>
-                {total === 0 ? 'No visits logged yet' : 'No visits match your search'}
+                {total === 0 ? t('noVisitsYet') : t('noRecords')}
               </div>
               <div style={{ fontSize:13 }}>
                 {total === 0
@@ -401,7 +407,7 @@ const VisitHistoryLog = () => {
                 <div key={visit._id || i}
                   style={{ borderBottom: i < displayed.length - 1 ? `1px solid ${C.border}` : 'none' }}
                 >
-                  <TimelineItem visit={visit} index={i} />
+                  <TimelineItem visit={visit} index={i} ss={SS} />
                 </div>
               ))}
             </div>

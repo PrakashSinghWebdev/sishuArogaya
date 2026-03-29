@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import Layout from '../../components/Layout';
 import { notificationAPI, adminAPI } from '../../services/api';
+import { useLanguage } from '../../context/LanguageContext';
 
 const TYPES = ['vaccine_reminder','health_alert','visit_reminder','scheme_update','system'];
 
 const NotificationsPanel = () => {
+  const { t } = useLanguage();
   const [users, setUsers] = useState([]);
   const [form, setForm] = useState({ userId:'', message:'', type:'system' });
   const [sending, setSending] = useState(false);
@@ -22,7 +24,7 @@ const NotificationsPanel = () => {
 
   return (
     <Layout role="admin">
-      <h4 className="fw-bold mb-4"><i className="bi bi-broadcast me-2 text-primary"></i>Notifications Panel</h4>
+      <h4 className="fw-bold mb-4"><i className="bi bi-broadcast me-2 text-primary"></i>{t('notificationsPanel')}</h4>
       <div className="card border-0 shadow-sm" style={{maxWidth:560}}>
         <div className="card-header bg-white border-0 fw-semibold">Send Notification</div>
         <div className="card-body">
@@ -37,16 +39,16 @@ const NotificationsPanel = () => {
               </select>
             </div>
             <div className="mb-3">
-              <label className="form-label small">Notification Type</label>
+              <label className="form-label small">{t('notifications')} Type</label>
               <select className="form-select" value={form.type} onChange={e=>setForm({...form,type:e.target.value})}>
-                {TYPES.map(t=><option key={t} value={t}>{t.replace('_',' ')}</option>)}
+                {TYPES.map(tp=><option key={tp} value={tp}>{tp.replace('_',' ')}</option>)}
               </select>
             </div>
             <div className="mb-3">
               <label className="form-label small">Message *</label>
               <textarea className="form-control" rows={3} required value={form.message} onChange={e=>setForm({...form,message:e.target.value})} placeholder="Enter notification message..."></textarea>
             </div>
-            <button type="submit" className="btn btn-sa-primary w-100" disabled={sending}>{sending?'Sending...':'Send Notification'}</button>
+            <button type="submit" className="btn btn-sa-primary w-100" disabled={sending}>{sending?`${t('loading')}...`:`Send ${t('notifications')}`}</button>
           </form>
         </div>
       </div>

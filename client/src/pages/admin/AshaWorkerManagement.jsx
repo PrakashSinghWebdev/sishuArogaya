@@ -1,8 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import Layout from '../../components/Layout';
 import { ashaAPI, childAPI } from '../../services/api';
+import { useLanguage } from '../../context/LanguageContext';
 
 const AshaWorkerManagement = () => {
+  const { t } = useLanguage();
   const [workers, setWorkers] = useState([]);
   const [children, setChildren] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -97,7 +99,7 @@ const AshaWorkerManagement = () => {
         </div>
       )}
 
-      <h4 className="fw-bold mb-4"><i className="bi bi-person-badge-fill me-2 text-primary"></i>ASHA Worker Management</h4>
+      <h4 className="fw-bold mb-4"><i className="bi bi-person-badge-fill me-2 text-primary"></i>{t('ashaWorkers')}</h4>
 
       {loading ? (
         <div className="text-center py-5"><div className="spinner-border text-primary"></div></div>
@@ -106,11 +108,11 @@ const AshaWorkerManagement = () => {
           <div className="table-responsive">
             <table className="table table-hover mb-0 align-middle">
               <thead className="table-light">
-                <tr><th>#</th><th>Name</th><th>ASHA ID</th><th>District</th><th>Block</th><th>Assigned</th><th>Visits</th><th>Status</th><th>Actions</th></tr>
+                <tr><th>#</th><th>{t('name')}</th><th>ASHA ID</th><th>{t('district')}</th><th>{t('block')}</th><th>{t('myChildren')}</th><th>{t('logVisit')}</th><th>{t('status')}</th><th>{t('actions')}</th></tr>
               </thead>
               <tbody>
                 {workers.length === 0 ? (
-                  <tr><td colSpan={9} className="text-muted text-center py-4">No workers found.</td></tr>
+                  <tr><td colSpan={9} className="text-muted text-center py-4">{t('noRecords')}</td></tr>
                 ) : workers.map((w, i) => (
                   <tr key={w._id}>
                     <td><span className="badge bg-primary">#{i + 1}</span></td>
@@ -120,7 +122,7 @@ const AshaWorkerManagement = () => {
                     <td>{w.block}</td>
                     <td><span className="badge bg-info text-dark">{w.assignedChildren?.length || 0}</span></td>
                     <td><span className="badge bg-success">{w.totalVisits}</span></td>
-                    <td><span className={`badge ${w.isActive ? 'bg-success' : 'bg-secondary'}`}>{w.isActive ? 'Active' : 'Inactive'}</span></td>
+                    <td><span className={`badge ${w.isActive ? 'bg-success' : 'bg-secondary'}`}>{w.isActive ? t('activate') : t('suspend')}</span></td>
                     <td>
                       <button className="btn btn-sm btn-outline-primary" onClick={() => openAssignModal(w)}>
                         <i className="bi bi-person-plus me-1"></i>Manage
@@ -156,7 +158,7 @@ const AshaWorkerManagement = () => {
                     <div className="table-responsive">
                       <table className="table table-sm table-bordered mb-0">
                         <thead className="table-success">
-                          <tr><th>Name</th><th>Age</th><th>Village/Block</th><th>Status</th><th>Action</th></tr>
+                          <tr><th>{t('name')}</th><th>{t('age')}</th><th>{t('village')}/{t('block')}</th><th>{t('status')}</th><th>{t('action')}</th></tr>
                         </thead>
                         <tbody>
                           {assignedToSelected.map(c => (
@@ -184,14 +186,14 @@ const AshaWorkerManagement = () => {
                   <h6 className="fw-semibold mb-2">
                     <i className="bi bi-person-plus me-1"></i>Assign Unassigned Children
                   </h6>
-                  <input className="form-control mb-3" placeholder="Search by name, village, or block..." value={childSearch} onChange={e => setChildSearch(e.target.value)} />
+                  <input className="form-control mb-3" placeholder={`${t('search')}...`} value={childSearch} onChange={e => setChildSearch(e.target.value)} />
                   {unassignedFiltered.length === 0 ? (
                     <p className="text-muted small">{childSearch ? 'No matching unassigned children.' : 'All children are already assigned.'}</p>
                   ) : (
                     <div className="table-responsive" style={{ maxHeight: 340, overflowY: 'auto' }}>
                       <table className="table table-sm table-hover mb-0">
                         <thead className="table-light sticky-top">
-                          <tr><th>Name</th><th>Age</th><th>Gender</th><th>Village/Block</th><th>Parent</th><th>Status</th><th>Action</th></tr>
+                          <tr><th>{t('name')}</th><th>{t('age')}</th><th>{t('gender')}</th><th>{t('village')}/{t('block')}</th><th>Parent</th><th>{t('status')}</th><th>{t('action')}</th></tr>
                         </thead>
                         <tbody>
                           {unassignedFiltered.map(c => (
@@ -216,7 +218,7 @@ const AshaWorkerManagement = () => {
                 </div>
               </div>
               <div className="modal-footer">
-                <button className="btn btn-secondary" onClick={() => setShowModal(false)}>Close</button>
+                <button className="btn btn-secondary" onClick={() => setShowModal(false)}>{t('close')}</button>
               </div>
             </div>
           </div>

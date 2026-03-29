@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ashaAPI, notificationAPI } from '../../services/api';
+import { useLanguage } from '../../context/LanguageContext';
 
 // ─── Color tokens ─────────────────────────────────────────────────────────────
 const C = {
@@ -8,23 +9,11 @@ const C = {
   light: '#cffafe', border: '#c5e8ef', text: '#0c2340', muted: '#4a7a8a',
 };
 
-// ─── NAV ──────────────────────────────────────────────────────────────────────
-const NAV = [
-  ['🏠 Dashboard',      '/asha/dashboard'],
-  ['👶 Children',       '/asha/children'],
-  ['📝 Log Visit',      '/asha/log-visit'],
-  ['💉 Vaccines',       '/asha/vaccination-tracker'],
-  ['📈 Growth',         '/asha/growth-records'],
-  ['🚨 Malnutrition',   '/asha/malnutrition-report'],
-  ['📋 Visits',         '/asha/visit-history'],
-  ['🔔 Alerts',         '/asha/notifications'],
-];
-
-// ─── Status helper ────────────────────────────────────────────────────────────
-const SS = {
-  healthy:  { bg:'#f0fdf4', border:'#6ee7b7', color:'#059669', bbg:'#d1fae5', grad:'linear-gradient(90deg,#059669,#34d399)', label:'✓ Healthy'  },
-  moderate: { bg:'#fffbeb', border:'#fcd34d', color:'#92400e', bbg:'#fef3c7', grad:'linear-gradient(90deg,#f59e0b,#fbbf24)', label:'⚠ Moderate' },
-  severe:   { bg:'#fff1f2', border:'#fca5a5', color:'#991b1b', bbg:'#fee2e2', grad:'linear-gradient(90deg,#ef4444,#f87171)', label:'🚨 Severe'   },
+// ─── Status helper (labels injected inside components via t()) ─────────────────
+const SS_BASE = {
+  healthy:  { bg:'#f0fdf4', border:'#6ee7b7', color:'#059669', bbg:'#d1fae5', grad:'linear-gradient(90deg,#059669,#34d399)' },
+  moderate: { bg:'#fffbeb', border:'#fcd34d', color:'#92400e', bbg:'#fef3c7', grad:'linear-gradient(90deg,#f59e0b,#fbbf24)' },
+  severe:   { bg:'#fff1f2', border:'#fca5a5', color:'#991b1b', bbg:'#fee2e2', grad:'linear-gradient(90deg,#ef4444,#f87171)' },
 };
 
 const SEVERE_PROTOCOL = [
@@ -74,7 +63,7 @@ const calcAge = (dob) => {
 };
 
 // ─── Navbar ───────────────────────────────────────────────────────────────────
-function Navbar({ unread }) {
+function Navbar({ unread, navItems, ashaPortalLabel }) {
   const nav = useNavigate();
   const path = window.location.pathname;
   const logout = () => { localStorage.removeItem('sa_token'); window.location.href = '/login'; };
@@ -90,11 +79,11 @@ function Navbar({ unread }) {
         <span style={{ fontSize:26 }}>🏥</span>
         <div>
           <div style={{ fontWeight:800, fontSize:15, color:C.text, lineHeight:1.2 }}>Sishu Arogaya</div>
-          <div style={{ fontSize:11, color:C.muted, fontWeight:500 }}>ASHA Worker Portal</div>
+          <div style={{ fontSize:11, color:C.muted, fontWeight:500 }}>{ashaPortalLabel}</div>
         </div>
       </div>
       <div style={{ display:'flex', gap:2, flex:1, overflowX:'auto' }}>
-        {NAV.map(([label, href]) => (
+        {navItems.map(([label, href]) => (
           <a key={href} href={href}
             className={`an-nav-link${path === href ? ' active' : ''}`}
             onClick={e => { e.preventDefault(); nav(href); }}
@@ -142,9 +131,10 @@ function StatCard({ label, value, accent, icon, sub }) {
 }
 
 // ─── Case card ────────────────────────────────────────────────────────────────
-function CaseCard({ child, type }) {
+function CaseCard({ child, type, SS }) {
   const [open, setOpen] = useState(false);
   const nav = useNavigate();
+  const { t } = useLanguage();
   const s = SS[type];
   const age = child.ageInMonths ?? calcAge(child.dateOfBirth);
 
@@ -199,8 +189,8 @@ function CaseCard({ child, type }) {
         borderBottom: open ? `1px solid ${s.border}` : 'none',
       }}>
         {[
-          { label:'Weight',     value: child.currentWeight ? `${child.currentWeight} kg` : (child.weight ? `${child.weight} kg` : '—') },
-          { label:'Height',     value: child.currentHeight ? `${child.currentHeight} cm` : (child.height ? `${child.height} cm` : '—') },
+          { label: t('weight'),  value: child.currentWeight ? `${child.currentWeight} kg` : (child.weight ? `${child.weight} kg` : '—') },
+          { label: t('height'),  value: child.currentHeight ? `${child.currentHeight} cm` : (child.height ? `${child.height} cm` : '—') },
           { label:'Blood Grp', value: child.bloodGroup || '—' },
           { label:'Village',   value: child.village || child.address || '—' },
         ].map(({ label, value }) => (
@@ -300,6 +290,23 @@ function ProtocolCard({ title, steps, accent, icon }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 const MalnutritionReport = () => {
+  const { t } = useLanguage();
+  const NAV = [
+    [`🏠 ${t('dashboard')}`,         '/asha/dashboard'],
+    [`👶 ${t('myChildren')}`,         '/asha/children'],
+    [`📝 ${t('logVisit')}`,           '/asha/log-visit'],
+    [`💉 ${t('vaccinationTracker')}`, '/asha/vaccination-tracker'],
+    [`📈 ${t('growthRecords')}`,      '/asha/growth-records'],
+    [`🚨 ${t('malnutritionReport')}`, '/asha/malnutrition-report'],
+    [`📋 ${t('visitHistory')}`,       '/asha/visit-history'],
+    [`🔔 ${t('notifications')}`,      '/asha/notifications'],
+  ];
+  const SS = {
+    healthy:  { ...SS_BASE.healthy,  label: `✓ ${t('healthy')}` },
+    moderate: { ...SS_BASE.moderate, label: `⚠ ${t('moderate')}` },
+    severe:   { ...SS_BASE.severe,   label: `🚨 ${t('severe')}` },
+  };
+
   const [allChildren, setAllChildren] = useState([]);
   const [loading, setLoading]         = useState(true);
   const [error, setError]             = useState('');
@@ -323,9 +330,11 @@ const MalnutritionReport = () => {
   // Estimate PHC referrals as severe cases (all need referral)
   const phcCount = severe.length;
 
+  const navbarProps = { unread, navItems: NAV, ashaPortalLabel: t('ashaPortal') };
+
   if (loading) return (
     <>
-      <Navbar unread={unread} />
+      <Navbar {...navbarProps} />
       <div style={{ display:'flex', justifyContent:'center', alignItems:'center', height:'60vh', background:C.bg }}>
         <div className="an-spinner" />
       </div>
@@ -334,7 +343,7 @@ const MalnutritionReport = () => {
 
   if (error) return (
     <>
-      <Navbar unread={unread} />
+      <Navbar {...navbarProps} />
       <div style={{ background:C.bg, minHeight:'100vh', display:'flex', justifyContent:'center', alignItems:'center' }}>
         <div style={{ background:'#fff1f2', border:'1px solid #fca5a5', borderRadius:12, padding:'24px 32px', color:'#991b1b', fontWeight:600 }}>
           {error}
@@ -345,12 +354,12 @@ const MalnutritionReport = () => {
 
   return (
     <>
-      <Navbar unread={unread} />
+      <Navbar {...navbarProps} />
       <div style={{ background:C.bg, minHeight:'100vh', padding:'28px 24px' }}>
 
         {/* Header */}
         <div style={{ marginBottom:24 }}>
-          <h1 style={{ fontSize:22, fontWeight:800, color:C.text, margin:0 }}>🚨 Malnutrition Report</h1>
+          <h1 style={{ fontSize:22, fontWeight:800, color:C.text, margin:0 }}>🚨 {t('malnutritionReport')}</h1>
           <p style={{ fontSize:13, color:C.muted, margin:'4px 0 0' }}>
             Active malnutrition cases in your assigned area — {allChildren.length} total children monitored
           </p>
@@ -368,10 +377,10 @@ const MalnutritionReport = () => {
             <span style={{ fontSize:28 }}>🚨</span>
             <div>
               <div style={{ fontWeight:800, fontSize:15 }}>
-                {severe.length} Severe Case{severe.length > 1 ? 's' : ''} — Immediate Action Required
+                {severe.length} {t('severe')} Case{severe.length > 1 ? 's' : ''} — Immediate Action Required
               </div>
               <div style={{ fontSize:12, opacity:.9, marginTop:2 }}>
-                {severe.map(c => c.name).join(', ')} require urgent PHC referral today.
+                {severe.map(c => c.name).join(', ')} require urgent {t('phcReferralNeeded')} today.
               </div>
             </div>
           </div>
@@ -379,10 +388,10 @@ const MalnutritionReport = () => {
 
         {/* Stat cards */}
         <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:14, marginBottom:28 }}>
-          <StatCard label="Severe Cases"    value={severe.length}   accent="#ef4444" icon="🚨" sub={severe.length > 0 ? 'Urgent referral needed' : undefined} />
-          <StatCard label="Moderate Cases"  value={moderate.length} accent="#f59e0b" icon="⚠️" sub={moderate.length > 0 ? 'Weekly monitoring' : undefined} />
-          <StatCard label="Healthy"         value={healthy.length}  accent="#059669" icon="✅" />
-          <StatCard label="PHC Referrals"   value={phcCount}        accent={C.primary} icon="🏥" sub={phcCount > 0 ? 'Pending referrals' : 'None pending'} />
+          <StatCard label={t('severeCases')}   value={severe.length}   accent="#ef4444" icon="🚨" sub={severe.length > 0 ? t('urgentAction') : undefined} />
+          <StatCard label={t('moderateCases')} value={moderate.length} accent="#f59e0b" icon="⚠️" sub={moderate.length > 0 ? 'Weekly monitoring' : undefined} />
+          <StatCard label={t('healthy')}        value={healthy.length}  accent="#059669" icon="✅" />
+          <StatCard label={t('phcReferralNeeded')} value={phcCount}    accent={C.primary} icon="🏥" sub={phcCount > 0 ? 'Pending referrals' : 'None pending'} />
         </div>
 
         {/* Severe cases section */}
@@ -397,14 +406,14 @@ const MalnutritionReport = () => {
                 borderRadius:8, padding:'4px 14px',
                 fontWeight:800, fontSize:14, color:'#991b1b',
               }}>
-                🚨 Severe Cases ({severe.length})
+                🚨 {t('severeCases')} ({severe.length})
               </div>
               <span style={{ fontSize:12, color:'#991b1b', fontWeight:500 }}>
-                Requires immediate PHC referral and daily home visits
+                Requires immediate {t('phcReferralNeeded')} and daily home visits
               </span>
             </div>
             {severe.map(child => (
-              <CaseCard key={child._id} child={child} type="severe" />
+              <CaseCard key={child._id} child={child} type="severe" SS={SS} />
             ))}
           </section>
         )}
@@ -421,14 +430,14 @@ const MalnutritionReport = () => {
                 borderRadius:8, padding:'4px 14px',
                 fontWeight:800, fontSize:14, color:'#92400e',
               }}>
-                ⚠️ Moderate Cases ({moderate.length})
+                ⚠️ {t('moderateCases')} ({moderate.length})
               </div>
               <span style={{ fontSize:12, color:'#92400e', fontWeight:500 }}>
                 Weekly home visits and enhanced nutrition counselling
               </span>
             </div>
             {moderate.map(child => (
-              <CaseCard key={child._id} child={child} type="moderate" />
+              <CaseCard key={child._id} child={child} type="moderate" SS={SS} />
             ))}
           </section>
         )}
@@ -437,9 +446,9 @@ const MalnutritionReport = () => {
         {severe.length === 0 && moderate.length === 0 && (
           <div className="an-card" style={{ padding:'48px 24px', textAlign:'center', animation:'fadeUp .4s ease' }}>
             <div style={{ fontSize:48, marginBottom:12 }}>✅</div>
-            <div style={{ fontWeight:700, fontSize:17, color:'#059669' }}>No Active Malnutrition Cases</div>
+            <div style={{ fontWeight:700, fontSize:17, color:'#059669' }}>No Active {t('malnutritionCases')}</div>
             <div style={{ fontSize:13, color:C.muted, marginTop:6 }}>
-              All {allChildren.length} children in your area are healthy. Keep up the great work!
+              All {allChildren.length} children in your area are {t('healthy').toLowerCase()}. Keep up the great work!
             </div>
           </div>
         )}

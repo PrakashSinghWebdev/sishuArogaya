@@ -2,18 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ashaAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-
-/* ─── Constants ─────────────────────────────────────────────────── */
-const NAV = [
-  ['🏠 Dashboard', '/asha/dashboard'],
-  ['👶 Children', '/asha/children'],
-  ['📝 Log Visit', '/asha/log-visit'],
-  ['💉 Vaccines', '/asha/vaccination-tracker'],
-  ['📈 Growth', '/asha/growth-records'],
-  ['🚨 Malnutrition', '/asha/malnutrition-report'],
-  ['📋 Visits', '/asha/visit-history'],
-  ['🔔 Alerts', '/asha/notifications'],
-];
+import { useLanguage } from '../../context/LanguageContext';
 
 const VISIT_TYPES = [
   'Growth Check',
@@ -163,6 +152,18 @@ const LogHomeVisit = () => {
   const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useLanguage();
+
+  const NAV = [
+    [`🏠 ${t('dashboard')}`,        '/asha/dashboard'],
+    [`👶 ${t('myChildren')}`,        '/asha/children'],
+    [`📝 ${t('logVisit')}`,          '/asha/log-visit'],
+    [`💉 ${t('vaccinationTracker')}`,'/asha/vaccination-tracker'],
+    [`📈 ${t('growthRecords')}`,     '/asha/growth-records'],
+    [`🚨 ${t('malnutritionReport')}`,'/asha/malnutrition-report'],
+    [`📋 ${t('visitHistory')}`,      '/asha/visit-history'],
+    [`🔔 ${t('notifications')}`,     '/asha/notifications'],
+  ];
   const preSelectedId = new URLSearchParams(location.search).get('childId') || '';
 
   const [children, setChildren] = useState([]);
@@ -243,7 +244,7 @@ const LogHomeVisit = () => {
       {/* Selected Child Card */}
       <div style={{ background: '#fff', border: `1.5px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>
-          Selected Child
+          {t('selectChild')}
         </div>
         {selectedChild ? (
           <>
@@ -278,7 +279,7 @@ const LogHomeVisit = () => {
         ) : (
           <div style={{ textAlign: 'center', padding: '16px 0', color: C.muted, fontSize: 13 }}>
             <div style={{ fontSize: 28, marginBottom: 6 }}>👶</div>
-            No child selected yet
+            {t('noChildrenAssigned')}
           </div>
         )}
       </div>
@@ -286,15 +287,15 @@ const LogHomeVisit = () => {
       {/* Visit Summary */}
       <div style={{ background: '#fff', border: `1.5px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>
-          Visit Summary
+          {t('recentVisitLog')}
         </div>
         {[
-          ['Visit Type', form.visitType || '—'],
-          ['Weight', form.weight ? `${form.weight} kg` : '—'],
-          ['Height', form.height ? `${form.height} cm` : '—'],
+          [t('visitType'), form.visitType || '—'],
+          [t('weight'), form.weight ? `${form.weight} kg` : '—'],
+          [t('height'), form.height ? `${form.height} cm` : '—'],
           ['MUAC', form.muac ? `${form.muac} cm` : '—'],
-          ['Vaccines', form.vaccinesGiven.length > 0 ? `${form.vaccinesGiven.length} selected` : '—'],
-          ['Outcome', form.outcome || '—'],
+          [t('vaccination'), form.vaccinesGiven.length > 0 ? `${form.vaccinesGiven.length} selected` : '—'],
+          [t('visitOutcome'), form.outcome || '—'],
         ].map(([k, v]) => (
           <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: `1px solid ${C.bg}` }}>
             <span style={{ fontSize: 12, color: C.muted }}>{k}</span>
@@ -303,7 +304,7 @@ const LogHomeVisit = () => {
         ))}
         {form.referralRequired && (
           <div style={{ marginTop: 10, background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 8, padding: '6px 10px', fontSize: 12, color: '#991b1b', fontWeight: 600 }}>
-            🏥 PHC Referral Required
+            🏥 {t('phcReferralNeeded')}
           </div>
         )}
       </div>
@@ -372,7 +373,7 @@ const LogHomeVisit = () => {
           }}>🏥</div>
           <div>
             <div style={{ fontSize: 14, fontWeight: 800, color: C.text, lineHeight: 1.2 }}>Sishu Arogaya</div>
-            <div style={{ fontSize: 10, color: C.muted, fontWeight: 500 }}>ASHA Worker Portal</div>
+            <div style={{ fontSize: 10, color: C.muted, fontWeight: 500 }}>{t('ashaPortal')}</div>
           </div>
         </Link>
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 2, overflowX: 'auto', padding: '0 8px' }}>
@@ -408,8 +409,8 @@ const LogHomeVisit = () => {
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '28px 20px' }}>
         {/* Header */}
         <div style={{ marginBottom: 24, animation: 'fadeUp 0.4s ease' }}>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: C.text, margin: 0 }}>📝 Log Home Visit</h1>
-          <p style={{ fontSize: 13, color: C.muted, margin: '4px 0 0' }}>Record a field visit in 4 easy steps</p>
+          <h1 style={{ fontSize: 22, fontWeight: 800, color: C.text, margin: 0 }}>📝 {t('logVisitPage')}</h1>
+          <p style={{ fontSize: 13, color: C.muted, margin: '4px 0 0' }}>{t('logVisit')}</p>
         </div>
 
         {/* Success overlay */}
@@ -424,8 +425,8 @@ const LogHomeVisit = () => {
               animation: 'fadeUp 0.3s ease',
             }}>
               <div style={{ fontSize: 56, marginBottom: 12 }}>✅</div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: C.dark }}>Visit Logged!</div>
-              <div style={{ fontSize: 13, color: C.muted, marginTop: 6 }}>Redirecting to visit history…</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: C.dark }}>{t('logVisit')}!</div>
+              <div style={{ fontSize: 13, color: C.muted, marginTop: 6 }}>{t('redirecting')}</div>
             </div>
           </div>
         )}
@@ -454,7 +455,7 @@ const LogHomeVisit = () => {
 
                 <div style={{ marginBottom: 18 }}>
                   <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: C.muted, marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    Select Child <span style={{ color: '#e53e3e' }}>*</span>
+                    {t('selectChild')} <span style={{ color: '#e53e3e' }}>*</span>
                   </label>
                   {loadingChildren ? (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 0', color: C.muted }}>
@@ -484,7 +485,7 @@ const LogHomeVisit = () => {
 
                 <div style={{ marginBottom: 18 }}>
                   <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: C.muted, marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    Visit Type <span style={{ color: '#e53e3e' }}>*</span>
+                    {t('visitType')} <span style={{ color: '#e53e3e' }}>*</span>
                   </label>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 8 }}>
                     {VISIT_TYPES.map(vt => (
@@ -594,7 +595,7 @@ const LogHomeVisit = () => {
 
                 <div style={{ marginBottom: 18 }}>
                   <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: C.muted, marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    Visit Notes
+                    {t('visitNotes')}
                   </label>
                   <textarea
                     value={form.notes}
@@ -615,7 +616,7 @@ const LogHomeVisit = () => {
 
                 <div style={{ marginBottom: 18 }}>
                   <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: C.muted, marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    Visit Outcome
+                    {t('visitOutcome')}
                   </label>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                     {OUTCOME_OPTIONS.map(opt => (
@@ -659,7 +660,7 @@ const LogHomeVisit = () => {
                   </div>
                   <div>
                     <div style={{ fontSize: 14, fontWeight: 600, color: form.referralRequired ? '#991b1b' : C.text }}>
-                      🏥 PHC Referral Required
+                      🏥 {t('phcReferralNeeded')}
                     </div>
                     <div style={{ fontSize: 12, color: form.referralRequired ? '#b91c1c' : C.muted, marginTop: 2 }}>
                       Check if this child needs to be referred to Primary Health Centre
@@ -676,16 +677,16 @@ const LogHomeVisit = () => {
                 onClick={() => setStep(s => s - 1)}
                 style={{ visibility: step === 1 ? 'hidden' : 'visible' }}
               >
-                ← Back
+                ← {t('back')}
               </button>
-              <span style={{ fontSize: 12, color: C.muted }}>Step {step} of 4</span>
+              <span style={{ fontSize: 12, color: C.muted }}>{t('step') || 'Step'} {step} / 4</span>
               {step < 4 ? (
                 <button
                   className="btn-primary-teal"
                   onClick={() => setStep(s => s + 1)}
                   disabled={step === 1 && !canProceed1}
                 >
-                  Next →
+                  {t('next')} →
                 </button>
               ) : (
                 <button
@@ -693,7 +694,7 @@ const LogHomeVisit = () => {
                   onClick={handleSubmit}
                   disabled={submitting}
                 >
-                  {submitting ? <><div className="an-spinner" /> Saving…</> : '💾 Save Visit'}
+                  {submitting ? <><div className="an-spinner" /> {t('loading')}</> : `💾 ${t('save')} ${t('logVisit')}`}
                 </button>
               )}
             </div>

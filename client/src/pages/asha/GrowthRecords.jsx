@@ -1,30 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ashaAPI, growthAPI, notificationAPI } from '../../services/api';
+import { useLanguage } from '../../context/LanguageContext';
 
 // ─── Color tokens ─────────────────────────────────────────────────────────────
 const C = {
   primary: '#0891b2', dark: '#0e7490', bg: '#f0fdff',
   light: '#cffafe', border: '#c5e8ef', text: '#0c2340', muted: '#4a7a8a',
-};
-
-// ─── NAV ──────────────────────────────────────────────────────────────────────
-const NAV = [
-  ['🏠 Dashboard',      '/asha/dashboard'],
-  ['👶 Children',       '/asha/children'],
-  ['📝 Log Visit',      '/asha/log-visit'],
-  ['💉 Vaccines',       '/asha/vaccination-tracker'],
-  ['📈 Growth',         '/asha/growth-records'],
-  ['🚨 Malnutrition',   '/asha/malnutrition-report'],
-  ['📋 Visits',         '/asha/visit-history'],
-  ['🔔 Alerts',         '/asha/notifications'],
-];
-
-// ─── Status helper ────────────────────────────────────────────────────────────
-const SS = {
-  healthy:  { bg:'#f0fdf4', border:'#6ee7b7', color:'#059669', bbg:'#d1fae5', grad:'linear-gradient(90deg,#059669,#34d399)', label:'✓ Healthy'    },
-  moderate: { bg:'#fffbeb', border:'#fcd34d', color:'#92400e', bbg:'#fef3c7', grad:'linear-gradient(90deg,#f59e0b,#fbbf24)', label:'⚠ Moderate'   },
-  severe:   { bg:'#fff1f2', border:'#fca5a5', color:'#991b1b', bbg:'#fee2e2', grad:'linear-gradient(90deg,#ef4444,#f87171)', label:'🚨 Severe'     },
 };
 
 const statusFromZ = (z) => {
@@ -69,7 +51,7 @@ const STYLES = `
 `;
 
 // ─── Navbar ───────────────────────────────────────────────────────────────────
-function Navbar({ unread }) {
+function Navbar({ unread, nav_items, portalLabel }) {
   const nav = useNavigate();
   const path = window.location.pathname;
   const logout = () => { localStorage.removeItem('sa_token'); window.location.href = '/login'; };
@@ -85,11 +67,11 @@ function Navbar({ unread }) {
         <span style={{ fontSize:26 }}>🏥</span>
         <div>
           <div style={{ fontWeight:800, fontSize:15, color:C.text, lineHeight:1.2 }}>Sishu Arogaya</div>
-          <div style={{ fontSize:11, color:C.muted, fontWeight:500 }}>ASHA Worker Portal</div>
+          <div style={{ fontSize:11, color:C.muted, fontWeight:500 }}>{portalLabel}</div>
         </div>
       </div>
       <div style={{ display:'flex', gap:2, flex:1, overflowX:'auto' }}>
-        {NAV.map(([label, href]) => (
+        {nav_items.map(([label, href]) => (
           <a key={href} href={href}
             className={`an-nav-link${path === href ? ' active' : ''}`}
             onClick={e => { e.preventDefault(); nav(href); }}
@@ -176,13 +158,13 @@ function BarChart({ records }) {
 }
 
 // ─── Z-score bar ──────────────────────────────────────────────────────────────
-function ZScoreBar({ label, z }) {
+function ZScoreBar({ label, z, ssMap }) {
   if (z == null || isNaN(z)) return null;
   // Map z from [-4, +4] to [0%, 100%]
   const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
   const pct = ((clamp(z, -4, 4) + 4) / 8) * 100;
   const status = statusFromZ(z);
-  const s = SS[status];
+  const s = ssMap[status];
 
   return (
     <div style={{ marginBottom:12 }}>
@@ -226,6 +208,23 @@ function StatCard({ label, value, accent, icon }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 const GrowthRecords = () => {
+  const { t } = useLanguage();
+  const NAV = [
+    [`🏠 ${t('dashboard')}`,         '/asha/dashboard'],
+    [`👶 ${t('myChildren')}`,         '/asha/children'],
+    [`📝 ${t('logVisit')}`,           '/asha/log-visit'],
+    [`💉 ${t('vaccinationTracker')}`, '/asha/vaccination-tracker'],
+    [`📈 ${t('growthRecords')}`,      '/asha/growth-records'],
+    [`🚨 ${t('malnutritionReport')}`, '/asha/malnutrition-report'],
+    [`📋 ${t('visitHistory')}`,       '/asha/visit-history'],
+    [`🔔 ${t('notifications')}`,      '/asha/notifications'],
+  ];
+  const SS = {
+    healthy:  { bg:'#f0fdf4', border:'#6ee7b7', color:'#059669', bbg:'#d1fae5', grad:'linear-gradient(90deg,#059669,#34d399)', label:`✓ ${t('healthy')}`   },
+    moderate: { bg:'#fffbeb', border:'#fcd34d', color:'#92400e', bbg:'#fef3c7', grad:'linear-gradient(90deg,#f59e0b,#fbbf24)', label:`⚠ ${t('moderate')}`  },
+    severe:   { bg:'#fff1f2', border:'#fca5a5', color:'#991b1b', bbg:'#fee2e2', grad:'linear-gradient(90deg,#ef4444,#f87171)', label:`🚨 ${t('severe')}`    },
+  };
+
   const [children, setChildren]               = useState([]);
   const [selectedChildIndex, setSelectedChildIndex] = useState(0);
   const [selectedChildId, setSelectedChildId] = useState(null);
@@ -336,7 +335,7 @@ const GrowthRecords = () => {
 
   if (loading) return (
     <>
-      <Navbar unread={unread} />
+      <Navbar unread={unread} nav_items={NAV} portalLabel={t('ashaPortal')} />
       <div style={{ display:'flex', justifyContent:'center', alignItems:'center', height:'60vh', background:C.bg }}>
         <div className="an-spinner" />
       </div>
@@ -345,7 +344,7 @@ const GrowthRecords = () => {
 
   if (error) return (
     <>
-      <Navbar unread={unread} />
+      <Navbar unread={unread} nav_items={NAV} portalLabel={t('ashaPortal')} />
       <div style={{ background:C.bg, minHeight:'100vh', display:'flex', justifyContent:'center', alignItems:'center' }}>
         <div style={{ background:'#fff1f2', border:'1px solid #fca5a5', borderRadius:12, padding:'24px 32px', color:'#991b1b', fontWeight:600 }}>
           {error}
@@ -356,13 +355,13 @@ const GrowthRecords = () => {
 
   return (
     <>
-      <Navbar unread={unread} />
+      <Navbar unread={unread} nav_items={NAV} portalLabel={t('ashaPortal')} />
       <div style={{ background:C.bg, minHeight:'100vh', padding:'28px 24px' }}>
 
         {/* Header */}
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:24 }}>
           <div>
-            <h1 style={{ fontSize:22, fontWeight:800, color:C.text, margin:0 }}>📈 Growth Records</h1>
+            <h1 style={{ fontSize:22, fontWeight:800, color:C.text, margin:0 }}>📈 {t('growthRecords')}</h1>
             <p style={{ fontSize:13, color:C.muted, margin:'4px 0 0' }}>
               Monitor weight, height and z-scores for your assigned children
             </p>
@@ -371,30 +370,30 @@ const GrowthRecords = () => {
             <button className="gr-btn gr-btn-primary"
               onClick={() => setLogOpen(o => !o)}
             >
-              {logOpen ? '✕ Cancel' : '+ Log Measurement'}
+              {logOpen ? `✕ ${t('cancel')}` : `+ ${t('growthEntry')}`}
             </button>
           )}
         </div>
 
         {/* Stat cards */}
         <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:14, marginBottom:24 }}>
-          <StatCard label="Normal Growth (WAZ ≥ −1)" value={normalCount}   accent="#059669" icon="✅" />
-          <StatCard label="Moderate Risk"             value={moderateCount} accent="#f59e0b" icon="⚠️" />
-          <StatCard label="Severe Cases"              value={severeCount}   accent="#ef4444" icon="🚨" />
-          <StatCard label="Total Monitored"           value={totalMonitored} accent={C.primary} icon="👶" />
+          <StatCard label={`${t('healthy')} (WAZ ≥ −1)`}  value={normalCount}    accent="#059669"   icon="✅" />
+          <StatCard label={t('moderate')}               value={moderateCount}  accent="#f59e0b"   icon="⚠️" />
+          <StatCard label={`${t('severe')} Cases`}              value={severeCount}    accent="#ef4444"   icon="🚨" />
+          <StatCard label={t('totalChildren')}          value={totalMonitored} accent={C.primary} icon="👶" />
         </div>
 
         {/* Inline log form */}
         {logOpen && selectedChild && (
           <div className="an-card" style={{ padding:20, marginBottom:20, animation:'fadeUp .3s ease' }}>
             <div style={{ fontWeight:700, color:C.text, marginBottom:14, fontSize:15 }}>
-              📋 Log Measurement — {selectedChild.name}
+              📋 {t('growthEntry')} — {selectedChild.name}
             </div>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12, marginBottom:12 }}>
               {[
-                { key:'weight', label:'Weight (kg)', placeholder:'e.g. 8.5' },
-                { key:'height', label:'Height (cm)', placeholder:'e.g. 70' },
-                { key:'hc',     label:'Head Circ. (cm)', placeholder:'e.g. 42' },
+                { key:'weight', label:`${t('weight')} (kg)`, placeholder:'e.g. 8.5' },
+                { key:'height', label:`${t('height')} (cm)`, placeholder:'e.g. 70' },
+                { key:'hc',     label:'Head Circ. (cm)',     placeholder:'e.g. 42' },
               ].map(({ key, label, placeholder }) => (
                 <div key={key}>
                   <label style={{ fontSize:12, fontWeight:600, color:C.muted, display:'block', marginBottom:5 }}>{label}</label>
@@ -405,7 +404,7 @@ const GrowthRecords = () => {
                 </div>
               ))}
               <div>
-                <label style={{ fontSize:12, fontWeight:600, color:C.muted, display:'block', marginBottom:5 }}>Date</label>
+                <label style={{ fontSize:12, fontWeight:600, color:C.muted, display:'block', marginBottom:5 }}>{t('date')}</label>
                 <input className="gr-input" type="date"
                   value={logForm.date}
                   onChange={e => setLogForm(f => ({ ...f, date: e.target.value }))}
@@ -419,10 +418,10 @@ const GrowthRecords = () => {
             )}
             <div style={{ display:'flex', gap:10 }}>
               <button className="gr-btn gr-btn-primary" onClick={handleSave} disabled={saving}>
-                {saving ? '💾 Saving…' : '💾 Save Measurement'}
+                {saving ? `💾 ${t('loading')}…` : `💾 ${t('save')}`}
               </button>
               <button className="gr-btn gr-btn-outline" onClick={() => { setLogOpen(false); setSaveError(''); }}>
-                Cancel
+                {t('cancel')}
               </button>
             </div>
           </div>
@@ -437,15 +436,15 @@ const GrowthRecords = () => {
             {/* Child selector */}
             <div className="an-card" style={{ padding:16 }}>
               <div style={{ fontWeight:700, fontSize:14, color:C.text, marginBottom:10 }}>
-                👶 Children ({children.length})
+                👶 {t('myChildren')} ({children.length})
               </div>
-              <input className="gr-input" placeholder="Search children…" value={search}
+              <input className="gr-input" placeholder={t('searchByName')} value={search}
                 onChange={e => setSearch(e.target.value)}
                 style={{ marginBottom:10 }}
               />
               {filteredChildren.length === 0 ? (
                 <div style={{ color:C.muted, fontSize:13, padding:'12px 0', textAlign:'center' }}>
-                  No children found.
+                  {t('noChildrenAssigned')}
                 </div>
               ) : (
                 <div style={{ maxHeight:260, overflowY:'auto', display:'flex', flexDirection:'column', gap:4 }}>
@@ -483,7 +482,7 @@ const GrowthRecords = () => {
             {/* Bar chart */}
             <div className="an-card" style={{ padding:16 }}>
               <div style={{ fontWeight:700, fontSize:14, color:C.text, marginBottom:6 }}>
-                📊 Weight Chart
+                📊 {t('weight')} Chart
                 {selectedChild && <span style={{ fontWeight:400, color:C.muted, fontSize:12 }}> — {selectedChild.name}</span>}
               </div>
               {gLoading ? (
@@ -502,7 +501,7 @@ const GrowthRecords = () => {
             {!selectedChild ? (
               <div className="an-card" style={{ padding:40, textAlign:'center', color:C.muted }}>
                 <div style={{ fontSize:40, marginBottom:12 }}>📈</div>
-                <div style={{ fontWeight:600 }}>Select a child to view growth records</div>
+                <div style={{ fontWeight:600 }}>Select a child to view {t('growthRecords')}</div>
               </div>
             ) : (
               <>
@@ -533,9 +532,9 @@ const GrowthRecords = () => {
                   {latest ? (
                     <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12, marginBottom:16 }}>
                       {[
-                        { label:'Weight', value: latest.weight ? `${latest.weight} kg` : '—', icon:'⚖️' },
-                        { label:'Height', value: latest.height ? `${latest.height} cm` : '—', icon:'📏' },
-                        { label:'Head Circ.', value: latest.headCircumference ? `${latest.headCircumference} cm` : '—', icon:'🔵' },
+                        { label: t('weight'),    value: latest.weight ? `${latest.weight} kg` : '—', icon:'⚖️' },
+                        { label: t('height'),    value: latest.height ? `${latest.height} cm` : '—', icon:'📏' },
+                        { label: 'Head Circ.',   value: latest.headCircumference ? `${latest.headCircumference} cm` : '—', icon:'🔵' },
                       ].map(({ label, value, icon }) => (
                         <div key={label} style={{
                           background:C.bg, border:`1px solid ${C.border}`,
@@ -549,7 +548,7 @@ const GrowthRecords = () => {
                     </div>
                   ) : (
                     <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, padding:'14px', color:C.muted, fontSize:13, textAlign:'center', marginBottom:16 }}>
-                      No measurements recorded yet.
+                      {t('noRecords')}
                     </div>
                   )}
 
@@ -559,8 +558,8 @@ const GrowthRecords = () => {
                       <div style={{ fontWeight:700, fontSize:13, color:C.text, marginBottom:12 }}>
                         WHO Z-Scores
                       </div>
-                      <ZScoreBar label="Weight-for-Age Z (WAZ)"   z={latest.weightForAgeZ} />
-                      <ZScoreBar label="Height-for-Age Z (HAZ)"   z={latest.heightForAgeZ} />
+                      <ZScoreBar label="Weight-for-Age Z (WAZ)"   z={latest.weightForAgeZ} ssMap={SS} />
+                      <ZScoreBar label="Height-for-Age Z (HAZ)"   z={latest.heightForAgeZ} ssMap={SS} />
                     </div>
                   )}
                 </div>
@@ -568,7 +567,7 @@ const GrowthRecords = () => {
                 {/* Growth history table */}
                 <div className="an-card" style={{ overflow:'hidden' }}>
                   <div style={{ padding:'16px 20px', borderBottom:`1px solid ${C.border}`, fontWeight:700, fontSize:14, color:C.text }}>
-                    📋 Growth History
+                    📋 {t('growthRecords')}
                   </div>
                   {gLoading ? (
                     <div style={{ display:'flex', justifyContent:'center', padding:28 }}>
@@ -576,15 +575,15 @@ const GrowthRecords = () => {
                     </div>
                   ) : growth.length === 0 ? (
                     <div style={{ padding:'28px 20px', textAlign:'center', color:C.muted, fontSize:13 }}>
-                      No growth records for this child yet.<br/>
-                      <span style={{ fontSize:12 }}>Click "Log Measurement" to add the first record.</span>
+                      {t('noRecords')}<br/>
+                      <span style={{ fontSize:12 }}>Click "{t('growthEntry')}" to add the first record.</span>
                     </div>
                   ) : (
                     <div style={{ overflowX:'auto' }}>
                       <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
                         <thead>
                           <tr style={{ background:C.bg }}>
-                            {['Month/Date','Weight (kg)','Height (cm)','Head Circ.','Weight Z','Height Z','Status'].map(h => (
+                            {[`${t('date')}`,`${t('weight')} (kg)`,`${t('height')} (cm)`,'Head Circ.',`${t('weight')} Z`,`${t('height')} Z`,t('status')].map(h => (
                               <th key={h} style={{
                                 padding:'10px 14px', textAlign:'left',
                                 color:C.muted, fontWeight:600, fontSize:12,

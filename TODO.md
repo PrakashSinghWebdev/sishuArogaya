@@ -1,43 +1,43 @@
-## Fix Frontend-Backend Connection &amp; Data Display (No Output Issue)
+# Sishu Arogaya Language Fix - Complete App Translation
+Status: 🚀 In Progress | Target: Translate ALL Parent/ASHA/Admin pages + components
 
-### Information Gathered from File Analysis
-- **Connection Config Perfect**: Vite proxy /api → localhost:5000, CORS setup correct, axios baseURL='/api'.
-- **Root Cause**: 
-  1. Backend not running (no terminals).
-  2. All APIs require JWT auth (`protect` middleware) → 401 → empty data ([] children).
-  3. No seeded data in DB (empty even after login).
-- **Visible Page** (VaccinationSchedule.jsx): childAPI.list() fails → children=[] → &#39;No Vaccination Data&#39; screen.
-- **Backend Endpoints**: /api/child (protect→listChildren role-filtered), /api/vaccination/:id (protect).
+## 📋 Implementation Steps (Approved Plan)
 
-### Detailed Code Update Plan (No Code Changes - Setup Only)
-**No file edits needed** - configs correct. Focus: Startup + Data.
+### Phase 1: Core Components (App-wide navbar/sidebar)
+- [✅] **Topbar.jsx**: Add `useLanguage`, translate "Sishu Arogaya..." → t('appTitle'), add language dropdown switcher (LANGUAGES array)
+- [✅] **Sidebar.jsx**: Replace hardcoded NAV_LINKS.label → t('dashboard'), t('myChild'), etc. Match T keys per role
+- [✅] **Layout.jsx**: No text, skip
 
-**File Level Plan**:
-| Step | Action | Command | Expected |
-|------|--------|---------|----------|
-| 1 | Install deps | `npm i` (root) + server/client | package-lock.json exists |
-| 2 | Setup .env | Create server/.env | MONGO_URI, JWT_SECRET ✓ |
-| 3 | Start Backend | `cd server &amp; npm start` | Port 5000, Mongo connected |
-| 4 | Seed Data | `node server/seed.js`<br>`node server/seedDiet.js`<br>`node server/seedFullData.js` | Users/children/vaccines created |
-| 5 | Start Frontend | `cd client &amp; npm run dev` | Port 5173, proxy to backend |
-| 6 | Test | http://localhost:5173 → Register/Login → /parent/vaccination | Data loads! |
+### Phase 2: Parent Pages (Priority - User focus)
+- [✅] **ChildProfile.jsx**: Import useLanguage/t(), translate titles/nav/labels (~50 strings)
+- [✅] **DietPlan.jsx**: Translate page content (tips, warnings, buttons, labels) - nav already good
+- [ ] **VaccinationSchedule.jsx**: Full translation
+- [ ] **Remaining Parent**: Dashboard.jsx, GrowthMonitoring.jsx, AIHealthPrediction.jsx, GovernmentSchemes.jsx, HealthReports.jsx, Notifications.jsx, Settings.jsx (partial)
 
-### Dependent Files
-- **server/.env** (created)
-- **Seeds**: seed.js, seedDiet.js, seedFullData.js, seedWHO.js
+### Phase 3: ASHA Pages
+- [ ] **Priority**: NotificationsAlerts.jsx (open tab), Dashboard.jsx, MyChildrenList.jsx, etc.
+- [ ] **All**: ChildDetailView.jsx, LogHomeVisit.jsx, GrowthRecords.jsx, MalnutritionReport.jsx, VaccinationTracker.jsx, VisitHistoryLog.jsx, AreaCoverageMap.jsx, ProfileSettings.jsx, GenerateReport.jsx
 
-### Followup Steps (After Startup)
-- **Register/Login**: Create parent account → token set → APIs work.
-- **Verify**: Browser Network: /api/child → 200 with data.
-- **Demo**: VaccinationSchedule shows children + auto-generated vaccines.
+### Phase 4: Admin Pages
+- [ ] **All**: Dashboard.jsx, DistrictHeatmap.jsx, AnalyticsReports.jsx, ChildrenRegistry.jsx, AshaWorkerManagement.jsx, HealthCentreDirectory.jsx, VaccinationData.jsx, MalnutritionCases.jsx, GovernmentSchemes.jsx, BlockwiseReports.jsx, NotificationsPanel.jsx, UserManagement.jsx, AuditLogs.jsx, SettingsConfiguration.jsx
 
-### Progress Tracker
-✅ **Step 1**: Analysis complete
-✅ **Step 2**: server/.env created (localhost MongoDB)
-⏳ **Step 3**: Start backend
-⏳ **Step 4**: Seed data
-⏳ **Step 5**: Start frontend
-⏳ **Step 6**: Test complete → attempt_completion
+### Phase 5: Auth + Misc
+- [ ] **Login.jsx, Register.jsx**: Translate forms/titles
+- [ ] **Search_files** for remaining hardcoded strings → batch fix
 
-**Next**: `cd server &amp; npm start`
+### Phase 6: Testing & Completion
+- [ ] Run `cd client && npm run dev`
+- [ ] Test: Settings/Topbar language change → ALL text updates instantly (no refresh)
+- [ ] Navigate all roles/pages → Verify 100% translation
+- [ ] Update this TODO.md: Mark ✅ completed phases
+- [ ] attempt_completion
+
+## 🔧 Edit Guidelines
+- Import: `import { useLanguage } from '../context/LanguageContext'; const { t } = useLanguage();`
+- Replace strings: t('exact_key') - keys exist in LanguageContext.T
+- Navbar: Prefer navLinks array from context
+- No new keys needed - use existing T dict
+- Preserve layout/CSS exactly
+
+**Progress: 0/6 phases complete**
 

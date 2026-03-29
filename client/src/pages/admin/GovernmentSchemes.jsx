@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import Layout from '../../components/Layout';
 import { schemeAPI } from '../../services/api';
+import { useLanguage } from '../../context/LanguageContext';
 
 const INITIAL = { name:'', shortName:'', description:'', eligibilityCriteria:'', benefits:'', applyLink:'', category:'nutrition' };
 
 const GovernmentSchemes = () => {
+  const { t } = useLanguage();
   const [schemes, setSchemes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -24,8 +26,8 @@ const GovernmentSchemes = () => {
   return (
     <Layout role="admin">
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h4 className="fw-bold mb-0"><i className="bi bi-bank me-2 text-purple"></i>Government Schemes</h4>
-        <button className="btn btn-sa-primary" onClick={()=>setShowForm(!showForm)}><i className="bi bi-plus-circle me-2"></i>Add Scheme</button>
+        <h4 className="fw-bold mb-0"><i className="bi bi-bank me-2 text-purple"></i>{t('governmentSchemes')}</h4>
+        <button className="btn btn-sa-primary" onClick={()=>setShowForm(!showForm)}><i className="bi bi-plus-circle me-2"></i>{t('schemes')}</button>
       </div>
 
       {showForm && (
@@ -48,11 +50,11 @@ const GovernmentSchemes = () => {
         </div>
       )}
 
-      {loading ? <div className="text-center py-5"><div className="spinner-border text-success"></div></div> : (
+      {loading ? <div className="text-center py-5"><div className="spinner-border text-success"></div><p className="mt-2 text-muted">{t('loading')}</p></div> : (
         <div className="card border-0 shadow-sm">
           <div className="table-responsive">
             <table className="table table-hover mb-0">
-              <thead><tr><th>Scheme</th><th>Short Name</th><th>Category</th><th>Status</th></tr></thead>
+              <thead><tr><th>{t('name')}</th><th>Short Name</th><th>Category</th><th>{t('status')}</th></tr></thead>
               <tbody>
                 {schemes.map(s=><tr key={s._id}><td className="fw-semibold">{s.name}</td><td>{s.shortName||'—'}</td><td className="text-capitalize">{s.category}</td><td><span className={`badge ${s.isActive?'bg-success':'bg-secondary'}`}>{s.isActive?'Active':'Inactive'}</span></td></tr>)}
               </tbody>

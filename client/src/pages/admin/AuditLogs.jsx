@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import Layout from '../../components/Layout';
 import { adminAPI } from '../../services/api';
+import { useLanguage } from '../../context/LanguageContext';
 
 const AuditLogs = () => {
+  const { t } = useLanguage();
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -15,14 +17,14 @@ const AuditLogs = () => {
 
   return (
     <Layout role="admin">
-      <h4 className="fw-bold mb-4"><i className="bi bi-journal-text me-2 text-secondary"></i>Audit Logs</h4>
-      {loading ? <div className="text-center py-5"><div className="spinner-border text-secondary"></div></div> : (
+      <h4 className="fw-bold mb-4"><i className="bi bi-journal-text me-2 text-secondary"></i>{t('auditLogs')}</h4>
+      {loading ? <div className="text-center py-5"><div className="spinner-border text-secondary"></div><p className="mt-2 text-muted">{t('loading')}...</p></div> : (
         <div className="card border-0 shadow-sm">
           <div className="table-responsive">
             <table className="table table-hover mb-0">
-              <thead><tr><th>Timestamp</th><th>Actor</th><th>Role</th><th>Action</th><th>Entity</th><th>Details</th></tr></thead>
+              <thead><tr><th>Timestamp</th><th>Actor</th><th>Role</th><th>{t('action')}</th><th>Entity</th><th>Details</th></tr></thead>
               <tbody>
-                {logs.length === 0 ? <tr><td colSpan={6} className="text-center text-muted py-4">No audit logs found.</td></tr> : logs.map(log => (
+                {logs.length === 0 ? <tr><td colSpan={6} className="text-center text-muted py-4">{t('noRecords')}</td></tr> : logs.map(log => (
                   <tr key={log._id}>
                     <td className="text-muted small">{new Date(log.createdAt).toLocaleString('en-IN')}</td>
                     <td className="fw-semibold">{log.actorName || log.actorId?.name || 'System'}</td>

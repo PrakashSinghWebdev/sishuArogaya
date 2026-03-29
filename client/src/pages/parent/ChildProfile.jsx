@@ -1,7 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { childAPI, reportAPI } from '../../services/api';
+import { useLanguage } from '../../context/LanguageContext';
 import useSelectedChild from '../../hooks/useSelectedChild';
+
+const { t, navLinks } = useLanguage();
 
 const C = {
   teal: '#0891b2', teal2: '#0e7490', teal3: '#cffafe', teal4: '#f0fdff',
@@ -200,7 +203,7 @@ export default function ChildProfile() {
           <span style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 17, fontWeight: 700, color: C.teal2 }}>Sishu Arogaya</span>
         </Link>
         <div className="cp-nav-links" style={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, overflowX: 'auto' }}>
-          {NAV.map(([label, to]) => (
+          {(navLinks.length ? navLinks : NAV).map(([label, to]) => (
             <Link key={to} to={to} style={{ padding: '6px 11px', borderRadius: 8, fontSize: 12.5, fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap', background: to === '/parent/child-profile' ? C.teal4 : 'transparent', color: to === '/parent/child-profile' ? C.teal : C.muted, borderBottom: to === '/parent/child-profile' ? `2px solid ${C.teal}` : '2px solid transparent' }}>
               {label}
             </Link>
@@ -234,10 +237,10 @@ export default function ChildProfile() {
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '28px 24px 60px' }}>
         {/* Page Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
-          <h2 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 24, fontWeight: 700, color: C.text, margin: 0 }}>👶 Child Profile</h2>
+<h2 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 24, fontWeight: 700, color: C.text, margin: 0 }}>👶 {t('myChild')}</h2>
           <div style={{ display: 'flex', gap: 10 }}>
-            <button className="cp-btn cp-btn-out" onClick={() => setShowForm(true)} style={{ background: '#fef3c7', color: '#92400e', borderColor: '#fed7aa' }}>
-              ➕ Add New Child
+              <button className="cp-btn cp-btn-out" onClick={() => setShowForm(true)} style={{ background: '#fef3c7', color: '#92400e', borderColor: '#fed7aa' }}>
+              ➕ {t('addChild')}
             </button>
             {selectedChild && (
               <button className="cp-btn cp-btn-teal" onClick={() => setShowEditForm(!showEditForm)}>
@@ -261,17 +264,17 @@ export default function ChildProfile() {
             {/* Edit Health Status Form */}
             {showEditForm && selectedChild && (
               <div className="cp-card" style={{ animation: 'fadeUp .4s ease', marginBottom: 24 }}>
-                <h5 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 17, fontWeight: 700, color: C.teal2, marginBottom: 16 }}>✏️ Update {selectedChild.name}'s Health Status</h5>
+                <h5 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 17, fontWeight: 700, color: C.teal2, marginBottom: 16 }}>✏️ {t('update')} {selectedChild.name} {t('status')}</h5>
                 {error && <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '10px 14px', borderRadius: 8, marginBottom: 14, fontSize: 13 }}>{error}</div>}
                 <form onSubmit={handleUpdate}>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 14 }}>
                     <div>
-                      <label style={{ fontSize: 12, fontWeight: 600, color: C.muted, display: 'block', marginBottom: 5 }}>Current Weight (kg)</label>
+                      <label style={{ fontSize: 12, fontWeight: 600, color: C.muted, display: 'block', marginBottom: 5 }}>{t('weight')} ({t('weightKg')})</label>
                       <input type="number" step="0.1" value={editForm.currentWeight} onChange={e => setEditForm({...editForm, currentWeight: e.target.value})}
                         style={{ width: '100%', padding: '9px 12px', border: `1.5px solid ${C.border}`, borderRadius: 9, fontSize: 13 }} />
                     </div>
                     <div>
-                      <label style={{ fontSize: 12, fontWeight: 600, color: C.muted, display: 'block', marginBottom: 5 }}>Current Height (cm)</label>
+                      <label style={{ fontSize: 12, fontWeight: 600, color: C.muted, display: 'block', marginBottom: 5 }}>{t('height')} ({t('heightCm')})</label>
                       <input type="number" step="0.1" value={editForm.currentHeight} onChange={e => setEditForm({...editForm, currentHeight: e.target.value})}
                         style={{ width: '100%', padding: '9px 12px', border: `1.5px solid ${C.border}`, borderRadius: 9, fontSize: 13 }} />
                     </div>

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { useLanguage } from '../../context/LanguageContext';
+import { useLanguage, LANGUAGES } from '../../context/LanguageContext';
 import { authAPI } from '../../services/api';
 import useSelectedChild from '../../hooks/useSelectedChild';
 
@@ -23,7 +23,7 @@ const SLIDES = [
   'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=1400&q=80&fit=crop',
 ];
 
-const LANGUAGES = ['English', 'हिंदी', 'বাংলা', 'తెలుగు', 'தமிழ்', 'ਪੰਜਾਬੀ', 'मराठी', 'ગુજરાતી', 'ಕನ್ನಡ', 'മലയാളം'];
+// LANGUAGES imported from LanguageContext (all 23 languages)
 
 const NOTIF_LABELS = {
   vaccines: { label: 'Vaccine Reminders', desc: 'Alerts for upcoming vaccine due dates', icon: '💉' },
@@ -142,7 +142,8 @@ export default function Settings() {
         .wrap{max-width:1280px;margin:0 auto;padding:24px 28px 60px}
         .g31{display:grid;grid-template-columns:2fr 1fr;gap:24px}
         .g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-        .glang{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+        .glang{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
+        @media(max-width:768px){.glang{grid-template-columns:1fr 1fr}}
         @media(max-width:1024px){.g31{grid-template-columns:1fr}.g2{grid-template-columns:1fr 1fr}}
         @media(max-width:768px){.navlinks{display:none!important}.g2{grid-template-columns:1fr}.wrap{padding:20px 16px 60px}}
       `}</style>
@@ -308,27 +309,31 @@ export default function Settings() {
               <div style={{ padding: 16 }}>
                 <div className="glang">
                   {LANGUAGES.map(lang => {
-                    const sel = language === lang;
+                    const sel = language === lang.code;
                     return (
                       <button
-                        key={lang}
-                        onClick={() => handleSelectLanguage(lang)}
+                        key={lang.code}
+                        onClick={() => handleSelectLanguage(lang.code)}
                         style={{
-                          padding: '9px 10px', borderRadius: 8, fontSize: 13, fontWeight: sel ? 700 : 500,
+                          padding: '8px 9px', borderRadius: 8, fontSize: 12, fontWeight: sel ? 700 : 500,
                           border: sel ? '1.5px solid #0891b2' : '1.5px solid #c5e8ef',
                           background: sel ? '#f0fdff' : '#fff',
                           color: sel ? '#0e7490' : '#4a7a8a',
-                          cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between', transition: 'all .2s',
+                          cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center',
+                          justifyContent: 'space-between', transition: 'all .2s', gap: 4,
                         }}
                       >
-                        <span>{lang}</span>
-                        {sel && <span style={{ color: '#0891b2', fontWeight: 800 }}>✓</span>}
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                          <span style={{ fontSize: 14 }}>{lang.flag}</span>
+                          <span style={{ lineHeight: 1.2 }}>{lang.label}</span>
+                        </span>
+                        {sel && <span style={{ color: '#0891b2', fontWeight: 800, flexShrink: 0 }}>✓</span>}
                       </button>
                     );
                   })}
                 </div>
                 <div style={{ marginTop: 10, fontSize: 12, color: '#4a7a8a', background: '#f0fdff', border: '1px solid #c5e8ef', borderRadius: 8, padding: '8px 12px' }}>
-                  🌐 Selected: <strong style={{ color: '#0e7490' }}>{language}</strong> — navigation and labels will update across all pages.
+                  🌐 {t('langTitle')}: <strong style={{ color: '#0e7490' }}>{LANGUAGES.find(l => l.code === language)?.flag} {language}</strong> — {t('langSub')}
                 </div>
               </div>
             </div>

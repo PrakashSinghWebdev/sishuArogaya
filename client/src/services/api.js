@@ -118,7 +118,7 @@ export const dietAPI = {
 
 // ——— Chatbot ———
 export const chatbotAPI = {
-  query: (message) => api.post('/chatbot/query', { message }),
+  query: (message, history = [], language = 'English') => api.post('/chatbot/query', { message, history, language }),
 };
 
 export default api;

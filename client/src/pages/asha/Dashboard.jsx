@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { ashaAPI, vaccinationAPI, notificationAPI } from '../../services/api';
 
 /* ── constants ── */
@@ -9,25 +10,6 @@ const SLIDES = [
   'https://images.unsplash.com/photo-1527482797697-8795b05a13fe?w=1400&q=80&fit=crop',
   'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=1400&q=80&fit=crop',
   'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=1400&q=80&fit=crop',
-];
-
-const NAV = [
-  ['🏠 Dashboard',    '/asha/dashboard'],
-  ['👶 Children',     '/asha/children'],
-  ['📝 Log Visit',    '/asha/log-visit'],
-  ['💉 Vaccines',     '/asha/vaccination-tracker'],
-  ['📈 Growth',       '/asha/growth-records'],
-  ['🚨 Malnutrition', '/asha/malnutrition-report'],
-  ['📋 Visits',       '/asha/visit-history'],
-  ['🗺️ Area Map',     '/asha/area-map'],
-  ['🔔 Alerts',       '/asha/notifications'],
-];
-
-const QUICK_ACTIONS = [
-  { emoji: '📝', label: 'Log Visit',      to: '/asha/log-visit' },
-  { emoji: '👶', label: 'Children',       to: '/asha/children' },
-  { emoji: '💉', label: 'Vaccines',       to: '/asha/vaccination-tracker' },
-  { emoji: '📈', label: 'Growth',         to: '/asha/growth-records' },
 ];
 
 /* ── helpers ── */
@@ -41,17 +23,36 @@ const calcAge = (dob) => {
   return months < 24 ? `${months} mo` : `${Math.floor(months / 12)} yr`;
 };
 
-/* ── status helpers ── */
-const SS = {
-  healthy:  { bg: '#f0fdf4', border: '#6ee7b7', color: '#059669', bbg: '#d1fae5', label: '✓ Healthy' },
-  moderate: { bg: '#fffbeb', border: '#fcd34d', color: '#92400e', bbg: '#fef3c7', label: '⚠️ Moderate' },
-  severe:   { bg: '#fff1f2', border: '#fca5a5', color: '#991b1b', bbg: '#fee2e2', label: '🚨 Severe' },
-};
-const s = (status) => SS[status] || SS.healthy;
-
 export default function AshaDashboard() {
   const { user } = useAuth();
   const location = useLocation();
+  const { t } = useLanguage();
+
+  /* ── nav + quick actions (translated) ── */
+  const NAV = [
+    [`🏠 ${t('dashboard')}`,        '/asha/dashboard'],
+    [`👶 ${t('myChildren')}`,        '/asha/children'],
+    [`📝 ${t('logVisit')}`,          '/asha/log-visit'],
+    [`💉 ${t('vaccinationTracker')}`,'/asha/vaccination-tracker'],
+    [`📈 ${t('growthRecords')}`,     '/asha/growth-records'],
+    [`🚨 ${t('malnutritionReport')}`,'/asha/malnutrition-report'],
+    [`📋 ${t('visitHistory')}`,      '/asha/visit-history'],
+    [`🗺️ Area Map`,                   '/asha/area-map'],
+    [`🔔 ${t('notifications')}`,     '/asha/notifications'],
+  ];
+  const QUICK_ACTIONS = [
+    { emoji: '📝', label: t('logVisit'),          to: '/asha/log-visit' },
+    { emoji: '👶', label: t('myChildren'),         to: '/asha/children' },
+    { emoji: '💉', label: t('vaccinationTracker'), to: '/asha/vaccination-tracker' },
+    { emoji: '📈', label: t('growthRecords'),      to: '/asha/growth-records' },
+  ];
+  /* ── status helpers ── */
+  const SS = {
+    healthy:  { bg: '#f0fdf4', border: '#6ee7b7', color: '#059669', bbg: '#d1fae5', label: `✓ ${t('healthy')}` },
+    moderate: { bg: '#fffbeb', border: '#fcd34d', color: '#92400e', bbg: '#fef3c7', label: `⚠️ ${t('moderate')}` },
+    severe:   { bg: '#fff1f2', border: '#fca5a5', color: '#991b1b', bbg: '#fee2e2', label: `🚨 ${t('severe')}` },
+  };
+  const s = (status) => SS[status] || SS.healthy;
 
   const [profile,       setProfile]       = useState(null);
   const [children,      setChildren]      = useState([]);
@@ -126,7 +127,7 @@ export default function AshaDashboard() {
           <div style={{ width: 38, height: 38, borderRadius: 10, background: 'linear-gradient(135deg,#0891b2,#0e7490)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>🏥</div>
           <div>
             <div style={{ fontFamily: "'Libre Baskerville',serif", fontWeight: 700, fontSize: 15, color: '#0e7490', lineHeight: 1.1 }}>Sishu Arogaya</div>
-            <div style={{ fontSize: 10, color: '#4a7a8a' }}>ASHA Worker Portal</div>
+            <div style={{ fontSize: 10, color: '#4a7a8a' }}>{t('ashaPortal')}</div>
           </div>
         </div>
         <div className="an-navlinks" style={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1, justifyContent: 'center', flexWrap: 'nowrap', overflow: 'hidden' }}>
@@ -152,12 +153,12 @@ export default function AshaDashboard() {
         <div style={{ position: 'relative', zIndex: 2, maxWidth: 1280, margin: '0 auto', padding: '0 48px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <div className="an-hero-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 24 }}>
             <div style={{ color: '#fff', animation: 'fadeUp .5s ease both' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', color: '#cffafe', marginBottom: 8 }}>ASHA Worker Portal</div>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', color: '#cffafe', marginBottom: 8 }}>{t('ashaPortal')}</div>
               <h1 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 'clamp(22px,3vw,34px)', fontWeight: 700, color: '#fff', margin: '0 0 8px', lineHeight: 1.2 }}>
                 Namaste, {firstName}!
               </h1>
               <p style={{ color: 'rgba(255,255,255,.8)', fontSize: 13, margin: '0 0 18px' }}>
-                {profile?.block ? `${profile.block}, ${profile.district}` : 'ASHA Worker'} · {children.length} children assigned · {today}
+                {profile?.block ? `${profile.block}, ${profile.district}` : t('ashaPortal')} · {children.length} {t('childrenAssignedLabel')} · {today}
               </p>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {QUICK_ACTIONS.map(({ emoji, label, to }) => (
@@ -169,7 +170,7 @@ export default function AshaDashboard() {
             </div>
             {/* Hero stats */}
             <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
-              {[[children.length, 'Children', '👶'], [monthVisits.length, 'Visits', '✅'], [overdue.length, 'Overdue', '⏰'], [severe, 'Urgent', '🚨']].map(([v, l, ico]) => (
+              {[[children.length, t('myChildren'), '👶'], [monthVisits.length, t('visitsThisMonth'), '✅'], [overdue.length, t('overdue'), '⏰'], [severe, t('severe'), '🚨']].map(([v, l, ico]) => (
                 <div key={l} style={{ background: 'rgba(255,255,255,.12)', border: '1px solid rgba(255,255,255,.2)', borderRadius: 12, padding: '12px 14px', textAlign: 'center', minWidth: 68 }}>
                   <div style={{ fontSize: 16, marginBottom: 4 }}>{ico}</div>
                   <div style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 22, fontWeight: 700, color: '#cffafe', lineHeight: 1 }}>{v}</div>
@@ -196,10 +197,10 @@ export default function AshaDashboard() {
           <>
             {/* ── Stat cards ── */}
             <div className="an-g4" style={{ marginBottom: 22, animation: 'fadeUp .4s ease' }}>
-              <AStatCard emoji="👶" accent="#0891b2" label="Total Children" value={children.length} sub="All assigned" />
-              <AStatCard emoji="✅" accent="#059669" label="Visits This Month" value={monthVisits.length} sub="Home visits done" />
-              <AStatCard emoji="⏰" accent="#f59e0b" label="Overdue Vaccines" value={overdue.length} sub={overdue.length > 0 ? 'Follow-up needed' : 'All up to date'} subColor={overdue.length > 0 ? '#f59e0b' : undefined} />
-              <AStatCard emoji="🚨" accent="#ef4444" label="Severe Cases" value={severe} sub="PHC referral needed" subColor={severe > 0 ? '#ef4444' : undefined} />
+              <AStatCard emoji="👶" accent="#0891b2" label={t('totalChildren')} value={children.length} sub={t('assignedChildren')} />
+              <AStatCard emoji="✅" accent="#059669" label={t('visitsThisMonth')} value={monthVisits.length} sub={t('logVisit')} />
+              <AStatCard emoji="⏰" accent="#f59e0b" label={t('overdueVaccines')} value={overdue.length} sub={overdue.length > 0 ? t('followUpNeeded') : t('allUpToDate')} subColor={overdue.length > 0 ? '#f59e0b' : undefined} />
+              <AStatCard emoji="🚨" accent="#ef4444" label={t('severeCases')} value={severe} sub={t('phcReferralNeeded')} subColor={severe > 0 ? '#ef4444' : undefined} />
             </div>
 
             {/* ── Urgent banner ── */}
@@ -208,9 +209,9 @@ export default function AshaDashboard() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                   <div style={{ width: 52, height: 52, borderRadius: 14, background: 'rgba(255,255,255,.15)', border: '2px solid rgba(255,255,255,.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, flexShrink: 0 }}>🚨</div>
                   <div>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.65)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 5 }}>⚡ URGENT — IMMEDIATE ACTION REQUIRED</div>
-                    <div style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 3 }}>{severe} Child{severe > 1 ? 'ren' : ''} with Severe Malnutrition</div>
-                    <div style={{ fontSize: 13, color: 'rgba(255,255,255,.75)' }}>PHC referral required today. Visit immediately and update MCPC register.</div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.65)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 5 }}>⚡ {t('urgentAction')}</div>
+                    <div style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 3 }}>{severe} {severe > 1 ? t('severeCases') : t('severe')} — {t('malnutrition')}</div>
+                    <div style={{ fontSize: 13, color: 'rgba(255,255,255,.75)' }}>{t('phcReferralNeeded')}. {t('logVisit')}.</div>
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 10 }}>
@@ -224,12 +225,12 @@ export default function AshaDashboard() {
               {/* Children list */}
               <div className="an-card" style={{ padding: '20px 22px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                  <h3 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 16, fontWeight: 700, margin: 0, color: '#0c2340' }}>👶 My Children</h3>
-                  <Link to="/asha/children" style={{ fontSize: 12, color: '#0891b2', fontWeight: 600, textDecoration: 'none' }}>View All →</Link>
+                  <h3 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 16, fontWeight: 700, margin: 0, color: '#0c2340' }}>👶 {t('myChildren')}</h3>
+                  <Link to="/asha/children" style={{ fontSize: 12, color: '#0891b2', fontWeight: 600, textDecoration: 'none' }}>{t('viewAll')} →</Link>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {children.length === 0 ? (
-                    <div style={{ color: '#4a7a8a', fontSize: 13, textAlign: 'center', padding: '20px 0' }}>No children assigned yet.</div>
+                    <div style={{ color: '#4a7a8a', fontSize: 13, textAlign: 'center', padding: '20px 0' }}>{t('noChildrenAssigned')}.</div>
                   ) : children.slice(0, 6).map((c) => {
                     const st = s(c.nutritionStatus);
                     return (
@@ -257,11 +258,11 @@ export default function AshaDashboard() {
                 {/* Overdue vaccines */}
                 <div className="an-card" style={{ padding: '20px 22px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                    <h3 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 16, fontWeight: 700, margin: 0, color: '#0c2340' }}>💉 Overdue Vaccines</h3>
-                    <Link to="/asha/vaccination-tracker" style={{ fontSize: 12, color: '#0891b2', fontWeight: 600, textDecoration: 'none' }}>View All →</Link>
+                    <h3 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 16, fontWeight: 700, margin: 0, color: '#0c2340' }}>💉 {t('overdueVaccines')}</h3>
+                    <Link to="/asha/vaccination-tracker" style={{ fontSize: 12, color: '#0891b2', fontWeight: 600, textDecoration: 'none' }}>{t('viewAll')} →</Link>
                   </div>
                   {overdue.length === 0 ? (
-                    <div style={{ color: '#059669', fontSize: 13, fontWeight: 600, padding: '10px 0', textAlign: 'center' }}>✅ No overdue vaccines!</div>
+                    <div style={{ color: '#059669', fontSize: 13, fontWeight: 600, padding: '10px 0', textAlign: 'center' }}>{t('noOverdueVaccines')}</div>
                   ) : overdue.map((v) => (
                     <div key={v._id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, background: '#fef3c7', border: '1px solid #fcd34d', marginBottom: 8 }}>
                       <span style={{ fontSize: 18 }}>💉</span>
@@ -269,7 +270,7 @@ export default function AshaDashboard() {
                         <div style={{ fontSize: 13, fontWeight: 700, color: '#0c2340' }}>{v.childId?.name || 'Unknown'}</div>
                         <div style={{ fontSize: 11, color: '#4a7a8a' }}>{v.vaccineName} · Due: {fmt(v.dueDate)}</div>
                       </div>
-                      <span className="an-badge-warn">Overdue</span>
+                      <span className="an-badge-warn">{t('overdue')}</span>
                     </div>
                   ))}
                 </div>
@@ -277,9 +278,9 @@ export default function AshaDashboard() {
                 {/* Health summary */}
                 <div style={{ background: 'linear-gradient(135deg,#0891b2,#0e7490)', borderRadius: 14, padding: '18px 20px', position: 'relative', overflow: 'hidden' }}>
                   <div style={{ position: 'absolute', top: -30, right: -30, width: 100, height: 100, background: 'rgba(255,255,255,.08)', borderRadius: '50%' }} />
-                  <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.65)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 10 }}>Block Health Summary</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.65)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 10 }}>{t('blockHealthSummary')}</div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 12 }}>
-                    {[['✅', healthy, 'Healthy'], ['⚠️', moderate, 'Moderate'], ['🚨', severe, 'Severe']].map(([ico, cnt, lbl]) => (
+                    {[['✅', healthy, t('healthy')], ['⚠️', moderate, t('moderate')], ['🚨', severe, t('severe')]].map(([ico, cnt, lbl]) => (
                       <div key={lbl} style={{ textAlign: 'center' }}>
                         <div style={{ fontSize: 18 }}>{ico}</div>
                         <div style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 22, fontWeight: 700, color: '#cffafe' }}>{cnt}</div>
@@ -293,7 +294,7 @@ export default function AshaDashboard() {
                         <div style={{ width: `${Math.round((healthy / children.length) * 100)}%`, height: '100%', background: '#cffafe', borderRadius: 4 }} />
                       </div>
                       <div style={{ fontSize: 11, color: 'rgba(255,255,255,.65)', marginTop: 6, textAlign: 'right' }}>
-                        {Math.round((healthy / children.length) * 100)}% children healthy
+                        {Math.round((healthy / children.length) * 100)}% {t('healthyChildren')}
                       </div>
                     </>
                   )}
@@ -304,17 +305,17 @@ export default function AshaDashboard() {
             {/* ── Recent Visits table ── */}
             <div className="an-card" style={{ padding: '20px 22px', marginBottom: 22, animation: 'fadeUp .55s ease' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <h3 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 16, fontWeight: 700, margin: 0, color: '#0c2340' }}>📋 Recent Visit Log</h3>
-                <Link to="/asha/visit-history" style={{ fontSize: 12, color: '#0891b2', fontWeight: 600, textDecoration: 'none' }}>Full History →</Link>
+                <h3 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 16, fontWeight: 700, margin: 0, color: '#0c2340' }}>📋 {t('recentVisitLog')}</h3>
+                <Link to="/asha/visit-history" style={{ fontSize: 12, color: '#0891b2', fontWeight: 600, textDecoration: 'none' }}>{t('fullHistory')} →</Link>
               </div>
               {visits.length === 0 ? (
-                <div style={{ color: '#4a7a8a', fontSize: 13, textAlign: 'center', padding: '20px 0' }}>No visits logged yet.</div>
+                <div style={{ color: '#4a7a8a', fontSize: 13, textAlign: 'center', padding: '20px 0' }}>{t('noVisitsYet')}.</div>
               ) : (
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                     <thead>
                       <tr style={{ background: '#f0fdff' }}>
-                        {['Child', 'Date', 'Type', 'Weight', 'Height', 'Outcome', 'Notes'].map(h => (
+                        {[t('childName'), t('date'), t('type'), t('weight'), t('height'), t('visitOutcome'), t('visitNotes')].map(h => (
                           <th key={h} style={{ padding: '9px 12px', textAlign: 'left', color: '#4a7a8a', fontWeight: 600, fontSize: 11, borderBottom: '1px solid #c5e8ef', whiteSpace: 'nowrap' }}>{h}</th>
                         ))}
                       </tr>
@@ -329,7 +330,7 @@ export default function AshaDashboard() {
                           <td style={{ padding: '9px 12px', fontWeight: 700 }}>📏 {v.height ?? '—'} cm</td>
                           <td style={{ padding: '9px 12px' }}>
                             <span className={v.outcome === 'healthy' ? 'an-badge-ok' : v.outcome === 'moderate' ? 'an-badge-warn' : 'an-badge-bad'}>
-                              {v.outcome === 'healthy' ? '✓ Healthy' : v.outcome === 'moderate' ? '⚠️ Moderate' : v.outcome === 'severe' ? '🚨 Severe' : v.outcome || '—'}
+                              {v.outcome === 'healthy' ? `✓ ${t('healthy')}` : v.outcome === 'moderate' ? `⚠️ ${t('moderate')}` : v.outcome === 'severe' ? `🚨 ${t('severe')}` : v.outcome || '—'}
                             </span>
                           </td>
                           <td style={{ padding: '9px 12px', fontSize: 12, color: '#4a7a8a', maxWidth: 180 }}>{v.notes?.slice(0, 60) || '—'}</td>
@@ -344,10 +345,10 @@ export default function AshaDashboard() {
             {/* ── Quick actions ── */}
             <div className="an-g4" style={{ animation: 'fadeUp .6s ease' }}>
               {[
-                { emoji: '📝', title: 'Log New Visit',    desc: 'Record today\'s home visit',     to: '/asha/log-visit' },
-                { emoji: '👶', title: 'Children List',    desc: `View all ${children.length} assigned`,    to: '/asha/children' },
-                { emoji: '💉', title: 'Vaccine Tracker',  desc: 'Check pending vaccinations',    to: '/asha/vaccination-tracker' },
-                { emoji: '📊', title: 'Growth Records',   desc: 'Enter weight & height data',    to: '/asha/growth-records' },
+                { emoji: '📝', title: t('logNewVisit'),          desc: t('logVisit'),              to: '/asha/log-visit' },
+                { emoji: '👶', title: t('myChildren'),           desc: `${t('viewAll')} ${children.length}`, to: '/asha/children' },
+                { emoji: '💉', title: t('vaccinationTracker'),   desc: t('overdueVaccines'),       to: '/asha/vaccination-tracker' },
+                { emoji: '📊', title: t('growthRecords'),        desc: t('growthEntry'),            to: '/asha/growth-records' },
               ].map(({ emoji, title, desc, to }) => (
                 <Link key={to} to={to} className="an-card an-card-hover" style={{ padding: '20px 16px', textAlign: 'center' }}>
                   <div style={{ fontSize: 30, marginBottom: 9 }}>{emoji}</div>

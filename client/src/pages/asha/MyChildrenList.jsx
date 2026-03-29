@@ -1,27 +1,16 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { ashaAPI } from '../../services/api';
 
 const SLIDES = ['https://images.unsplash.com/photo-1527482797697-8795b05a13fe?w=1400&q=80&fit=crop'];
 
-const NAV = [
-  ['🏠 Dashboard',    '/asha/dashboard'],
-  ['👶 Children',     '/asha/children'],
-  ['📝 Log Visit',    '/asha/log-visit'],
-  ['💉 Vaccines',     '/asha/vaccination-tracker'],
-  ['📈 Growth',       '/asha/growth-records'],
-  ['🚨 Malnutrition', '/asha/malnutrition-report'],
-  ['📋 Visits',       '/asha/visit-history'],
-  ['🔔 Alerts',       '/asha/notifications'],
-];
-
-const SS = {
-  healthy:  { bg: '#f0fdf4', border: '#6ee7b7', color: '#059669', bbg: '#d1fae5', grad: 'linear-gradient(90deg,#059669,#34d399)', label: '✓ Healthy' },
-  moderate: { bg: '#fffbeb', border: '#fcd34d', color: '#92400e', bbg: '#fef3c7', grad: 'linear-gradient(90deg,#f59e0b,#fbbf24)', label: '⚠️ Moderate' },
-  severe:   { bg: '#fff1f2', border: '#fca5a5', color: '#991b1b', bbg: '#fee2e2', grad: 'linear-gradient(90deg,#ef4444,#f87171)', label: '🚨 Severe' },
+const ST_STYLES = {
+  healthy:  { bg: '#f0fdf4', border: '#6ee7b7', color: '#059669', bbg: '#d1fae5', grad: 'linear-gradient(90deg,#059669,#34d399)' },
+  moderate: { bg: '#fffbeb', border: '#fcd34d', color: '#92400e', bbg: '#fef3c7', grad: 'linear-gradient(90deg,#f59e0b,#fbbf24)' },
+  severe:   { bg: '#fff1f2', border: '#fca5a5', color: '#991b1b', bbg: '#fee2e2', grad: 'linear-gradient(90deg,#ef4444,#f87171)' },
 };
-const st = (status) => SS[status] || SS.healthy;
 
 const calcAge = (dob, ageInMonths) => {
   if (ageInMonths) return ageInMonths < 24 ? `${ageInMonths} mo` : `${Math.floor(ageInMonths / 12)} yr ${ageInMonths % 12} mo`;
@@ -37,6 +26,24 @@ const fmt = (d) => {
 export default function MyChildrenList() {
   const { user } = useAuth();
   const location = useLocation();
+  const { t } = useLanguage();
+
+  const NAV = [
+    [`🏠 ${t('dashboard')}`,        '/asha/dashboard'],
+    [`👶 ${t('myChildren')}`,        '/asha/children'],
+    [`📝 ${t('logVisit')}`,          '/asha/log-visit'],
+    [`💉 ${t('vaccinationTracker')}`,'/asha/vaccination-tracker'],
+    [`📈 ${t('growthRecords')}`,     '/asha/growth-records'],
+    [`🚨 ${t('malnutritionReport')}`,'/asha/malnutrition-report'],
+    [`📋 ${t('visitHistory')}`,      '/asha/visit-history'],
+    [`🔔 ${t('notifications')}`,     '/asha/notifications'],
+  ];
+  const SS = {
+    healthy:  { ...ST_STYLES.healthy,  label: `✓ ${t('healthy')}` },
+    moderate: { ...ST_STYLES.moderate, label: `⚠️ ${t('moderate')}` },
+    severe:   { ...ST_STYLES.severe,   label: `🚨 ${t('severe')}` },
+  };
+  const st = (status) => SS[status] || SS.healthy;
 
   const [children,  setChildren]  = useState([]);
   const [loading,   setLoading]   = useState(true);
@@ -88,7 +95,7 @@ export default function MyChildrenList() {
           <div style={{ width: 38, height: 38, borderRadius: 10, background: 'linear-gradient(135deg,#0891b2,#0e7490)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>🏥</div>
           <div>
             <div style={{ fontFamily: "'Libre Baskerville',serif", fontWeight: 700, fontSize: 15, color: '#0e7490', lineHeight: 1.1 }}>Sishu Arogaya</div>
-            <div style={{ fontSize: 10, color: '#4a7a8a' }}>ASHA Worker Portal</div>
+            <div style={{ fontSize: 10, color: '#4a7a8a' }}>{t('ashaPortal')}</div>
           </div>
         </div>
         <div className="an-navlinks" style={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1, justifyContent: 'center', overflow: 'hidden' }}>
@@ -106,12 +113,12 @@ export default function MyChildrenList() {
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg,rgba(8,145,178,.92),rgba(14,116,144,.7))' }} />
         <div style={{ position: 'relative', zIndex: 2, maxWidth: 1280, margin: '0 auto', padding: '0 48px', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ color: '#fff' }}>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', color: '#cffafe', marginBottom: 8 }}>ASHA Worker Portal</div>
-            <h1 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 28, fontWeight: 700, color: '#fff', margin: '0 0 8px' }}>My Children List</h1>
-            <p style={{ color: 'rgba(255,255,255,.8)', fontSize: 13, margin: 0 }}>{children.length} assigned · Tap any card for details</p>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', color: '#cffafe', marginBottom: 8 }}>{t('ashaPortal')}</div>
+            <h1 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 28, fontWeight: 700, color: '#fff', margin: '0 0 8px' }}>{t('myChildren')}</h1>
+            <p style={{ color: 'rgba(255,255,255,.8)', fontSize: 13, margin: 0 }}>{children.length} {t('childrenAssignedLabel')}</p>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
-            {[['✅', counts.healthy, 'Healthy'], ['⚠️', counts.moderate, 'Moderate'], ['🚨', counts.severe, 'Severe']].map(([ico, v, l]) => (
+            {[['✅', counts.healthy, t('healthy')], ['⚠️', counts.moderate, t('moderate')], ['🚨', counts.severe, t('severe')]].map(([ico, v, l]) => (
               <div key={l} style={{ background: 'rgba(255,255,255,.12)', border: '1px solid rgba(255,255,255,.2)', borderRadius: 12, padding: '12px 14px', textAlign: 'center', minWidth: 64 }}>
                 <div style={{ fontSize: 16, marginBottom: 4 }}>{ico}</div>
                 <div style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 20, fontWeight: 700, color: '#cffafe' }}>{v}</div>
@@ -127,13 +134,13 @@ export default function MyChildrenList() {
 
         {/* Page header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 20, animation: 'fadeUp .4s ease' }}>
-          <h2 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 20, fontWeight: 700, margin: 0, color: '#0c2340' }}>👶 My Children</h2>
-          <Link to="/asha/log-visit" style={{ padding: '9px 20px', borderRadius: 9, background: 'linear-gradient(135deg,#0891b2,#0e7490)', color: '#fff', fontWeight: 700, fontSize: 13, textDecoration: 'none' }}>➕ Log Visit</Link>
+          <h2 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 20, fontWeight: 700, margin: 0, color: '#0c2340' }}>👶 {t('myChildren')}</h2>
+          <Link to="/asha/log-visit" style={{ padding: '9px 20px', borderRadius: 9, background: 'linear-gradient(135deg,#0891b2,#0e7490)', color: '#fff', fontWeight: 700, fontSize: 13, textDecoration: 'none' }}>➕ {t('logVisit')}</Link>
         </div>
 
         {/* Stat cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 20, animation: 'fadeUp .45s ease' }}>
-          {[['👶','#0891b2',counts.all,'Total','All assigned'],['✅','#059669',counts.healthy,'Healthy','WAZ ≥ −1'],['⚠️','#f59e0b',counts.moderate,'Moderate','Monitor closely'],['🚨','#ef4444',counts.severe,'Severe','PHC referral due']].map(([ico,ac,v,lbl,sub])=>(
+          {[['👶','#0891b2',counts.all,t('totalChildren'),t('assignedChildren')],['✅','#059669',counts.healthy,t('healthy'),'WAZ ≥ −1'],['⚠️','#f59e0b',counts.moderate,t('moderate'),t('followUpNeeded')],['🚨','#ef4444',counts.severe,t('severe'),t('phcReferralNeeded')]].map(([ico,ac,v,lbl,sub])=>(
             <div key={lbl} className="an-card" style={{ padding:'16px 18px', borderLeft:`4px solid ${ac}` }}>
               <div style={{ display:'flex', alignItems:'center', gap:7, marginBottom:8 }}><span style={{ fontSize:18 }}>{ico}</span><span style={{ fontSize:12, color:'#4a7a8a', fontWeight:500 }}>{lbl}</span></div>
               <div style={{ fontSize:24, fontWeight:700, color:'#0c2340' }}>{v}</div>
@@ -146,12 +153,12 @@ export default function MyChildrenList() {
         <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center', animation: 'fadeUp .5s ease' }}>
           <div style={{ position: 'relative', flex: 1, minWidth: 220 }}>
             <span style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', fontSize: 14, opacity: .4 }}>🔍</span>
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by child name..."
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t('searchByName')}
               style={{ width: '100%', padding: '11px 12px 11px 38px', border: '1.5px solid #c5e8ef', borderRadius: 11, fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: '#0c2340', background: '#f0fdff', outline: 'none' }}
               onFocus={e => e.target.style.borderColor = '#0891b2'} onBlur={e => e.target.style.borderColor = '#c5e8ef'} />
           </div>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {[['all','👥 All',counts.all],['healthy','✅ Healthy',counts.healthy],['moderate','⚠️ Moderate',counts.moderate],['severe','🚨 Severe',counts.severe]].map(([k,lbl,cnt])=>(
+            {[['all',`👥 ${t('viewAll')}`,counts.all],['healthy',`✅ ${t('healthy')}`,counts.healthy],['moderate',`⚠️ ${t('moderate')}`,counts.moderate],['severe',`🚨 ${t('severe')}`,counts.severe]].map(([k,lbl,cnt])=>(
               <button key={k} onClick={()=>setFilter(k)}
                 style={{ padding:'9px 12px', borderRadius:10, border:`1.5px solid ${filter===k?'#0891b2':'#c5e8ef'}`, background:filter===k?'#e0f7fa':'#fff', color:filter===k?'#0891b2':'#4a7a8a', fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:700, cursor:'pointer' }}>
                 {lbl} <span style={{ marginLeft:4, background:filter===k?'#0891b2':'#c5e8ef', color:'#fff', borderRadius:100, padding:'1px 7px', fontSize:10 }}>{cnt}</span>
@@ -173,8 +180,8 @@ export default function MyChildrenList() {
         ) : filtered.length === 0 ? (
           <div style={{ textAlign:'center', padding:'60px 20px' }}>
             <div style={{ fontSize:48, marginBottom:12 }}>🔍</div>
-            <div style={{ fontFamily:"'Libre Baskerville',serif", fontSize:18, fontWeight:700, color:'#0c2340' }}>No children found</div>
-            <div style={{ fontSize:13, color:'#4a7a8a', marginTop:6 }}>Try adjusting your search or filter</div>
+            <div style={{ fontFamily:"'Libre Baskerville',serif", fontSize:18, fontWeight:700, color:'#0c2340' }}>{t('noRecords')}</div>
+            <div style={{ fontSize:13, color:'#4a7a8a', marginTop:6 }}>{t('filter')}</div>
           </div>
         ) : view === 'grid' ? (
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(300px,1fr))', gap:14, animation:'fadeUp .55s ease' }}>
@@ -211,7 +218,7 @@ export default function MyChildrenList() {
                     </div>
                     <button onClick={()=>setExpanded(isOpen?null:c._id)}
                       style={{ width:'100%', padding:'7px', borderRadius:9, border:`1px solid ${sc.border}`, background:isOpen?sc.bbg:'#fff', color:isOpen?sc.color:'#4a7a8a', fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:700, cursor:'pointer' }}>
-                      {isOpen?'▲ Hide Details':'▼ Show Details'}
+                      {isOpen?`▲ ${t('close')}` : `▼ ${t('view')}`}
                     </button>
                   </div>
                   {isOpen && (
@@ -222,7 +229,7 @@ export default function MyChildrenList() {
                     </div>
                   )}
                   <div style={{ display:'flex', gap:8, padding:'10px 14px', borderTop:`1px solid ${sc.border}`, background:sc.bg }}>
-                    <Link to="/asha/log-visit" style={{ flex:1, padding:'9px', borderRadius:9, background:'linear-gradient(135deg,#0891b2,#0e7490)', color:'#fff', fontSize:11, fontWeight:700, textDecoration:'none', textAlign:'center' }}>📝 Log Visit</Link>
+                    <Link to="/asha/log-visit" style={{ flex:1, padding:'9px', borderRadius:9, background:'linear-gradient(135deg,#0891b2,#0e7490)', color:'#fff', fontSize:11, fontWeight:700, textDecoration:'none', textAlign:'center' }}>📝 {t('logVisit')}</Link>
                     <Link to="/asha/growth-records" style={{ padding:'9px 12px', borderRadius:9, border:`1px solid ${sc.border}`, background:'#fff', fontSize:11, fontWeight:700, color:'#4a7a8a', textDecoration:'none' }}>📈</Link>
                     <Link to={`/asha/child/${c._id}`} style={{ padding:'9px 12px', borderRadius:9, border:'1px solid #c5e8ef', background:'#f0fdff', fontSize:11, fontWeight:700, color:'#0891b2', textDecoration:'none' }}>👁️</Link>
                   </div>
@@ -236,7 +243,7 @@ export default function MyChildrenList() {
               <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
                 <thead>
                   <tr style={{ background:'#f0fdff' }}>
-                    {['#','Name','Age','Weight','Height','Blood','Gender','Status','Actions'].map(h=>(
+                    {['#', t('childName'), t('age'), t('weight'), t('height'), t('bloodGroup'), t('gender'), t('status'), t('actions')].map(h=>(
                       <th key={h} style={{ padding:'9px 12px', textAlign:'left', color:'#4a7a8a', fontWeight:600, fontSize:11, borderBottom:'1px solid #c5e8ef', whiteSpace:'nowrap' }}>{h}</th>
                     ))}
                   </tr>
@@ -256,7 +263,7 @@ export default function MyChildrenList() {
                         <td style={{ padding:'9px 12px' }}><span style={{ padding:'3px 9px', borderRadius:100, fontSize:10, fontWeight:700, background:sc.bbg, color:sc.color }}>{sc.label}</span></td>
                         <td style={{ padding:'9px 12px' }}>
                           <div style={{ display:'flex', gap:5 }}>
-                            <Link to="/asha/log-visit" style={{ padding:'4px 10px', borderRadius:7, background:'linear-gradient(135deg,#0891b2,#0e7490)', color:'#fff', fontSize:10, fontWeight:700, textDecoration:'none' }}>📝 Log</Link>
+                            <Link to="/asha/log-visit" style={{ padding:'4px 10px', borderRadius:7, background:'linear-gradient(135deg,#0891b2,#0e7490)', color:'#fff', fontSize:10, fontWeight:700, textDecoration:'none' }}>📝 {t('logVisit')}</Link>
                             <Link to={`/asha/child/${c._id}`} style={{ padding:'4px 8px', borderRadius:7, border:'1px solid #c5e8ef', background:'#f0fdff', color:'#0891b2', fontSize:10, fontWeight:700, textDecoration:'none' }}>👁️</Link>
                           </div>
                         </td>

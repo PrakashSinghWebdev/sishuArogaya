@@ -1,19 +1,48 @@
 import { useEffect, useRef, useState } from 'react';
-import { findAnswer } from '../data/chatbotKnowledge';
+import { chatbotAPI } from '../services/api';
+import { LANGUAGES } from '../context/LanguageContext';
 
-/* ─── Suggested quick questions ─────────────────────────────────────────── */
-const SUGGESTIONS = [
-  'Vaccination schedule',
-  'What is BCG vaccine?',
-  'Normal weight for 6 month baby',
-  'What is malnutrition?',
-  'Signs of emergency',
-  'What is ICDS scheme?',
-  'Diarrhea treatment',
-  'Fever in baby',
-  'Breastfeeding tips',
-  'Baby milestones',
-];
+/* ─── Language-specific greetings & suggestions ──────────────────────────── */
+const LANG_GREETINGS = {
+  'English':    'Hello! 👋 I am your Sishu Arogaya health assistant. Ask me anything about child health, vaccines, nutrition, or government schemes!',
+  'हिंदी':      'नमस्ते! 👋 मैं आपका शिशु आरोग्य स्वास्थ्य सहायक हूं। बच्चे के स्वास्थ्य, टीकाकरण, पोषण या सरकारी योजनाओं के बारे में कुछ भी पूछें!',
+  'বাংলা':      'নমস্কার! 👋 আমি আপনার শিশু আরোগ্য স্বাস্থ্য সহায়ক। শিশুর স্বাস্থ্য, টিকা, পুষ্টি বা সরকারি প্রকল্প সম্পর্কে যেকোনো কিছু জিজ্ঞেস করুন!',
+  'ਪੰਜਾਬੀ':    'ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ! 👋 ਮੈਂ ਤੁਹਾਡਾ ਸਿਸ਼ੂ ਆਰੋਗਿਆ ਸਿਹਤ ਸਹਾਇਕ ਹਾਂ। ਬੱਚੇ ਦੀ ਸਿਹਤ, ਟੀਕਾਕਰਣ, ਪੋਸ਼ਣ ਜਾਂ ਸਰਕਾਰੀ ਯੋਜਨਾਵਾਂ ਬਾਰੇ ਕੁਝ ਵੀ ਪੁੱਛੋ!',
+  'தமிழ்':      'வணக்கம்! 👋 நான் உங்கள் சிசு ஆரோக்கிய உதவியாளர். குழந்தை சுகாதாரம், தடுப்பூசி, ஊட்டச்சத்து அல்லது அரசு திட்டங்களைப் பற்றி எதையும் கேளுங்கள்!',
+  'తెలుగు':     'నమస్కారం! 👋 నేను మీ శిశు ఆరోగ్య సహాయకుడిని. పిల్లల ఆరోగ్యం, టీకాలు, పోషణ లేదా ప్రభుత్వ పథకాల గురించి ఏదైనా అడగండి!',
+  'मराठी':      'नमस्कार! 👋 मी तुमचा शिशू आरोग्य सहाय्यक आहे. मुलांचे आरोग्य, लसीकरण, पोषण किंवा सरकारी योजनांबद्दल काहीही विचारा!',
+  'ગુજરાતી':    'નમસ્તે! 👋 હું તમારો શિશુ આરોગ્ય સહાયક છું. બાળ આરોગ્ય, રસીકરણ, પોષણ અથવા સરકારી યોજનાઓ વિશે કંઈ પણ પૂછો!',
+  'ಕನ್ನಡ':      'ನಮಸ್ಕಾರ! 👋 ನಾನು ನಿಮ್ಮ ಶಿಶು ಆರೋಗ್ಯ ಸಹಾಯಕ. ಮಕ್ಕಳ ಆರೋಗ್ಯ, ಲಸಿಕೆ, ಪೋಷಣೆ ಅಥವಾ ಸರ್ಕಾರಿ ಯೋಜನೆಗಳ ಬಗ್ಗೆ ಏನಾದರೂ ಕೇಳಿ!',
+  'മലയാളം':     'നമസ്കാരം! 👋 ഞാൻ നിങ്ങളുടെ ശിശു ആരോഗ്യ സഹായിയാണ്. ശിശു ആരോഗ്യം, വാക്സിനേഷൻ, പോഷണം അല്ലെങ്കിൽ സർക്കാർ പദ്ധതികളെക്കുറിച്ച് എന്തും ചോദിക്കൂ!',
+  'ଓଡ଼ିଆ':      'ନମସ୍କାର! 👋 ମୁଁ ଆପଣଙ୍କ ଶିଶୁ ଆରୋଗ୍ୟ ସହାୟକ। ଶିଶୁ ସ୍ୱାସ୍ଥ୍ୟ, ଟିକା, ପୋଷଣ ବା ସରକାରୀ ଯୋଜନା ବିଷୟରେ ଯେକୌଣସି ପ୍ରଶ୍ନ ପଚାର!',
+  'অসমীয়া':    'নমস্কাৰ! 👋 মই আপোনাৰ শিশু আৰোগ্য স্বাস্থ্য সহায়ক। শিশুৰ স্বাস্থ্য, ছিকা, পুষ্টি বা চৰকাৰী আঁচনিৰ বিষয়ে যিকোনো কথা সোধক!',
+  'اردو':       '!السلام علیکم 👋 میں آپ کا شیشو آروگیہ صحت معاون ہوں۔ بچے کی صحت، ویکسین، غذائیت یا سرکاری اسکیموں کے بارے میں کچھ بھی پوچھیں',
+  'नेपाली':     'नमस्ते! 👋 म तपाईंको शिशु आरोग्य स्वास्थ्य सहायक हुँ। बच्चाको स्वास्थ्य, खोप, पोषण वा सरकारी योजनाहरूबारे जे भए पनि सोध्नुहोस्!',
+  'মৈতৈলোন্':  'খুরুমজরি! 👋 ঐ নুপা শিশু আরোগ্য চৎনবি য়ামখিবি। নুপামচাগী লমচৎ, ইনজেকশন, শজিল্লক্লবা অমদি সরকারগী প্লান শিংগী মতাংদা হন্না থাজিন্নহৌ!',
+  'संस्कृत':   'नमस्ते! 👋 अहं भवतः शिशु-आरोग्य-सहायकः अस्मि। बालस्वास्थ्यं, टीकाकरणं, पोषणं सरकारीयोजनाः च विषये किमपि पृच्छतु!',
+  'मैथिली':    'प्रणाम! 👋 हम अहाँक शिशु आरोग्य स्वास्थ्य सहायक छी। बच्चाक स्वास्थ्य, टीकाकरण, पोषण वा सरकारी योजना विषयमे कोनो बात पूछि सकैत छी!',
+  'डोगरी':     'नमस्ते! 👋 मैं तुआडा शिशु आरोग्य स्वास्थ्य सहायक आं। बच्चे दी सेहत, टीकाकरण, पोषण ते सरकारी योजनाएं बारे कुछ भी पुच्छो!',
+  'कोंकणी':    'देव बरे करूं! 👋 हांव तुमचो शिशु आरोग्य आरोग्य सहायक. भुरग्यांचें आरोग्य, रस, पोषण वा सरकारी योजनांविशीं कांयपूण विचारात!',
+  'सिन्धी':    'जय जिंदगी! 👋 मांतुहांजो शिशु आरोग्य स्वास्थ्य सहायक आहियां। ٻار جي صحت، ويڪسين، غذائيت يا سرڪاري اسڪيمن بابت ڪجهه به پڇو!',
+  'बड़ो':      'नमस्काराव! 👋 आं दिनैनि बोसोर शिशु आरोग्यनि स्वास्थ्य सहायक। बुथुर स्वास्थ्य, टिका, खाद्य सुरक्षा आरो सरकारनि योजनाफोरनि बिजिरनो दोनायखौ बिनि!',
+  'ᱥᱟᱱᱛᱟᱲᱤ': 'ᱡᱳᱦᱟᱨ! 👋 ᱤᱧ ᱟᱢᱟᱜ ᱥᱤᱥᱷᱩ ᱟᱨᱳᱜᱭᱟ ᱥᱟᱶᱛᱮ ᱮᱸᱜᱮᱞ। ᱯᱤᱞᱪᱩ ᱥᱮᱦᱮᱛ, ᱴᱤᱠᱟ, ᱯᱳᱥᱱ ᱟᱨ ᱥᱚᱨᱠᱟᱨ ᱡᱳᱜᱟᱱ ᱠᱟᱛᱮ ᱠᱤᱪᱷᱩ ᱢᱮᱛᱟᱜ!',
+  'कश्मीरी':   'آداب! 👋 میں آپنا شیشو آروگیہ صحت مددگار چھس۔ بچے کہ صحت، ویکسین، غذائیت تہ سرکاری اسکیماں بارے کیا بہ پوچھوو!',
+};
+
+const LANG_SUGGESTIONS = {
+  'English':  ['Vaccination schedule', 'What is BCG vaccine?', 'Normal weight for baby', 'Signs of malnutrition', 'Emergency signs', 'Breastfeeding tips'],
+  'हिंदी':    ['टीकाकरण कार्यक्रम', 'BCG टीका क्या है?', 'बच्चे का सामान्य वजन', 'कुपोषण के लक्षण', 'आपातकालीन संकेत', 'स्तनपान सुझाव'],
+  'বাংলা':    ['টিকার সময়সূচি', 'BCG টিকা কি?', 'শিশুর স্বাভাবিক ওজন', 'অপুষ্টির লক্ষণ', 'জরুরি সংকেত', 'বুকের দুধ টিপস'],
+  'ਪੰਜਾਬੀ':  ['ਟੀਕਾਕਰਣ ਸਮਾਂ-ਸਾਰਣੀ', 'BCG ਟੀਕਾ ਕੀ ਹੈ?', 'ਬੱਚੇ ਦਾ ਸਾਧਾਰਨ ਵਜ਼ਨ', 'ਕੁਪੋਸ਼ਣ ਦੇ ਲੱਛਣ', 'ਐਮਰਜੈਂਸੀ ਸੰਕੇਤ', 'ਦੁੱਧ ਚੁੰਘਾਉਣਾ ਸੁਝਾਅ'],
+  'தமிழ்':   ['தடுப்பூசி அட்டவணை', 'BCG தடுப்பூசி என்ன?', 'குழந்தையின் சாதாரண எடை', 'ஊட்டச்சத்துக் குறைபாடு', 'அவசர அறிகுறிகள்', 'தாய்ப்பால் குறிப்புகள்'],
+  'తెలుగు':  ['టీకా షెడ్యూల్', 'BCG టీకా అంటే ఏమిటి?', 'పిల్లల సాధారణ బరువు', 'పోషకాహార లోపం లక్షణాలు', 'అత్యవసర సంకేతాలు', 'తల్లి పాలు చిట్కాలు'],
+  'मराठी':   ['लसीकरण वेळापत्रक', 'BCG लस म्हणजे काय?', 'बाळाचे सामान्य वजन', 'कुपोषणाची लक्षणे', 'आणीबाणीची चिन्हे', 'स्तनपान टिपा'],
+  'ગુજરાતી': ['રસીકરણ સમયપત્રક', 'BCG રસી શું છે?', 'બાળકનું સામાન્ય વજન', 'કુપોષણના ચિહ્નો', 'ઇમર્જન્સી સંકેત', 'ધવડાવવાની ટિપ્સ'],
+  'ಕನ್ನಡ':   ['ಲಸಿಕಾ ವೇಳಾಪಟ್ಟಿ', 'BCG ಲಸಿಕೆ ಎಂದರೇನು?', 'ಮಗುವಿನ ಸಾಮಾನ್ಯ ತೂಕ', 'ಅಪೌಷ್ಟಿಕತೆ ಲಕ್ಷಣ', 'ತುರ್ತು ಚಿಹ್ನೆಗಳು', 'ಎದೆ ಹಾಲು ಸಲಹೆಗಳು'],
+  'മലയാളം':  ['വാക്സിനേഷൻ ഷെഡ്യൂൾ', 'BCG വാക്സിൻ എന്താണ്?', 'കുഞ്ഞിന്റെ സാധാരണ ഭാരം', 'പോഷകാഹാരക്കുറവ്', 'അടിയന്തര ലക്ഷണങ്ങൾ', 'മുലയൂട്ടൽ നുറുങ്ങുകൾ'],
+};
+// fallback suggestions for languages without specific entries
+const DEFAULT_SUGGESTIONS = LANG_SUGGESTIONS['English'];
 
 /* ─── Markdown-lite renderer ─────────────────────────────────────────────── */
 function renderMarkdown(text) {
@@ -96,14 +125,19 @@ function TypingDots() {
 
 /* ─── Main ChatBot widget ─────────────────────────────────────────────────── */
 export default function ChatBot() {
-  const [open,     setOpen]     = useState(false);
-  const [messages, setMessages] = useState([
-    {
+  // Persist chosen chat language across sessions
+  const savedLang = localStorage.getItem('sa_chat_language');
+  const [chatLang,  setChatLang]  = useState(savedLang || null);
+  const [open,      setOpen]      = useState(false);
+  const [messages,  setMessages]  = useState(() => {
+    const lang = localStorage.getItem('sa_chat_language');
+    if (!lang) return [];
+    return [{
       role: 'bot',
-      text: `Namaste! 🙏 I am Sishu Arogaya's health assistant.\n\nI can answer questions about:\n• Vaccines and immunization schedule\n• Child growth and nutrition\n• Government health schemes\n• Common illnesses and home care\n• Emergency warning signs\n\nHow can I help you today?`,
+      text: LANG_GREETINGS[lang] || LANG_GREETINGS['English'],
       ts: Date.now(),
-    },
-  ]);
+    }];
+  });
   const [input,    setInput]    = useState('');
   const [loading,  setLoading]  = useState(false);
   const [listening, setListening] = useState(false);
@@ -123,7 +157,28 @@ export default function ChatBot() {
     if (!open && messages.length > 1) setUnread(prev => prev + 1);
   }, [messages]); // eslint-disable-line
 
-  const openChat = () => { setOpen(true); setUnread(0); setTimeout(() => inputRef.current?.focus(), 100); };
+  const openChat = () => {
+    setOpen(true);
+    setUnread(0);
+    // Focus input only if language already chosen
+    if (chatLang) setTimeout(() => inputRef.current?.focus(), 100);
+  };
+
+  /* ── select chat language ── */
+  function selectLanguage(lang) {
+    setChatLang(lang);
+    localStorage.setItem('sa_chat_language', lang);
+    const greeting = LANG_GREETINGS[lang] || LANG_GREETINGS['English'];
+    setMessages([{ role: 'bot', text: greeting, ts: Date.now() }]);
+    setTimeout(() => inputRef.current?.focus(), 150);
+  }
+
+  /* ── change language (reset chat) ── */
+  function changeLang() {
+    setChatLang(null);
+    localStorage.removeItem('sa_chat_language');
+    setMessages([]);
+  }
 
   /* ── send message ── */
   async function send(text) {
@@ -136,10 +191,10 @@ export default function ChatBot() {
     setLoading(true);
 
     try {
-      // Small delay to feel natural
-      await new Promise(r => setTimeout(r, 600));
-      const answer = findAnswer(msg);
-      setMessages(prev => [...prev, { role: 'bot', text: answer, ts: Date.now() }]);
+      const res = await chatbotAPI.query(msg, messages, chatLang || 'English');
+      const answer = res.data?.answer || "I'm not sure about that. Please ask your ASHA worker or call 108.";
+      const intent = res.data?.intent;
+      setMessages(prev => [...prev, { role: 'bot', text: answer, intent, ts: Date.now() }]);
     } catch {
       setMessages(prev => [...prev, {
         role: 'bot',
@@ -291,10 +346,24 @@ export default function ChatBot() {
               <div style={{ flex: 1 }}>
                 <div style={{ color: '#fff', fontWeight: 700, fontSize: 14 }}>Sishu Arogaya Assistant</div>
                 <div style={{ color: 'rgba(255,255,255,.75)', fontSize: 11 }}>
-                  {loading ? '● Thinking…' : '● Online — Health & Vaccine Expert'}
+                  {loading ? '● Thinking…' : chatLang ? `● ${chatLang} — Health & Vaccine Expert` : '● Select your language'}
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 6 }}>
+                {/* Change Language */}
+                {chatLang && (
+                  <button
+                    className="sb-btn"
+                    onClick={changeLang}
+                    title="Change language"
+                    style={{
+                      background: 'rgba(255,255,255,.18)',
+                      border: '1px solid rgba(255,255,255,.4)',
+                      borderRadius: 8, padding: '5px 8px',
+                      color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600,
+                    }}
+                  >🌐</button>
+                )}
                 {/* Clear */}
                 <button
                   className="sb-btn"
@@ -322,51 +391,92 @@ export default function ChatBot() {
               </div>
             </div>
 
-            {/* Messages area */}
-            <div style={{
-              flex: 1,
-              overflowY: 'auto',
-              padding: '14px 14px 8px',
-              display: 'flex',
-              flexDirection: 'column',
-            }}>
-              {messages.map((m, i) => (
-                <Message key={i} role={m.role} text={m.text} ts={m.ts} />
-              ))}
-              {loading && <TypingDots />}
-              <div ref={bottomRef} />
-            </div>
-
-            {/* Quick suggestion chips */}
-            {messages.length <= 2 && !loading && (
+            {/* ── Language selection screen ── */}
+            {!chatLang ? (
               <div style={{
-                padding: '6px 12px',
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: 6,
-                borderTop: '1px solid #e0f2fe',
-                background: '#fff',
-                flexShrink: 0,
+                flex: 1, overflowY: 'auto', padding: '18px 14px',
+                display: 'flex', flexDirection: 'column', gap: 14,
               }}>
-                {SUGGESTIONS.slice(0, 6).map(s => (
-                  <button
-                    key={s}
-                    className="suggestion-chip"
-                    onClick={() => send(s)}
-                    style={{
-                      padding: '4px 10px', borderRadius: 20,
-                      border: '1.5px solid #c5e8ef',
-                      background: '#f0fdff', color: '#0e7490',
-                      fontSize: 11, fontWeight: 600,
-                      cursor: 'pointer', whiteSpace: 'nowrap',
-                    }}
-                  >{s}</button>
-                ))}
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: 28, marginBottom: 6 }}>🌐</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#0c2340', marginBottom: 4 }}>Choose your language</div>
+                  <div style={{ fontSize: 11, color: '#4a7a8a' }}>अपनी भाषा चुनें · ভাষা বেছে নিন · மொழியை தேர்ந்தெடுக்கவும்</div>
+                </div>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: 7,
+                }}>
+                  {LANGUAGES.map(lang => (
+                    <button
+                      key={lang.code}
+                      onClick={() => selectLanguage(lang.code)}
+                      style={{
+                        padding: '9px 10px', borderRadius: 10,
+                        border: '1.5px solid #c5e8ef',
+                        background: '#fff', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', gap: 7,
+                        fontSize: 13, fontWeight: 600, color: '#0c2340',
+                        transition: 'all .15s', textAlign: 'left',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = '#f0fdff'; e.currentTarget.style.borderColor = '#0891b2'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#c5e8ef'; }}
+                    >
+                      <span style={{ fontSize: 18, flexShrink: 0 }}>{lang.flag}</span>
+                      <span style={{ lineHeight: 1.25 }}>{lang.label}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
+            ) : (
+              <>
+                {/* Messages area */}
+                <div style={{
+                  flex: 1,
+                  overflowY: 'auto',
+                  padding: '14px 14px 8px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}>
+                  {messages.map((m, i) => (
+                    <Message key={i} role={m.role} text={m.text} ts={m.ts} />
+                  ))}
+                  {loading && <TypingDots />}
+                  <div ref={bottomRef} />
+                </div>
+
+                {/* Quick suggestion chips */}
+                {messages.length <= 2 && !loading && (
+                  <div style={{
+                    padding: '6px 12px',
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 6,
+                    borderTop: '1px solid #e0f2fe',
+                    background: '#fff',
+                    flexShrink: 0,
+                  }}>
+                    {(LANG_SUGGESTIONS[chatLang] || DEFAULT_SUGGESTIONS).map(s => (
+                      <button
+                        key={s}
+                        className="suggestion-chip"
+                        onClick={() => send(s)}
+                        style={{
+                          padding: '4px 10px', borderRadius: 20,
+                          border: '1.5px solid #c5e8ef',
+                          background: '#f0fdff', color: '#0e7490',
+                          fontSize: 11, fontWeight: 600,
+                          cursor: 'pointer', whiteSpace: 'nowrap',
+                        }}
+                      >{s}</button>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
 
-            {/* Input row */}
-            <div style={{
+            {/* Input row — only shown after language is chosen */}
+            {chatLang && <div style={{
               padding: '10px 12px',
               borderTop: '1px solid #c5e8ef',
               background: '#fff',
@@ -436,7 +546,7 @@ export default function ChatBot() {
                   : '➤'
                 }
               </button>
-            </div>
+            </div>}
 
             {/* Disclaimer */}
             <div style={{

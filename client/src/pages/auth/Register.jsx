@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../../services/api';
+import { useLanguage } from '../../context/LanguageContext';
 
 const ROLES = [
   { value: 'parent', label: 'Parent / Guardian', icon: 'bi-person-heart',     color: '#1a6b3c' },
@@ -10,6 +11,7 @@ const ROLES = [
 
 const Register = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [selectedRole, setSelectedRole] = useState('parent');
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', ashaId: '', district: '', block: '' });
   const [error, setError] = useState('');
@@ -48,13 +50,13 @@ const Register = () => {
             <i className="bi bi-heart-pulse-fill text-success" style={{ fontSize: 32 }}></i>
           </div>
           <h2 className="text-white fw-bold mb-1">Sishu Arogaya</h2>
-          <p className="text-white-50 mb-0" style={{ fontSize: '0.85rem' }}>Create your account</p>
+          <p className="text-white-50 mb-0" style={{ fontSize: '0.85rem' }}>{t('registerTitle')}</p>
         </div>
 
         <div className="card border-0 shadow-lg rounded-4">
           <div className="card-body p-4">
             {/* Role Selector */}
-            <p className="text-muted small mb-2 fw-semibold">Select your role</p>
+            <p className="text-muted small mb-2 fw-semibold">{t('selectRole')}</p>
             <div className="row g-2 mb-3">
               {ROLES.map((r) => (
                 <div className="col-4" key={r.value}>
@@ -76,25 +78,25 @@ const Register = () => {
               {success && <div className="alert alert-success py-2 small">{success}</div>}
 
               <div className="mb-3">
-                <label className="form-label small fw-semibold">Full Name</label>
-                <input type="text" name="name" className="form-control" placeholder="Your full name"
+                <label className="form-label small fw-semibold">{t('fullName')}</label>
+                <input type="text" name="name" className="form-control" placeholder={t('fullName')}
                   value={form.name} onChange={handleChange} required />
               </div>
 
               <div className="mb-3">
-                <label className="form-label small fw-semibold">Email Address</label>
+                <label className="form-label small fw-semibold">{t('email')}</label>
                 <input type="email" name="email" className="form-control" placeholder="you@example.com"
                   value={form.email} onChange={handleChange} required />
               </div>
 
               <div className="mb-3">
-                <label className="form-label small fw-semibold">Phone Number</label>
+                <label className="form-label small fw-semibold">{t('phone')}</label>
                 <input type="tel" name="phone" className="form-control" placeholder="10-digit mobile number"
                   value={form.phone} onChange={handleChange} required />
               </div>
 
               <div className="mb-3">
-                <label className="form-label small fw-semibold">Password</label>
+                <label className="form-label small fw-semibold">{t('password')}</label>
                 <input type="password" name="password" className="form-control" placeholder="Min. 6 characters"
                   value={form.password} onChange={handleChange} required minLength={6} />
               </div>
@@ -123,12 +125,12 @@ const Register = () => {
 
               <button type="submit" className="btn btn-sa-primary w-100 py-2 fw-semibold" disabled={loading}>
                 {loading ? <span className="spinner-border spinner-border-sm me-2"></span> : null}
-                Register
+                {t('registerBtn')}
               </button>
 
               <p className="text-center text-muted small mt-3 mb-0">
-                Already have an account?{' '}
-                <Link to="/login" className="text-success fw-semibold">Login here</Link>
+                {t('alreadyAccount')}{' '}
+                <Link to="/login" className="text-success fw-semibold">{t('login')}</Link>
               </p>
             </form>
           </div>

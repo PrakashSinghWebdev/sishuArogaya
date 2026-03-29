@@ -1,5 +1,6 @@
 import React from 'react';
 import Layout from '../../components/Layout';
+import { useLanguage } from '../../context/LanguageContext';
 
 // Static PHC/CHC data for Uttarakhand district — replace with DB in production
 const CENTRES = [
@@ -10,13 +11,15 @@ const CENTRES = [
   { name:'Sub-District Hospital Pauri',   type:'SDH', block:'Pauri',    contact:'01368-111xxx', services:'Full spectrum — IPD, ICU, Surgery' },
 ];
 
-const HealthCentreDirectory = () => (
+const HealthCentreDirectory = () => {
+  const { t } = useLanguage();
+  return (
   <Layout role="admin">
-    <h4 className="fw-bold mb-4"><i className="bi bi-hospital me-2 text-info"></i>Health Centre Directory</h4>
+    <h4 className="fw-bold mb-4"><i className="bi bi-hospital me-2 text-info"></i>{t('healthCentreDirectory')}</h4>
     <div className="card border-0 shadow-sm">
       <div className="table-responsive">
         <table className="table table-hover mb-0">
-          <thead><tr><th>Centre Name</th><th>Type</th><th>Block</th><th>Contact</th><th>Services</th></tr></thead>
+          <thead><tr><th>{t('name')}</th><th>Type</th><th>{t('block')}</th><th>Contact</th><th>Services</th></tr></thead>
           <tbody>
             {CENTRES.map((c,i)=>(
               <tr key={i}>
@@ -32,6 +35,7 @@ const HealthCentreDirectory = () => (
       </div>
     </div>
   </Layout>
-);
+  );
+};
 
 export default HealthCentreDirectory;

@@ -324,7 +324,7 @@ export default function DietPlan() {
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 24px 60px' }}>
         <div style={{ marginBottom: 24 }}>
           <h1 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 26, fontWeight: 700, color: C.text, margin: 0 }}>
-            🥗 Diet Plan
+            🥗 {t('dietPlan')}
           </h1>
           {selectedChild && ageMonths != null && (
             <p style={{ color: C.muted, marginTop: 6, fontSize: 14 }}>
@@ -362,7 +362,7 @@ export default function DietPlan() {
               onClick={() => setShowCustomForm(!showCustomForm)}
               style={{ padding: '10px 20px', background: C.teal, color: 'white', border: 'none', borderRadius: 10, fontWeight: 600, cursor: 'pointer', fontSize: 13, marginBottom: 24 }}
             >
-              {showCustomForm ? '✕ Cancel' : '➕ Add Custom Diet Plan'}
+              {showCustomForm ? t('cancel') : t('add')}
             </button>
             
             {showCustomForm && (

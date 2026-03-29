@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 const CAPTIONS = [
   { e: 'AI', t: 'Early detection saves lives', d: 'AI malnutrition prediction using WHO z-score standards' },
@@ -28,6 +29,7 @@ const ROTATE_MS = 4500;
 
 export default function SishuLogin() {
   const { login, verifyOTP, getDashboardPath } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
 
   const [cur, setCur] = useState(0);
@@ -224,9 +226,9 @@ export default function SishuLogin() {
               </div>
             </div>
 
-            <div className="login-card__title">{step === 1 ? 'Welcome back' : 'Verify OTP'}</div>
+            <div className="login-card__title">{step === 1 ? t('loginTitle') : t('otpVerify')}</div>
             <div className="login-card__subtitle">
-              {step === 1 ? 'Sign in to your portal to continue' : 'Enter the OTP sent to your registered email'}
+              {step === 1 ? t('loginSubtitle') : t('otpSubtitle')}
             </div>
 
             {step === 1 ? (
@@ -250,7 +252,7 @@ export default function SishuLogin() {
                   {info ? <div className="login-card__alert login-card__alert--info">{info}</div> : null}
 
                   <div className="login-card__field">
-                    <label className="login-card__label">Email / Phone</label>
+                    <label className="login-card__label">{t('email')}</label>
                     <div className="login-card__input-wrap">
                       <span className="login-card__input-icon">@</span>
                       <input
@@ -265,14 +267,14 @@ export default function SishuLogin() {
                   </div>
 
                   <div className="login-card__field">
-                    <label className="login-card__label">Password</label>
+                    <label className="login-card__label">{t('password')}</label>
                     <div className="login-card__input-wrap">
                       <span className="login-card__input-icon">#</span>
                       <input
                         type={showPw ? 'text' : 'password'}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Enter your password"
+                        placeholder={t('enterPassword')}
                         className={`login-card__input login-card__input--password ${passErr ? 'has-error' : ''}`}
                       />
                       <button
@@ -290,13 +292,13 @@ export default function SishuLogin() {
                   <div className="login-card__meta">
                     <label className="login-card__checkbox">
                       <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
-                      Keep me signed in
+                      {t('keepSignedIn')}
                     </label>
-<button type="button" className="login-card__meta-link forgot-btn" onClick={() => alert('Forgot password clicked! Backend endpoint added. Enter email to get reset OTP (dev mode returns OTP). Restart backend terminal (Ctrl+C then rerun start command).')}>Forgot password?</button>
+<button type="button" className="login-card__meta-link forgot-btn" onClick={() => alert('Forgot password clicked! Backend endpoint added. Enter email to get reset OTP (dev mode returns OTP). Restart backend terminal (Ctrl+C then rerun start command).')}>{t('forgotPassword')}</button>
                   </div>
 
                   <button type="submit" disabled={loading} className="login-card__submit">
-                    {loading ? <span className="login-card__spinner" /> : 'Sign In'}
+                    {loading ? <span className="login-card__spinner" /> : t('loginBtn')}
                   </button>
                 </form>
               </>
@@ -308,7 +310,7 @@ export default function SishuLogin() {
                 <div className="login-card__otp-badge">Secure OTP Verification</div>
 
                 <div className="login-card__field">
-                  <label className="login-card__label">One-Time Password</label>
+                  <label className="login-card__label">{t('otpLabel')}</label>
                   <div className="login-card__input-wrap">
                     <span className="login-card__input-icon">OTP</span>
                     <input
@@ -324,11 +326,11 @@ export default function SishuLogin() {
                 </div>
 
                 <button type="submit" disabled={loading || redirected} className="login-card__submit">
-                  {loading ? <span className="login-card__spinner" /> : redirected ? 'Redirecting...' : 'Verify & Login'}
+                  {loading ? <span className="login-card__spinner" /> : redirected ? t('redirecting') : t('verifyLogin')}
                 </button>
 
                 <button type="button" className="login-card__secondary" onClick={resetToLogin}>
-                  Back to Login
+                  {t('backToLogin')}
                 </button>
               </form>
             )}
@@ -336,13 +338,13 @@ export default function SishuLogin() {
             <div className="login-card__footer">
               {step === 1 ? (
                 <>
-                  New to Sishu Arogaya?{' '}
+                  {t('noAccount')}{' '}
                   <Link to="/register" className="login-card__footer-link">
-                    Create an account
+                    {t('registerBtn')}
                   </Link>
                 </>
               ) : (
-                <>OTP verification is required before continuing to your dashboard.</>
+                <>{t('otpRequired')}</>
               )}
               <br />
               <br />

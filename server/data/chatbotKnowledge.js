@@ -374,7 +374,7 @@ Malnutrition means a child is not getting enough nutrients to grow and stay heal
 
   {
     intent: 'diarrhea_management',
-    patterns: ['diarrhea', 'loose motions', 'loose stool', 'stomach upset', 'ors', 'dehydration', 'दस्त', 'पेचिश', 'loose motion'],
+    patterns: ['diarrhea', 'loose motions', 'loose stool', 'stomach upset', 'dehydration', 'दस्त', 'पेचिश', 'loose motion', 'diarrhea in child', 'baby diarrhea', 'child diarrhea', 'diarrhea treatment', 'diarrhoea', 'watery stool', 'how to treat diarrhea', 'baby loose motion'],
     response: `**Managing Diarrhea (Loose Motions)**
 
 Diarrhea is dangerous because it causes dehydration — the biggest risk for young children.
@@ -823,6 +823,1098 @@ Sishu Arogaya is a Government Integrated Child Health Monitoring System develope
 **Data privacy:** All health data is stored securely. Your child's information is only visible to you and your assigned ASHA worker.
 
 📞 For help: 1800-180-1104`
+  },
+
+  // ══════════════════════ NEWBORN CARE ══════════════════════
+  {
+    intent: 'newborn_care',
+    patterns: ['newborn care', 'care of newborn', 'new baby care', 'just born baby', 'neonatal care', 'baby born today', 'care after birth', 'how to take care of newborn', 'naya bachha', 'navjat shishu'],
+    response: `**Newborn Baby Care (First 28 Days):**
+
+**Warmth:**
+• Keep baby in skin-to-skin contact (Kangaroo Mother Care)
+• Room temperature 25–28°C — no fans/AC directly on baby
+• Cover head with soft cap
+
+**Feeding:**
+• Start breastfeeding within 1 hour of birth
+• Breastfeed every 2–3 hours (8–12 times per day)
+• Give ONLY breast milk for 6 months — no water, no formula
+
+**Cord Care:**
+• Keep cord stump clean and dry
+• Do NOT apply oil, turmeric, or ash — causes infection
+• Cord falls off naturally in 7–10 days
+
+**Bathing:**
+• Delay first bath by 24 hours
+• Sponge bath only until cord falls off
+
+**Warning Signs — Go to hospital immediately:**
+🚨 Not feeding, very sleepy
+🚨 Yellow colour (jaundice) spreading below belly button
+🚨 Fast breathing (>60 breaths/min)
+🚨 Cold to touch, blue lips or fingernails
+🚨 Bulging fontanelle (soft spot on head)
+
+📞 National helpline: 1800-180-1104`
+  },
+
+  // ══════════════════════ KANGAROO MOTHER CARE ══════════════════════
+  {
+    intent: 'kangaroo_mother_care',
+    patterns: ['kangaroo mother care', 'kmc', 'skin to skin', 'premature baby care', 'preterm baby', 'low birth weight baby', 'small baby care', 'premie care', 'born early baby'],
+    response: `**Kangaroo Mother Care (KMC) — For Small & Premature Babies:**
+
+KMC means keeping your baby on your bare chest (skin-to-skin).
+
+**Benefits:**
+• Keeps baby warm — prevents hypothermia
+• Promotes breastfeeding
+• Faster weight gain
+• Reduces infections and deaths in premature babies
+• Strengthens mother-baby bond
+
+**How to do KMC:**
+• Place baby upright between your breasts
+• Baby wears only diaper + cap + socks
+• Cover both with a shawl or wrap
+• Do for minimum 8 hours/day (can be done by father too)
+
+**When to start:**
+• As soon as baby is medically stable
+• Can be done even in NICU
+
+**Who needs it most:**
+• Birth weight < 2.5 kg (Low Birth Weight)
+• Born before 37 weeks (Premature)
+
+✅ KMC is safe, free, and proven to save lives!
+
+📞 Ask your ASHA worker or ANM for a demonstration.`
+  },
+
+  // ══════════════════════ WORM TREATMENT ══════════════════════
+  {
+    intent: 'deworming',
+    patterns: ['deworming', 'worm treatment', 'albendazole', 'national deworming day', 'pet ke kirde', 'intestinal worms', 'roundworm', 'hookworm', 'pinworm', 'child worms'],
+    response: `**Deworming for Children:**
+
+**National Deworming Day** — February 10 and August 10 every year.
+
+**Who should be dewormed:**
+• Children 1–19 years of age
+
+**Medicine:**
+• Albendazole 400mg chewable tablet
+• Chew tablet (do not swallow whole)
+• Given free at Anganwadi, school, PHC
+
+**Age-wise dose:**
+• 1–2 years: Half tablet (200mg) — crush and mix with food
+• 2–19 years: 1 full tablet (400mg)
+
+**Benefits:**
+• Improves nutrition absorption
+• Reduces anemia
+• Better growth and concentration in school
+• Reduces malnutrition
+
+**Side effects** (rare, pass in 1–2 days):
+• Mild stomach pain, nausea — this is normal
+• Drink water and rest
+
+✅ Safe to give along with vaccines.
+✅ Free at all government centres.`
+  },
+
+  // ══════════════════════ VACCINE — PCV (PNEUMOCOCCAL) ══════════════════════
+  {
+    intent: 'vaccine_pcv',
+    patterns: ['pcv vaccine', 'pneumococcal vaccine', 'pneumonia vaccine', 'pcv', 'pneumococcal', '10 week vaccine', 'pneumo jab'],
+    response: `**PCV — Pneumococcal Conjugate Vaccine:**
+
+**What it prevents:**
+Pneumococcal disease — a bacterium that causes:
+• Pneumonia (lung infection)
+• Meningitis (brain infection)
+• Blood poisoning (sepsis)
+
+**Schedule:**
+• PCV-1 at 6 weeks
+• PCV-2 at 10 weeks
+• PCV-3 at 14 weeks
+
+**How given:** Injection in the thigh
+
+**Side effects:**
+• Mild redness/swelling at injection site
+• Low-grade fever — normal, resolves in 1–2 days
+• Give paracetamol if fever high
+
+✅ Free under India's Universal Immunisation Programme (UIP).`
+  },
+
+  // ══════════════════════ VACCINE — ROTAVIRUS ══════════════════════
+  {
+    intent: 'vaccine_rotavirus_detail',
+    patterns: ['rotavirus vaccine detail', 'rotavirus dose', 'rota vaccine', 'diarrhea vaccine', 'gastro vaccine', 'loose motion vaccine', 'rotarix', 'rotateq'],
+    response: `**Rotavirus Vaccine:**
+
+**What it prevents:**
+Rotavirus — the leading cause of severe diarrhea in children under 5. Can cause dehydration and death.
+
+**Schedule (oral drops):**
+• Dose 1 at 6 weeks
+• Dose 2 at 10 weeks
+• Dose 3 at 14 weeks
+
+**How given:** Oral drops (by mouth — not injection)
+
+**Important:**
+• Do NOT give if baby is vomiting severely
+• Breastfeed normally before and after
+• Very safe — protects up to 85% against severe rotavirus diarrhea
+
+**Side effects:**
+• Very mild — baby may be slightly fussy
+• Rarely: mild loose stools within 7 days
+
+✅ Free under India's UIP.`
+  },
+
+  // ══════════════════════ VACCINE — IPV ══════════════════════
+  {
+    intent: 'vaccine_ipv',
+    patterns: ['ipv vaccine', 'inactivated polio vaccine', 'ipv injection', 'ipv dose', 'injectable polio'],
+    response: `**IPV — Inactivated Polio Vaccine (Injectable):**
+
+Used alongside OPV drops to give stronger protection against polio.
+
+**Schedule:**
+• IPV-1 at 6 weeks
+• IPV-2 at 14 weeks
+
+**How given:** Injection in thigh or arm
+
+**Difference from OPV:**
+• OPV = oral drops (given at birth, 6w, 10w, 14w, booster doses)
+• IPV = injection — boosts immunity further
+
+✅ Together, OPV + IPV give the best protection against all 3 types of polio virus.`
+  },
+
+  // ══════════════════════ VACCINE — JE ══════════════════════
+  {
+    intent: 'vaccine_je',
+    patterns: ['je vaccine', 'japanese encephalitis vaccine', 'brain fever vaccine', 'je-1', 'je-2', 'encephalitis vaccine', 'dimagi bukhar vaccine'],
+    response: `**JE — Japanese Encephalitis Vaccine:**
+
+**What it prevents:**
+Japanese Encephalitis — a viral brain infection spread by mosquito bites. Can cause brain damage and death.
+
+**Schedule:**
+• JE-1 at 9 months
+• JE-2 at 16–24 months (booster)
+
+**Available in:** Areas where JE is common (UP, Bihar, Assam, Karnataka, etc.)
+
+**How given:** Injection
+
+**Side effects:**
+• Mild fever, redness at site — resolves in 1–2 days
+
+✅ Free at government centres in endemic districts.`
+  },
+
+  // ══════════════════════ COUGH & COLD ══════════════════════
+  {
+    intent: 'cough_cold',
+    patterns: ['cough', 'cold', 'runny nose', 'nasal congestion', 'blocked nose', 'khansi', 'zukam', 'common cold baby', 'baby cough', 'infant cold'],
+    response: `**Cough & Cold in Children:**
+
+**Most colds are caused by viruses — antibiotics do NOT help.**
+
+**Home Treatment:**
+• Saline (salt water) nasal drops — 2 drops each nostril, 3 times/day
+• Steam inhalation — for older children
+• Honey (1 tsp) for cough — **only for children over 1 year**
+• Keep head slightly elevated during sleep
+• Offer extra fluids (breast milk, warm water, soup)
+
+**Danger Signs — see doctor immediately:**
+🚨 Fast breathing or difficulty breathing
+🚨 Wheezing (whistling sound from chest)
+🚨 Fever > 38.5°C for more than 3 days
+🚨 Child refuses all food/drink
+🚨 Earache (ear infection)
+🚨 Under 2 months with any cough
+
+**Do NOT:**
+• Give adult cough syrups to babies
+• Give cold medicines to children under 2 years
+• Give aspirin (risk of Reye's syndrome)`
+  },
+
+  // ══════════════════════ EAR INFECTION ══════════════════════
+  {
+    intent: 'ear_infection',
+    patterns: ['ear infection', 'ear pain', 'ear discharge', 'otitis media', 'kaan dard', 'kaan se pani', 'ear problem baby', 'baby ear', 'child ear ache'],
+    response: `**Ear Infection in Children:**
+
+**Signs:**
+• Pulling/tugging at ear
+• Crying more than usual
+• Fever
+• Discharge (pus/fluid) from ear
+• Difficulty hearing, not responding to sounds
+
+**What to do:**
+• Take child to doctor for examination
+• Doctor may prescribe antibiotic ear drops or oral antibiotics
+• Complete the full course of antibiotics
+
+**Warning signs:**
+🚨 Ear discharge (pus) — always see doctor
+🚨 Swelling behind the ear
+🚨 Child very unwell or stiff neck
+
+**Prevention:**
+• Breastfeeding protects against ear infections
+• Keep baby away from cigarette smoke
+• Vaccinate on time (PCV vaccine helps prevent some ear infections)
+
+📞 If ear is discharging pus, visit PHC immediately.`
+  },
+
+  // ══════════════════════ MALARIA ══════════════════════
+  {
+    intent: 'malaria',
+    patterns: ['malaria', 'malaria in child', 'malaria symptoms', 'mosquito fever', 'malaria treatment', 'malaria prevention', 'malaria baby', 'malarial fever'],
+    response: `**Malaria in Children:**
+
+**Symptoms:**
+• High fever with chills and shivering
+• Fever comes and goes in cycles
+• Sweating after fever
+• Headache, vomiting
+• Loss of appetite
+
+**Warning Signs — Emergency:**
+🚨 Convulsions (fits)
+🚨 Unconscious or very drowsy
+🚨 Breathing difficulty
+🚨 Yellow eyes/skin (jaundice)
+🚨 Not able to eat/drink
+
+**What to do:**
+• Test for malaria: RDT (Rapid Diagnostic Test) at PHC — free
+• Do NOT give home treatment without testing
+• Complete full course of antimalarial medication
+
+**Prevention:**
+• Use mosquito nets (ITN — Insecticide-Treated Nets) — available free from government
+• Eliminate standing water (breeding ground)
+• Use mosquito repellent
+
+📞 Malaria hotline: 1800-11-0101 (free)`
+  },
+
+  // ══════════════════════ DENGUE ══════════════════════
+  {
+    intent: 'dengue',
+    patterns: ['dengue', 'dengue fever', 'dengue symptoms', 'platelet count', 'dengue baby', 'dengue child', 'dengue treatment'],
+    response: `**Dengue Fever in Children:**
+
+**Symptoms:**
+• Sudden high fever (39–40°C)
+• Severe headache, pain behind eyes
+• Joint and muscle pain ("breakbone fever")
+• Skin rash (red spots)
+• Nausea, vomiting
+
+**Warning Signs — Go to hospital immediately:**
+🚨 Bleeding from gums, nose, or in urine/stool
+🚨 Red spots on skin that don't fade when pressed
+🚨 Severe stomach pain
+🚨 Persistent vomiting
+🚨 Very drowsy or restless
+
+**Treatment:**
+• No specific medicine — supportive care
+• Rest and plenty of fluids (ORS, coconut water, juices)
+• Paracetamol for fever — do NOT give Aspirin or Ibuprofen
+• Hospital admission if platelet count < 1 lakh
+
+**Prevention:**
+• Remove stagnant water (dengue mosquito breeds in clean water)
+• Use mosquito nets and repellent
+• Wear full-sleeve clothes`
+  },
+
+  // ══════════════════════ TYPHOID ══════════════════════
+  {
+    intent: 'typhoid',
+    patterns: ['typhoid', 'typhoid fever', 'enteric fever', 'typhoid vaccine', 'tcv vaccine', 'typhoid child', 'typhoid symptoms'],
+    response: `**Typhoid in Children:**
+
+**Symptoms:**
+• Gradually increasing fever (gets higher each day)
+• Headache, weakness
+• Stomach pain, constipation or diarrhea
+• Rose spots on skin (pale pink spots)
+• Prolonged fever > 1 week
+
+**Treatment:**
+• Antibiotics prescribed by doctor (complete full course)
+• Light, easily digestible diet
+• Plenty of fluids
+• Rest
+
+**Typhoid Conjugate Vaccine (TCV):**
+• Single dose at 9–12 months
+• Highly effective (80% protection)
+• Free at government health centres in many states
+
+**Prevention:**
+• Clean drinking water (boil or filter)
+• Wash hands before eating and after toilet
+• Eat freshly cooked food
+
+📞 If high fever > 5 days — always see doctor.`
+  },
+
+  // ══════════════════════ SKIN CONDITIONS ══════════════════════
+  {
+    intent: 'skin_conditions',
+    patterns: ['baby skin rash', 'nappy rash', 'diaper rash', 'eczema child', 'skin problem baby', 'heat rash', 'prickly heat', 'ringworm', 'scabies', 'baby skin care'],
+    response: `**Common Baby Skin Conditions:**
+
+**Diaper/Nappy Rash:**
+• Keep area clean and dry
+• Change diapers frequently
+• Apply zinc oxide barrier cream
+• Let baby go without diaper for short periods
+
+**Heat Rash (Prickly Heat):**
+• Small red bumps — common in hot weather
+• Keep baby cool, loose cotton clothing
+• Talcum powder or calamine lotion
+
+**Eczema:**
+• Dry, itchy, red patches
+• Moisturise frequently with unscented cream
+• Avoid harsh soaps; use baby-safe products
+• See doctor if infected (oozing/crusting)
+
+**Scabies:**
+• Intense itching especially at night
+• Small bumps between fingers, wrists
+• Whole family needs treatment (permethrin cream)
+• Wash all clothes/bedding in hot water
+
+**Ringworm:**
+• Circular itchy patch — despite name, it's a fungal infection
+• Antifungal cream from doctor
+
+🚨 See doctor for: widespread rash, fever with rash, bleeding spots on skin.`
+  },
+
+  // ══════════════════════ ORAL HEALTH ══════════════════════
+  {
+    intent: 'oral_health',
+    patterns: ['baby teeth', 'teething', 'tooth care child', 'dental care baby', 'brushing teeth child', 'oral hygiene baby', 'first tooth', 'tooth decay child'],
+    response: `**Child Oral Health & Teething:**
+
+**Teething Timeline:**
+• First tooth: around 6 months
+• All 20 milk teeth by age 2.5–3 years
+
+**Teething Symptoms:**
+• Drooling, chewing on things, irritability
+• Mild gum soreness
+• **Teething does NOT cause fever** — if fever, check for other cause
+
+**Teething relief:**
+• Cold (not frozen) teething ring
+• Gently rub gums with clean finger
+
+**Dental Care:**
+• Before teeth: wipe gums with clean damp cloth after feeds
+• First tooth appears: use soft baby toothbrush, smear of fluoride toothpaste
+• Age 3+: pea-sized fluoride toothpaste, brush twice daily
+
+**Tooth Decay Prevention:**
+• Never put baby to sleep with bottle of milk/juice
+• Reduce sugar in diet
+• First dental visit by age 1
+
+✅ Healthy baby teeth are important for speech, chewing, and spacing for adult teeth.`
+  },
+
+  // ══════════════════════ EYE CARE ══════════════════════
+  {
+    intent: 'eye_care',
+    patterns: ['baby eye care', 'eye discharge baby', 'sticky eyes newborn', 'eye infection child', 'conjunctivitis baby', 'squint baby', 'red eye', 'ankh infection'],
+    response: `**Baby Eye Care:**
+
+**Sticky Eyes in Newborns (very common):**
+• Clean with sterile cotton wool dipped in warm water
+• Wipe from inner corner outward
+• Use separate cotton for each eye
+• Usually clears in a few weeks
+
+**Conjunctivitis (Pink Eye):**
+• Red, watery or sticky discharge
+• Wipe with clean cotton and boiled (cooled) water
+• Doctor may prescribe antibiotic eye drops
+• Wash hands frequently to avoid spreading
+
+**Warning signs:**
+🚨 Swelling around eye
+🚨 Baby unable to open eye
+🚨 Cloudiness in pupil (cataract)
+🚨 Eyes not looking in same direction (squint)
+
+**Vision Screening:**
+• Newborn check at birth (red reflex test)
+• RBSK screening at Anganwadi age 0–6
+• Tell ASHA worker if you notice squint, crossed eyes, or white pupil
+
+✅ Early detection saves sight — all problems found early can be treated.`
+  },
+
+  // ══════════════════════ SLEEP ══════════════════════
+  {
+    intent: 'baby_sleep',
+    patterns: ['baby sleep', 'how much sleep baby', 'sleep hours child', 'baby not sleeping', 'baby crying at night', 'safe sleep baby', 'co sleeping', 'sids prevention', 'sudden infant death'],
+    response: `**Baby Sleep Guide:**
+
+**Recommended Sleep Hours:**
+• Newborn (0–3 months): 14–17 hours/day
+• Infant (4–11 months): 12–15 hours/day
+• Toddler (1–2 years): 11–14 hours/day
+• Preschool (3–5 years): 10–13 hours/day
+
+**Safe Sleep — Prevent SIDS:**
+✅ Always place baby on BACK to sleep
+✅ Firm, flat surface — no soft mattress
+✅ No pillows, loose bedding, or toys in sleep area
+✅ Room temperature comfortable (not too hot)
+✅ Breastfeeding protects against SIDS
+✅ Smoke-free environment
+
+**Why baby wakes at night:**
+• Hunger — feed on demand
+• Wet/soiled diaper
+• Discomfort or illness
+• Needs comfort
+
+**Sleep tips:**
+• Establish bedtime routine (bath → feed → sleep)
+• Differentiate day and night (bright light during day, dim at night)
+• Swaddling helps newborns feel secure
+
+🚨 Always put baby to sleep on back — never on stomach or side.`
+  },
+
+  // ══════════════════════ VACCINATION SIDE EFFECTS ══════════════════════
+  {
+    intent: 'vaccine_side_effects',
+    patterns: ['vaccine side effects', 'after vaccination', 'vaccination reaction', 'baby crying after injection', 'swelling after vaccine', 'fever after vaccine', 'vaccine fever treatment', 'post vaccine care'],
+    response: `**After Vaccination — What to Expect:**
+
+**Normal reactions (very common):**
+• Mild fever (< 38.5°C) — for 1–2 days
+• Redness, swelling at injection site
+• Baby irritable or crying
+• Sleepiness
+
+**What to do:**
+• Give paracetamol (by weight) for fever
+• Apply cold, clean cloth on injection site
+• Breastfeed more — it comforts baby
+• Do NOT massage injection site — makes swelling worse
+
+**Paracetamol dose:**
+• 10–15 mg per kg body weight
+• Every 6 hours as needed
+• Ask doctor/ASHA worker for exact dose
+
+**BCG special:**
+• A small bump/blister at injection site after 2–4 weeks is NORMAL
+• It will ulcerate and heal into a small scar — do not put any cream
+
+**When to see doctor:**
+🚨 High fever (>39°C) not coming down with paracetamol
+🚨 Continuous crying for > 3 hours
+🚨 Fits/seizures
+🚨 Difficulty breathing
+🚨 Rash over whole body
+
+✅ Mild reactions mean your baby's immune system is responding — that's good!`
+  },
+
+  // ══════════════════════ HAND WASHING ══════════════════════
+  {
+    intent: 'hand_hygiene',
+    patterns: ['hand washing', 'hand hygiene', 'handwash', 'how to wash hands', 'hath dhona', 'hygiene baby', 'prevent infection hygiene', 'soap hand washing'],
+    response: `**Hand Hygiene — Key to Preventing Disease:**
+
+**When to wash hands (critical times):**
+• Before preparing food
+• Before feeding baby
+• Before breastfeeding
+• After using toilet
+• After cleaning baby's bottom
+• After blowing nose / coughing
+• After touching animals
+
+**How to wash hands correctly (20 seconds):**
+1. Wet hands with clean running water
+2. Apply soap
+3. Rub palms, back of hands, between fingers, under nails
+4. Rinse thoroughly
+5. Dry with clean cloth or air dry
+
+**If no running water:**
+• Use ash + water OR alcohol-based hand sanitiser
+
+**Impact of hand washing:**
+• Reduces diarrhea by 47%
+• Reduces respiratory infections by 23%
+• Prevents spread of worms, typhoid, and other infections
+
+✅ Hand washing is the single most effective action to prevent child illness.`
+  },
+
+  // ══════════════════════ WATER & SANITATION ══════════════════════
+  {
+    intent: 'water_sanitation',
+    patterns: ['safe drinking water', 'water purification', 'boil water', 'clean water baby', 'water borne disease', 'toilet sanitation', 'open defecation', 'swachh bharat', 'ODF village', 'water source'],
+    response: `**Safe Water & Sanitation for Child Health:**
+
+**Safe Drinking Water:**
+• Boil water for at least 1 minute (at high altitude: 3 minutes)
+• Filter or use chlorine tablets if boiling not possible
+• Store in covered, clean container
+• Never collect water with dirty hands
+
+**Water-borne diseases prevented:**
+• Diarrhea, typhoid, cholera, hepatitis A, worm infections
+
+**Sanitation — Swachh Bharat Mission:**
+• Free toilet construction: PM Swachh Bharat Mission
+• Contact Gram Panchayat or Block office to apply
+• Open defecation is a major cause of child malnutrition
+
+**Oral Rehydration Solution (ORS):**
+• For diarrhea caused by unsafe water
+• Mix 1 ORS packet in 1 litre boiled and cooled water
+
+**Government Schemes:**
+• Jal Jeevan Mission — piped water to every household
+• Swachh Bharat Mission — free toilets
+
+📞 Report water contamination: district health officer or Gram Panchayat.`
+  },
+
+  // ══════════════════════ POSTPARTUM MOTHER CARE ══════════════════════
+  {
+    intent: 'postpartum_care',
+    patterns: ['mother after delivery', 'postpartum care', 'after childbirth care', 'new mother care', 'postnatal care', 'delivery recovery', 'after birth mother', 'mata ki dekh bhal', 'caesarean recovery'],
+    response: `**Mother's Care After Delivery:**
+
+**First 48 hours:**
+• Rest in clean, warm environment
+• Start breastfeeding within 1 hour of delivery
+• Iron and folic acid tablets — continue for 180 days
+• Vitamin A capsule (200,000 IU) within 6 weeks of delivery
+
+**Diet:**
+• Eat nutritious food: dal, rice, vegetables, eggs, milk, fruits
+• Drink plenty of fluids
+• Continue taking iron-folic acid tablets
+
+**Warning Signs — go to hospital:**
+🚨 Heavy bleeding (soaking > 2 pads/hour)
+🚨 Foul-smelling vaginal discharge
+🚨 High fever (>38°C)
+🚨 Severe headache or blurred vision
+🚨 Leg pain/swelling (may be blood clot)
+🚨 Feeling sad all the time (postpartum depression)
+
+**Postnatal checkups:**
+• Day 3, Day 7, Day 42 — visit ANM/ASHA or PHC
+
+**Caesarean recovery:**
+• Keep wound clean and dry
+• Report redness, discharge, or wound opening to doctor
+
+📞 JSY benefit: institutional delivery + ₹1400 (rural) / ₹1000 (urban) cash.`
+  },
+
+  // ══════════════════════ ANTENATAL CARE ══════════════════════
+  {
+    intent: 'antenatal_care',
+    patterns: ['antenatal care', 'pregnancy care', 'pregnant woman care', 'anc visits', 'checkup during pregnancy', 'pregnant diet', 'prenatal care', 'garbhavastha', 'pregnancy checkup'],
+    response: `**Antenatal Care (ANC) — Care During Pregnancy:**
+
+**Recommended ANC Visits:**
+• 1st visit: within 12 weeks of pregnancy (first trimester)
+• 2nd visit: 14–26 weeks
+• 3rd visit: 28–34 weeks
+• 4th visit: 36+ weeks
+
+**Free services at PHC/Sub-centre:**
+✅ Weight and blood pressure check
+✅ Blood tests (hemoglobin, blood group, blood sugar, HIV)
+✅ Urine tests
+✅ Ultrasound (at least 1 during pregnancy)
+✅ TT injection (Tetanus Toxoid) — 2 doses or booster
+✅ Iron-Folic Acid tablets (180 tablets, start from 1st trimester)
+✅ Calcium tablets
+
+**Pradhan Mantri Surakshit Matritva Abhiyan (PMSMA):**
+• Free comprehensive ANC on 9th of every month at PHC
+• Doctor examination + all tests
+
+**Danger signs during pregnancy:**
+🚨 Bleeding from vagina
+🚨 Severe headache or blurred vision
+🚨 Swelling of face/hands
+🚨 No baby movement after 28 weeks
+🚨 Fever
+
+📞 Call ASHA or 108 for any danger sign.`
+  },
+
+  // ══════════════════════ FAMILY PLANNING ══════════════════════
+  {
+    intent: 'family_planning',
+    patterns: ['family planning', 'contraception', 'birth control', 'spacing children', 'avoid pregnancy', 'parivar niyojan', 'nsbari', 'iud', 'copper t', 'condom', 'sterilization', 'tubectomy', 'vasectomy'],
+    response: `**Family Planning Services:**
+
+**Free Government Services (Mission Parivar Vikas):**
+
+**Spacing Methods:**
+• Condoms — available free at PHC, Anganwadi, ASHA
+• Oral Contraceptive Pills (OCP) — free at sub-centre
+• Depo Provera (injection, 3-monthly) — at PHC
+• Copper-T / IUD — inserted at PHC, effective 5–10 years
+
+**Permanent Methods:**
+• Tubectomy (female sterilisation) — free, with compensation ₹2000
+• Vasectomy (male sterilisation) — free, with compensation ₹3000
+
+**After baby:**
+• Breastfeeding provides some protection (LAM method)
+• For reliable contraception: start Copper-T or pills after 6 weeks
+
+**Basket of Choices — available free:**
+• Condoms, OCPs, EC pills (emergency), IUD, injectable, sterilisation
+
+✅ All services confidential and free at government facilities.
+📞 Contact ASHA worker or ANM for counselling and referral.`
+  },
+
+  // ══════════════════════ TUBERCULOSIS IN CHILDREN ══════════════════════
+  {
+    intent: 'tuberculosis_child',
+    patterns: ['tuberculosis child', 'tb in children', 'tb symptoms child', 'tb treatment child', 'bcg and tb', 'child tb', 'tb baby', 'kshay rog', 'nikshay', 'tb test child'],
+    response: `**Tuberculosis (TB) in Children:**
+
+**Symptoms:**
+• Cough lasting > 2 weeks
+• Fever especially in evenings
+• Night sweats
+• Weight loss / poor weight gain
+• Loss of appetite
+• Swollen lymph nodes in neck
+
+**Diagnosis:**
+• Mantoux test (TST) or IGRA blood test
+• Chest X-ray
+• Sputum or gastric lavage (for babies)
+• All free at government TB centres
+
+**Treatment:**
+• 6 months of antibiotics (DOTS — Directly Observed Therapy)
+• 100% free under Nikshay programme
+• Do NOT stop treatment even if child feels better
+
+**BCG protection:**
+• BCG vaccine at birth protects against severe forms (miliary TB, TB meningitis)
+• Does not fully prevent TB — screening still important
+
+**Nikshay Poshan Yojana:**
+• ₹500/month nutritional support during TB treatment
+• Register at government TB centre
+
+📞 TB helpline: 1800-11-6666 (free)`
+  },
+
+  // ══════════════════════ WEIGHT GAIN ISSUES ══════════════════════
+  {
+    intent: 'poor_weight_gain',
+    patterns: ['baby not gaining weight', 'poor weight gain', 'underweight baby', 'child not growing', 'weight not increasing', 'thin baby', 'baby weight low', 'faltering growth', 'bache ka wajan nahi badh raha'],
+    response: `**Poor Weight Gain / Faltering Growth in Babies:**
+
+**Common Causes:**
+• Not enough breast milk
+• Incorrect breastfeeding technique
+• Introducing solids too early or too late
+• Frequent illness (diarrhea, infections)
+• Underlying medical condition
+
+**What to do:**
+
+For babies under 6 months:
+• Feed on demand — 8–12 times per day
+• Ensure deep latch (not just nipple)
+• Feed from both breasts each time
+• See lactation counsellor if problem with supply
+
+For babies 6 months+:
+• Continue breastfeeding + 3 meals/day + 2 snacks
+• Energy-dense foods: khichdi with ghee, banana, egg
+• Add oil/ghee to every meal
+• Treat any illness promptly
+
+**Medical check:**
+• Weigh every month at Anganwadi
+• Plot on growth chart
+• If dropping 2 or more channels — refer to doctor
+
+**NRC (Nutrition Rehabilitation Centre):**
+• For severe acute malnutrition (SAM) with complications
+• Free inpatient care + therapeutic food
+
+📞 Talk to your ASHA worker or AWW immediately if you are worried about weight.`
+  },
+
+  // ══════════════════════ READY-TO-USE THERAPEUTIC FOOD (RUTF) ══════════════════════
+  {
+    intent: 'rutf_treatment',
+    patterns: ['rutf', 'ready to use therapeutic food', 'plumpy nut', 'therapeutic food', 'sam treatment food', 'severe malnutrition treatment', 'nutrimix', 'protein energy malnutrition treatment'],
+    response: `**RUTF — Ready-to-Use Therapeutic Food:**
+
+**What is RUTF?**
+A peanut-based, energy-dense food used to treat Severe Acute Malnutrition (SAM).
+
+**Brand names:** Plumpy'Nut, Nutrimix
+
+**Why RUTF is special:**
+• Does not need cooking
+• Long shelf life
+• Does not need water — safe even in areas with poor sanitation
+• High in calories, protein, vitamins, minerals
+
+**How given:**
+• Given at home alongside breastfeeding
+• 3 packets/day for a child 6–59 months (by weight)
+• Child comes for check-up every 1–2 weeks
+
+**Where to get:**
+• NRC (Nutrition Rehabilitation Centre) — free
+• CMAM (Community-based Management of Acute Malnutrition) programme
+• Contact ASHA worker or AWW
+
+**Duration:** Usually 8–12 weeks
+
+✅ With RUTF, 80–90% of SAM children recover completely.
+
+📞 Ask your ASHA worker to refer your child to the NRC if severely malnourished.`
+  },
+
+  // ══════════════════════ ORS (ORAL REHYDRATION SALT) ══════════════════════
+  {
+    intent: 'ors_preparation',
+    patterns: ['ors', 'oral rehydration', 'ors preparation', 'how to make ors', 'ors solution', 'dehydration treatment', 'rehydration salts', 'jeevan jal', 'diarrhea fluid'],
+    response: `**ORS — Oral Rehydration Solution:**
+
+**When to use:**
+• Whenever a child has diarrhea — start ORS immediately
+• Also helpful for vomiting, fever, heat exhaustion
+
+**Packaged ORS:**
+• Available free at PHC, Sub-centre, Anganwadi
+• Mix 1 sachet in 1 litre of boiled and cooled water
+• Give small sips frequently
+
+**Homemade ORS (if no packet available):**
+• 1 litre boiled cooled water
+• 6 level teaspoons sugar
+• ½ teaspoon salt
+• Mix well and taste — should taste like tears (not too salty!)
+
+**How much to give:**
+• Under 2 years: 50–100 ml after each loose stool
+• 2–10 years: 100–200 ml after each loose stool
+• Continue until diarrhea stops
+
+**Zinc (always give with ORS):**
+• Under 6 months: 10mg zinc daily for 14 days
+• 6 months+: 20mg zinc daily for 14 days
+• Zinc reduces duration and severity of diarrhea
+
+**Do NOT give:**
+• Sugary drinks, juice, carbonated drinks
+• Salt-sugar water without proper measurements
+
+🚨 Go to hospital if: blood in stool, severe vomiting, no urine in 6 hours, child very drowsy.`
+  },
+
+  // ══════════════════════ ZINC SUPPLEMENTATION ══════════════════════
+  {
+    intent: 'zinc_supplementation',
+    patterns: ['zinc', 'zinc supplement', 'zinc tablet', 'zinc syrup', 'zinc for diarrhea', 'zinc deficiency child', 'zinc dose'],
+    response: `**Zinc Supplementation for Children:**
+
+**Why zinc matters:**
+• Zinc is essential for immune function, growth, and brain development
+• Zinc deficiency is common in India — affects growth and immunity
+
+**For diarrhea treatment:**
+• Give zinc ALWAYS alongside ORS
+• Under 6 months: 10mg daily for 14 days
+• 6 months to 5 years: 20mg daily for 14 days
+• Reduces diarrhea duration by 25% and severity by 40%
+
+**For general nutrition:**
+• Zinc is found in: meat, eggs, dairy, legumes (dal), pumpkin seeds
+• Breastmilk has adequate zinc for infants under 6 months
+
+**Zinc-rich foods:**
+• Meat and fish (best absorbed)
+• Eggs
+• Dairy products (milk, paneer)
+• Legumes — dal, rajma, chana
+• Nuts and seeds
+
+**Zinc tablets/syrup:**
+• Available free at PHC for diarrhea management
+• Dispersible zinc tablets — dissolve in a spoon of water
+
+✅ Zinc + ORS is the WHO/UNICEF recommended treatment for childhood diarrhea.`
+  },
+
+  // ══════════════════════ CHILD DEVELOPMENT & PLAY ══════════════════════
+  {
+    intent: 'child_development_play',
+    patterns: ['child development', 'baby play', 'stimulation baby', 'how to stimulate baby', 'cognitive development', 'early childhood development', 'play ideas for baby', 'toys for baby', 'learning activities baby', 'bache ka vikas'],
+    response: `**Early Childhood Development & Play:**
+
+**Why play matters:**
+Play is how babies learn — it builds brain connections, language, and social skills.
+
+**0–3 months:**
+• Talk and sing to baby — faces 20–30cm away
+• Black and white patterns stimulate vision
+• Skin-to-skin, gentle massage
+
+**3–6 months:**
+• Rattles, bright toys within reach
+• Tummy time (supervised) to strengthen neck
+• Mirror play — baby loves seeing own face
+
+**6–12 months:**
+• Peekaboo, pat-a-cake
+• Give things to grab, bang, and mouth (safe objects)
+• Name everything you do: "now we eat, now we sleep"
+
+**1–2 years:**
+• Blocks, stacking, simple sorting
+• Picture books — point to pictures and name them
+• Outdoor play and exploring nature
+• Simple songs and nursery rhymes
+
+**2–3 years:**
+• Pretend play (cooking, dolls, doctor)
+• Crayons and drawing
+• Simple puzzles
+
+**Responsive parenting:**
+• Respond to baby's cries and sounds
+• Maintain eye contact
+• Read simple stories every day
+
+✅ You don't need expensive toys — a loving, talking, responsive caregiver is the best stimulus!`
+  },
+
+  // ══════════════════════ IMMUNISATION CATCH-UP ══════════════════════
+  {
+    intent: 'vaccine_catchup',
+    patterns: ['missed vaccine', 'catch up vaccination', 'delayed vaccination', 'vaccine pending', 'child not vaccinated', 'no vaccination yet', 'vaccination overdue', 'late vaccination', 'vaccine missed'],
+    response: `**Missed/Delayed Vaccines — Catch-Up:**
+
+**Good news:** It is NEVER too late to vaccinate!
+
+**What to do:**
+• Go to nearest Anganwadi, Sub-centre, PHC, or hospital
+• Bring your child's vaccination card (if you have it)
+• ASHA worker can check what's pending and arrange catch-up
+
+**Key rules for catch-up:**
+• You do NOT need to restart a series from scratch
+• Give the next dose as soon as possible
+• Minimum intervals between doses must be maintained
+• All missed vaccines can be given on the same day (unless they need spacing)
+
+**Minimum intervals:**
+• DPT/Polio series: at least 4 weeks between doses
+• MR: single dose if not given, or 2 doses if > 12 months old
+• Hepatitis B series: allow proper intervals
+
+**Free under UIP:**
+All vaccines in India's Universal Immunisation Programme are free at government facilities.
+
+**Village Health and Nutrition Days (VHND):**
+• Monthly immunisation sessions at Anganwadi centres
+• Ask your ASHA worker for the next session date
+
+📞 Contact your ASHA worker — she will arrange catch-up vaccination for your child.`
+  },
+
+  // ══════════════════════ WEIGHING / GROWTH MONITORING ══════════════════════
+  {
+    intent: 'growth_monitoring',
+    patterns: ['weigh baby', 'weighing child', 'growth monitoring', 'growth chart', 'how to weigh baby', 'weight check', 'monthly weighing', 'anganwadi weighing', 'plot growth chart'],
+    response: `**Growth Monitoring — Weighing Your Child:**
+
+**Why it matters:**
+Regular weighing detects malnutrition early, before it becomes severe.
+
+**Where to weigh:**
+• Anganwadi Centre — every month (free)
+• PHC / Sub-centre
+• Village Health and Nutrition Day (VHND)
+
+**How often:**
+• Monthly until age 2 years
+• Every 3 months from 2–5 years
+
+**Growth Chart (WHO Child Growth Standards):**
+• Green zone: Normal
+• Yellow zone: Moderate acute malnutrition (MAM) — needs extra feeding
+• Red zone: Severe acute malnutrition (SAM) — needs medical care
+
+**Indicators tracked:**
+• Weight-for-age (underweight)
+• Height-for-age (stunting)
+• Weight-for-height (wasting — most important for acute malnutrition)
+• MUAC (mid-upper arm circumference) — quick screening
+
+**MUAC cut-offs (6–59 months):**
+• Green ≥ 12.5cm: Normal
+• Yellow 11.5–12.4cm: MAM
+• Red < 11.5cm: SAM
+
+✅ Ask AWW to show you your child's growth chart every month.
+📞 If child in yellow or red zone — refer to PHC or NRC immediately.`
+  },
+
+  // ══════════════════════ APP FEATURES ══════════════════════
+  {
+    intent: 'app_features',
+    patterns: ['app features', 'what can this app do', 'how to use app', 'app help', 'sishu arogaya features', 'app functions', 'login app', 'register app', 'parent features', 'asha features'],
+    response: `**Sishu Arogaya App — Features:**
+
+**For Parents:**
+• View child's vaccination schedule and upcoming vaccines
+• Track child's weight and height growth
+• Access diet plans by age
+• View ASHA worker contact
+• Get health notifications and reminders
+
+**For ASHA Workers:**
+• View assigned children list
+• Log home visit details
+• Track vaccination status of all children
+• Monitor malnutrition reports
+• Access growth records
+
+**For Admin:**
+• Manage ASHA assignments
+• View district-wide health data
+• Generate reports
+
+**Getting Started:**
+• Parents: Register with your mobile number
+• ASHA workers: Use credentials given by your supervisor
+• Admin: Separate admin login
+
+**Need help?**
+📞 Contact your ASHA worker directly through the app.
+
+✅ The app works on mobile and desktop browsers.`
+  },
+
+  // ══════════════════════ HOTLINES & EMERGENCY ══════════════════════
+  {
+    intent: 'emergency_numbers',
+    patterns: ['emergency number', 'helpline number', 'ambulance number', 'call for help', 'health helpline', '108', 'call 108', 'emergency contact', 'hospital emergency', 'crisis help'],
+    response: `**Emergency & Health Helpline Numbers:**
+
+🚨 **108** — Free ambulance & emergency (24/7)
+🚨 **102** — Free ambulance for pregnant women and sick children
+📞 **1800-180-1104** — Child health helpline (toll-free)
+📞 **1800-11-0101** — Malaria helpline (toll-free)
+📞 **1800-11-6666** — TB helpline (Nikshay, toll-free)
+📞 **14416 / 1800-110-416** — Mental health helpline (iCall)
+📞 **1098** — CHILDLINE for child welfare emergency
+📞 **104** — Health advice line (many states)
+
+**When to call 108:**
+• Child not breathing, unconscious
+• Severe difficulty breathing
+• Seizures (fits) lasting > 5 minutes
+• Suspected poisoning
+• Severe injuries or bleeding
+• Pregnant woman in emergency
+
+✅ All these numbers are toll-free from any phone — including no-balance phones.`
+  },
+
+  // ══════════════════════ COMPLEMENTARY FEEDING — DETAILED ══════════════════════
+  {
+    intent: 'complementary_feeding_6m',
+    patterns: ['what to feed 6 month baby', 'starting solids', 'first foods baby', '6 month food', 'solid food start', 'weaning food', 'oopar ka khana', 'baby food start', 'first solid food', 'complementary food start'],
+    response: `**Starting Solid Foods at 6 Months:**
+
+**Why 6 months?**
+Breast milk alone is not enough after 6 months. Baby needs extra energy and nutrients.
+
+**Golden Rules:**
+• Continue breastfeeding (do NOT stop)
+• Start SLOWLY — 1 new food at a time
+• Give same new food for 3 days before introducing another
+
+**What to give at 6 months:**
+• Mashed rice + dal (khichdi) — most important
+• Mashed banana
+• Mashed sweet potato or potato
+• Cooked and mashed vegetables
+• No salt, no sugar, no honey
+
+**Consistency:** Thick paste (not watery gruel)
+
+**Amount:**
+• Start: 2–3 teaspoons, 2 times/day
+• By 9 months: Half a small bowl (125ml), 3 times/day + 1 snack
+
+**8–9 months:**
+• Add mashed eggs (yolk first)
+• Soft mashed fish / chicken
+• Curd (dahi)
+• Add a little ghee or oil to every meal
+
+**12 months onward:**
+• Family foods (well-cooked, soft)
+• 3 meals + 2 snacks per day
+• Cow's milk as drink is okay after 12 months
+
+🚨 Do NOT give honey before 1 year — risk of infant botulism.`
   },
 
   // ══════════════════════ DEFAULT / UNKNOWN ══════════════════════

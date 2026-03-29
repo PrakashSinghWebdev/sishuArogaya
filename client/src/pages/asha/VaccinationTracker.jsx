@@ -2,18 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ashaAPI, vaccinationAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-
-/* ─── Constants ─────────────────────────────────────────────────── */
-const NAV = [
-  ['🏠 Dashboard', '/asha/dashboard'],
-  ['👶 Children', '/asha/children'],
-  ['📝 Log Visit', '/asha/log-visit'],
-  ['💉 Vaccines', '/asha/vaccination-tracker'],
-  ['📈 Growth', '/asha/growth-records'],
-  ['🚨 Malnutrition', '/asha/malnutrition-report'],
-  ['📋 Visits', '/asha/visit-history'],
-  ['🔔 Alerts', '/asha/notifications'],
-];
+import { useLanguage } from '../../context/LanguageContext';
 
 const C = {
   primary: '#0891b2',
@@ -137,6 +126,18 @@ const VaccinationTracker = () => {
   const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useLanguage();
+
+  const NAV = [
+    [`🏠 ${t('dashboard')}`,        '/asha/dashboard'],
+    [`👶 ${t('myChildren')}`,        '/asha/children'],
+    [`📝 ${t('logVisit')}`,          '/asha/log-visit'],
+    [`💉 ${t('vaccinationTracker')}`,'/asha/vaccination-tracker'],
+    [`📈 ${t('growthRecords')}`,     '/asha/growth-records'],
+    [`🚨 ${t('malnutritionReport')}`,'/asha/malnutrition-report'],
+    [`📋 ${t('visitHistory')}`,      '/asha/visit-history'],
+    [`🔔 ${t('notifications')}`,     '/asha/notifications'],
+  ];
 
   const [tab, setTab] = useState('children');
   const [children, setChildren] = useState([]);
@@ -188,7 +189,7 @@ const VaccinationTracker = () => {
         }}>🏥</div>
         <div>
           <div style={{ fontSize: 14, fontWeight: 800, color: C.text, lineHeight: 1.2 }}>Sishu Arogaya</div>
-          <div style={{ fontSize: 10, color: C.muted, fontWeight: 500 }}>ASHA Worker Portal</div>
+          <div style={{ fontSize: 10, color: C.muted, fontWeight: 500 }}>{t('ashaPortal')}</div>
         </div>
       </Link>
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 2, overflowX: 'auto', padding: '0 8px' }}>
@@ -249,9 +250,9 @@ const VaccinationTracker = () => {
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '28px 20px' }}>
         {/* Header */}
         <div style={{ marginBottom: 24, animation: 'fadeUp 0.4s ease' }}>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: C.text, margin: 0 }}>💉 Vaccination Tracker</h1>
+          <h1 style={{ fontSize: 22, fontWeight: 800, color: C.text, margin: 0 }}>💉 {t('vaccinationTracker')}</h1>
           <p style={{ fontSize: 13, color: C.muted, margin: '4px 0 0' }}>
-            Monitor immunisation coverage, track due vaccines, and manage camp schedules
+            {t('vaccineCoverage')}
           </p>
         </div>
 
@@ -270,15 +271,15 @@ const VaccinationTracker = () => {
           display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
           gap: 14, marginBottom: 24, animation: 'fadeUp 0.4s ease 0.05s both',
         }}>
-          <StatCard icon="✅" label="Fully Vaccinated" value={loading ? '…' : fullyVaccinated} sub="Children (24m+)" accent="#dcfce7" />
-          <StatCard icon="⏰" label="Due This Week" value={loading ? '…' : dueThisWeek} sub="Overdue vaccines" accent="#fef3c7" />
-          <StatCard icon="📊" label="Block Coverage" value={loading ? '…' : `${blockCoverage}%`} sub="Of assigned children" accent={C.light} />
-          <StatCard icon="📅" label="Next Camp" value="15 Sep" sub="PHC Raipur" accent="#f3e8ff" />
+          <StatCard icon="✅" label={t('completed')} value={loading ? '…' : fullyVaccinated} sub={t('myChildren')} accent="#dcfce7" />
+          <StatCard icon="⏰" label={t('overdueVaccines')} value={loading ? '…' : dueThisWeek} sub={t('followUpNeeded')} accent="#fef3c7" />
+          <StatCard icon="📊" label={t('vaccineCoverage')} value={loading ? '…' : `${blockCoverage}%`} sub={t('assignedChildren')} accent={C.light} />
+          <StatCard icon="📅" label={t('upcomingCamps')} value="15 Sep" sub="PHC Raipur" accent="#f3e8ff" />
         </div>
 
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 20, animation: 'fadeUp 0.4s ease 0.1s both' }}>
-          {[['children', '👶 Children'], ['vaccines', '📊 Coverage'], ['camps', '📅 Camps']].map(([key, label]) => (
+          {[['children', `👶 ${t('myChildren')}`], ['vaccines', `📊 ${t('vaccineCoverage')}`], ['camps', `📅 ${t('upcomingCamps')}`]].map(([key, label]) => (
             <button
               key={key}
               className={`vt-tab${tab === key ? ' active' : ''}`}
@@ -305,7 +306,7 @@ const VaccinationTracker = () => {
               <span style={{ fontSize: 16 }}>🔍</span>
               <input
                 type="text"
-                placeholder="Search children by name…"
+                placeholder={t('searchByName')}
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 style={{
@@ -322,7 +323,7 @@ const VaccinationTracker = () => {
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ background: C.bg }}>
-                    {['Child', 'Age', 'Weight', 'Next Vaccine', 'Progress', 'Status', 'Action'].map(h => (
+                    {[t('childName'), t('age'), t('weight'), t('nextVaccine'), t('progressLabel') || 'Progress', t('status'), t('action')].map(h => (
                       <th key={h} style={{
                         padding: '10px 16px', fontSize: 11, fontWeight: 700,
                         color: C.muted, textTransform: 'uppercase', letterSpacing: '0.05em',
@@ -335,7 +336,7 @@ const VaccinationTracker = () => {
                   {filteredChildren.length === 0 ? (
                     <tr>
                       <td colSpan={7} style={{ padding: '40px 0', textAlign: 'center', color: C.muted, fontSize: 14 }}>
-                        {search ? 'No children match your search.' : 'No children assigned yet.'}
+                        {search ? t('noRecords') : t('noChildrenAssigned')}
                       </td>
                     </tr>
                   ) : filteredChildren.map((child, i) => {
@@ -403,7 +404,7 @@ const VaccinationTracker = () => {
                             className="btn-teal-sm"
                             onClick={() => navigate(`/asha/log-visit?childId=${child._id}`)}
                           >
-                            ✓ Mark Given
+                            ✓ {t('markGiven')}
                           </button>
                         </td>
                       </tr>
@@ -420,8 +421,8 @@ const VaccinationTracker = () => {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, animation: 'fadeUp 0.35s ease' }}>
             {/* Bar meters */}
             <div className="an-card">
-              <h3 style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 6 }}>Block Vaccine Coverage</h3>
-              <p style={{ fontSize: 12, color: C.muted, marginBottom: 20, marginTop: 0 }}>Coverage percentage by vaccine dose</p>
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 6 }}>{t('vaccineCoverage')}</h3>
+              <p style={{ fontSize: 12, color: C.muted, marginBottom: 20, marginTop: 0 }}>{t('coverageLegend')}</p>
               {ALL_VACCINES.map(v => (
                 <BarMeter key={v.name} name={v.name} age={v.age} pct={v.pct} />
               ))}
@@ -431,7 +432,7 @@ const VaccinationTracker = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {/* Coverage legend */}
               <div className="an-card">
-                <h3 style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 14 }}>Coverage Legend</h3>
+                <h3 style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 14 }}>{t('coverageLegend')}</h3>
                 {[
                   { label: 'Excellent (90–100%)', color: '#16a34a', bg: '#dcfce7' },
                   { label: 'Good (75–89%)', color: '#0891b2', bg: '#cffafe' },
@@ -455,7 +456,7 @@ const VaccinationTracker = () => {
               {/* Overdue summary */}
               <div className="an-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                  <h3 style={{ fontSize: 15, fontWeight: 700, color: C.text, margin: 0 }}>Overdue Vaccines</h3>
+                  <h3 style={{ fontSize: 15, fontWeight: 700, color: C.text, margin: 0 }}>{t('overdueVaccines')}</h3>
                   <span style={{
                     background: overdue.length > 0 ? '#fef2f2' : '#dcfce7',
                     color: overdue.length > 0 ? '#ef4444' : '#16a34a',
@@ -492,7 +493,7 @@ const VaccinationTracker = () => {
                       onClick={() => setTab('children')}
                       style={{ background: 'none', border: 'none', color: C.primary, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
                     >
-                      View all {overdue.length} →
+                      {t('viewAll')} {overdue.length} →
                     </button>
                   </div>
                 )}
@@ -505,8 +506,8 @@ const VaccinationTracker = () => {
         {!loading && tab === 'camps' && (
           <div style={{ animation: 'fadeUp 0.35s ease' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 700, color: C.text, margin: 0 }}>Upcoming Vaccination Camps</h3>
-              <span style={{ fontSize: 12, color: C.muted }}>{CAMPS.length} camps scheduled</span>
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: C.text, margin: 0 }}>{t('upcomingCamps')}</h3>
+              <span style={{ fontSize: 12, color: C.muted }}>{CAMPS.length} {t('upcoming')}</span>
             </div>
             {CAMPS.map((camp, i) => {
               const isUpcoming = camp.status === 'upcoming';
@@ -555,7 +556,7 @@ const VaccinationTracker = () => {
                       onClick={() => navigate('/asha/log-visit')}
                       style={{ whiteSpace: 'nowrap' }}
                     >
-                      📋 Log Visit
+                      📋 {t('logVisit')}
                     </button>
                   </div>
                 </div>

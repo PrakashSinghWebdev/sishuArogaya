@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import Layout from '../../components/Layout';
 import { useAuth } from '../../context/AuthContext';
 import { authAPI } from '../../services/api';
+import { useLanguage } from '../../context/LanguageContext';
 
 const SettingsConfiguration = () => {
+  const { t } = useLanguage();
   const { user } = useAuth();
   const [pass, setPass] = useState({ current:'', new_:'', confirm:'' });
   const [msg, setMsg] = useState('');
@@ -18,7 +20,7 @@ const SettingsConfiguration = () => {
 
   return (
     <Layout role="admin">
-      <h4 className="fw-bold mb-4"><i className="bi bi-sliders me-2 text-secondary"></i>Settings & Configuration</h4>
+      <h4 className="fw-bold mb-4"><i className="bi bi-sliders me-2 text-secondary"></i>{t('settingsConfig')}</h4>
       <div className="row g-4">
         <div className="col-md-5">
           <div className="card border-0 shadow-sm">
@@ -41,7 +43,7 @@ const SettingsConfiguration = () => {
                 <div className="mb-3"><label className="form-label small">Current Password</label><input type="password" className="form-control" value={pass.current} onChange={e=>setPass({...pass,current:e.target.value})} required /></div>
                 <div className="mb-3"><label className="form-label small">New Password</label><input type="password" className="form-control" value={pass.new_} onChange={e=>setPass({...pass,new_:e.target.value})} required /></div>
                 <div className="mb-3"><label className="form-label small">Confirm Password</label><input type="password" className="form-control" value={pass.confirm} onChange={e=>setPass({...pass,confirm:e.target.value})} required /></div>
-                <button type="submit" className="btn btn-sa-primary w-100">Update Password</button>
+                <button type="submit" className="btn btn-sa-primary w-100">{t('update')} Password</button>
               </form>
             </div>
           </div>

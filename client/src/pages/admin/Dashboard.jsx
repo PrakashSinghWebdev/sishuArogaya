@@ -5,6 +5,7 @@ import { adminAPI } from '../../services/api';
 import { Link } from 'react-router-dom';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend, Title } from 'chart.js';
+import { useLanguage } from '../../context/LanguageContext';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend, Title);
 
@@ -29,6 +30,7 @@ const StatCard = ({ icon, label, value, color, sub, link }) => (
 
 const AdminDashboard = () => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -46,13 +48,13 @@ const AdminDashboard = () => {
   const barData = {
     labels: blockNames,
     datasets: [
-      { label: 'Severe', data: severeData, backgroundColor: '#dc3545' },
-      { label: 'Moderate', data: moderateData, backgroundColor: '#ffc107' },
+      { label: t('severe'), data: severeData, backgroundColor: '#dc3545' },
+      { label: t('moderate'), data: moderateData, backgroundColor: '#ffc107' },
     ],
   };
 
   const doughnutData = {
-    labels: ['Healthy', 'Moderate Risk', 'Severe'],
+    labels: [t('healthy'), t('moderate'), t('severe')],
     datasets: [{
       data: [
         (stats?.totalChildren || 0) - (stats?.malnutritionCases || 0),
@@ -67,7 +69,7 @@ const AdminDashboard = () => {
   return (
     <Layout role="admin">
       <div className="rounded-4 p-4 mb-4 text-white" style={{ background: 'linear-gradient(135deg, #6f42c1, #495057)' }}>
-        <h4 className="fw-bold mb-1">Admin Dashboard</h4>
+        <h4 className="fw-bold mb-1">{t('adminPortal')}</h4>
         <p className="mb-0 opacity-75">District-level health analytics · {new Date().toLocaleDateString('en-IN', { dateStyle: 'long' })}</p>
       </div>
 
@@ -76,10 +78,10 @@ const AdminDashboard = () => {
       ) : (
         <>
           <div className="row g-3 mb-4">
-            <StatCard icon="bi-people-fill" label="Total Children" value={stats?.totalChildren || 0} color="#1a6b3c" link="/admin/children" />
-            <StatCard icon="bi-person-badge-fill" label="ASHA Workers" value={stats?.totalAshaWorkers || 0} color="#0d6efd" link="/admin/asha-workers" />
-            <StatCard icon="bi-exclamation-octagon" label="Malnutrition Cases" value={stats?.malnutritionCases || 0} color="#dc3545" sub="Moderate + Severe" link="/admin/malnutrition" />
-            <StatCard icon="bi-shield-x" label="Missed Vaccines" value={stats?.missedVaccinations || 0} color="#fd7e14" link="/admin/vaccination-data" />
+            <StatCard icon="bi-people-fill" label={t('totalChildren')} value={stats?.totalChildren || 0} color="#1a6b3c" link="/admin/children" />
+            <StatCard icon="bi-person-badge-fill" label={t('ashaWorkers')} value={stats?.totalAshaWorkers || 0} color="#0d6efd" link="/admin/asha-workers" />
+            <StatCard icon="bi-exclamation-octagon" label={t('malnutrition')} value={stats?.malnutritionCases || 0} color="#dc3545" sub={`${t('moderate')} + ${t('severe')}`} link="/admin/malnutrition" />
+            <StatCard icon="bi-shield-x" label={t('vaccination')} value={stats?.missedVaccinations || 0} color="#fd7e14" link="/admin/vaccination-data" />
           </div>
 
           <div className="row g-4">
@@ -120,7 +122,7 @@ const AdminDashboard = () => {
                       { to: '/admin/asha-workers', icon: 'bi-person-badge-fill', label: 'ASHA Performance', color: '#0d6efd' },
                       { to: '/admin/children', icon: 'bi-people-fill', label: 'Children Registry', color: '#1a6b3c' },
                       { to: '/admin/block-reports', icon: 'bi-file-earmark-excel', label: 'Export Reports', color: '#6f42c1' },
-                      { to: '/admin/users', icon: 'bi-person-gear', label: 'User Management', color: '#fd7e14' },
+                      { to: '/admin/users', icon: 'bi-person-gear', label: t('userManagement'), color: '#fd7e14' },
                       { to: '/admin/audit-logs', icon: 'bi-journal-text', label: 'Audit Logs', color: '#6c757d' },
                     ].map((a) => (
                       <div className="col-6 col-md-2" key={a.to}>
@@ -145,7 +147,7 @@ const AdminDashboard = () => {
                   <div className="table-responsive">
                     <table className="table table-hover mb-0">
                       <thead>
-                        <tr><th>Block</th><th>Total Children</th><th>Moderate</th><th>Severe</th><th>Status</th></tr>
+                        <tr><th>{t('block')}</th><th>{t('totalChildren')}</th><th>{t('moderate')}</th><th>{t('severe')}</th><th>{t('status')}</th></tr>
                       </thead>
                       <tbody>
                         {stats.blockStats.map((b) => (

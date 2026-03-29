@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import Layout from '../../components/Layout';
 import { adminAPI, reportAPI } from '../../services/api';
+import { useLanguage } from '../../context/LanguageContext';
 
 const BlockwiseReports = () => {
+  const { t } = useLanguage();
   const [stats, setStats] = useState(null);
   const [downloading, setDownloading] = useState(null);
 
@@ -23,19 +25,19 @@ const BlockwiseReports = () => {
 
   return (
     <Layout role="admin">
-      <h4 className="fw-bold mb-4"><i className="bi bi-file-earmark-excel me-2 text-success"></i>Block-wise Reports</h4>
+      <h4 className="fw-bold mb-4"><i className="bi bi-file-earmark-excel me-2 text-success"></i>{t('blockwiseReports')}</h4>
       <div className="card border-0 shadow-sm">
         <div className="table-responsive">
           <table className="table table-hover mb-0">
-            <thead><tr><th>Block</th><th>Total Children</th><th>Moderate</th><th>Severe</th><th>Action</th></tr></thead>
+            <thead><tr><th>{t('block')}</th><th>{t('totalChildren')}</th><th>{t('moderate')}</th><th>{t('severe')}</th><th>{t('action')}</th></tr></thead>
             <tbody>
-              {blocks.length===0?<tr><td colSpan={5} className="text-muted text-center py-4">No block data available.</td></tr>:blocks.map((b,i)=>(
+              {blocks.length===0?<tr><td colSpan={5} className="text-muted text-center py-4">{t('noData')}</td></tr>:blocks.map((b,i)=>(
                 <tr key={i}>
                   <td className="fw-semibold">{b._id||'Unknown'}</td>
                   <td>{b.total}</td>
                   <td><span className="badge bg-warning text-dark">{b.moderate}</span></td>
                   <td><span className="badge bg-danger">{b.severe}</span></td>
-                  <td><button className="btn btn-sm btn-outline-success" onClick={()=>download(b._id)} disabled={downloading===b._id}>{downloading===b._id?'...':<><i className="bi bi-download me-1"></i>Excel</>}</button></td>
+                  <td><button className="btn btn-sm btn-outline-success" onClick={()=>download(b._id)} disabled={downloading===b._id}>{downloading===b._id?'...':<><i className="bi bi-download me-1"></i>{t('download')}</>}</button></td>
                 </tr>
               ))}
             </tbody>
