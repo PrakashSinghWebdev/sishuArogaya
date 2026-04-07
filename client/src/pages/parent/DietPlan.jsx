@@ -17,6 +17,10 @@ const AGE_GROUPS = [
   { minMonths: 24, maxMonths: 60, label: '2 – 5 Years',   tag: '2-5yr' },
 ];
 
+// item types:
+//   regular  { emoji, name, qty, note }              → checkbox in checklist
+//   options  { type:'options', label, options:[...] } → radio buttons in checklist (pick ONE)
+
 const DIET_PLANS = {
   'exclusive-bf': {
     intro: 'Exclusive breastfeeding is the ONLY food your baby needs for the first 6 months. No water, no other milk, no solid food.',
@@ -30,14 +34,16 @@ const DIET_PLANS = {
       'Mother should eat well, drink plenty of fluids, and rest',
     ],
     meals: [
-      { time: 'Every 2–3 hours (day & night)', icon: '🌅', name: 'Breastfeeding Session', items: [
-        { emoji: '🥛', name: 'Breast Milk', qty: 'On demand (both sides)', note: 'The only food needed' },
+      { time: 'Every 2–3 hours (day & night)', icon: '🌅', name: 'Feeding Session', items: [
+        { type: 'options', label: 'Choose milk source', options: [
+          { emoji: '🤱', name: 'Breast Milk', qty: 'On demand (both sides)', note: 'Best choice — the only food needed' },
+          { emoji: '🍼', name: 'Formula Milk', qty: 'As per tin instructions', note: 'Only if breastfeeding not possible' },
+        ]},
       ]},
     ],
-    avoidFoods: ['Water (before 6 months)', 'Formula (unless medically required)', 'Cow\'s milk', 'Honey', 'Solid foods', 'Juices'],
+    avoidFoods: ['Water (before 6 months)', 'Cow\'s milk', 'Honey', 'Solid foods', 'Juices', 'Glucose water'],
     warning: '⚠️ Never dilute breast milk. Never add sugar or salt. If breastfeeding is difficult, contact your ASHA worker or doctor.',
   },
-  // ... (keeping all other DIET_PLANS identical to original for brevity, but include ALL in actual file)
   '6-8mo': {
     intro: 'At 6 months, start soft complementary foods alongside continued breastfeeding. Begin with small amounts and gradually increase.',
     color: '#fef9c3',
@@ -50,34 +56,74 @@ const DIET_PLANS = {
       'Never add salt or sugar to baby food',
     ],
     meals: [
-      { time: '7:00 – 8:00 AM', icon: '🌅', name: 'Morning Feed', items: [
-        { emoji: '🥛', name: 'Breast Milk', qty: 'Both sides, on demand', note: 'Always offer breast milk first' },
+      { time: '7:00 – 8:00 AM', icon: '🌅', name: 'Morning Milk Feed', items: [
+        { type: 'options', label: 'Choose milk source', options: [
+          { emoji: '🤱', name: 'Breast Milk', qty: 'Both sides, on demand', note: 'Always offer breast milk first' },
+          { emoji: '🍼', name: 'Formula Milk', qty: '120–150 ml', note: 'If not breastfeeding' },
+        ]},
       ]},
       { time: '9:00 – 10:00 AM', icon: '🍚', name: 'First Solid Meal', items: [
-        { emoji: '🍚', name: 'Soft Dal Khichdi', qty: '2–4 tbsp (gradually increase)', note: 'Cooked until very soft' },
-        { emoji: '🍌', name: 'Mashed Ripe Banana', qty: '1–2 tbsp', note: 'Or any soft seasonal fruit' },
+        { type: 'options', label: 'Choose one cereal / main', options: [
+          { emoji: '🍚', name: 'Soft Dal Khichdi', qty: '2–4 tbsp', note: 'Cooked until very soft, add ghee' },
+          { emoji: '🌾', name: 'Ragi Porridge (thin)', qty: '3–4 tbsp', note: 'Cook well with water or breast milk' },
+          { emoji: '🥣', name: 'Soft Rice Porridge', qty: '3–4 tbsp', note: 'With a little dal water' },
+          { emoji: '🌾', name: 'Oats Porridge (thin)', qty: '3–4 tbsp', note: 'Cooked smooth, no salt/sugar' },
+        ]},
+        { type: 'options', label: 'Choose one fruit (alongside)', options: [
+          { emoji: '🍌', name: 'Mashed Ripe Banana', qty: '1–2 tbsp', note: 'Soft & easily digestible' },
+          { emoji: '🍎', name: 'Apple Puree (cooked)', qty: '1–2 tbsp', note: 'Steam, then mash smooth' },
+          { emoji: '🧡', name: 'Papaya Puree', qty: '1–2 tbsp', note: 'Ripe, mashed fine' },
+          { emoji: '🍑', name: 'Chikoo (Sapota) Puree', qty: '1–2 tbsp', note: 'Sweet & soft' },
+        ]},
       ]},
       { time: '12:00 – 1:00 PM', icon: '☀️', name: 'Lunch', items: [
-        { emoji: '🥛', name: 'Breast Milk', qty: 'On demand', note: '' },
-        { emoji: '🥕', name: 'Mashed Cooked Vegetables', qty: '2–3 tbsp', note: 'Carrot, pumpkin, sweet potato' },
-        { emoji: '🍚', name: 'Soft Rice + Dal water', qty: '3–4 tbsp', note: 'Add ½ tsp ghee' },
+        { type: 'options', label: 'Choose milk feed (before meal)', options: [
+          { emoji: '🤱', name: 'Breast Milk', qty: 'On demand', note: 'Offer before solids' },
+          { emoji: '🍼', name: 'Formula Milk', qty: '100 ml', note: '' },
+        ]},
+        { type: 'options', label: 'Choose one vegetable puree', options: [
+          { emoji: '🥕', name: 'Mashed Carrot (cooked)', qty: '2–3 tbsp', note: 'Boil and mash smooth' },
+          { emoji: '🎃', name: 'Pumpkin Puree', qty: '2–3 tbsp', note: 'Naturally sweet and easy to digest' },
+          { emoji: '🍠', name: 'Sweet Potato Puree', qty: '2–3 tbsp', note: 'Boil and mash well' },
+          { emoji: '🥦', name: 'Soft Cooked Peas Mash', qty: '2–3 tbsp', note: 'Press through sieve' },
+        ]},
+        { emoji: '🍚', name: 'Soft Rice + Dal water', qty: '3–4 tbsp', note: 'Add ½ tsp ghee for energy' },
       ]},
       { time: '4:00 – 5:00 PM', icon: '🌆', name: 'Evening Snack', items: [
-        { emoji: '🍌', name: 'Fruit Puree', qty: '2–3 tbsp', note: 'Banana, papaya, or chikoo' },
-        { emoji: '🌾', name: 'Ragi Porridge (thin)', qty: '3–4 tbsp', note: 'Cook well, thin consistency' },
+        { type: 'options', label: 'Choose one fruit puree', options: [
+          { emoji: '🍌', name: 'Mashed Banana', qty: '2–3 tbsp', note: '' },
+          { emoji: '🧡', name: 'Papaya Puree', qty: '2–3 tbsp', note: 'Ripe and smooth' },
+          { emoji: '🥭', name: 'Mango Puree (seasonal)', qty: '2–3 tbsp', note: 'No added sugar' },
+          { emoji: '🍑', name: 'Chikoo Puree', qty: '2–3 tbsp', note: '' },
+          { emoji: '🍐', name: 'Pear Puree (cooked)', qty: '2–3 tbsp', note: 'Peel, boil, blend smooth' },
+        ]},
+        { type: 'options', label: 'Choose one cereal snack', options: [
+          { emoji: '🌾', name: 'Ragi Porridge (thin)', qty: '3–4 tbsp', note: 'Good source of calcium' },
+          { emoji: '🥣', name: 'Soft Oats Porridge', qty: '3–4 tbsp', note: 'Creamy consistency' },
+          { emoji: '🌽', name: 'Corn (maize) Porridge', qty: '3–4 tbsp', note: 'Smooth, no lumps' },
+        ]},
       ]},
       { time: '7:00 – 8:00 PM', icon: '🌙', name: 'Dinner', items: [
-        { emoji: '🥛', name: 'Breast Milk', qty: 'On demand', note: '' },
-        { emoji: '🍚', name: 'Soft Khichdi / Rice porridge', qty: '3–4 tbsp', note: 'Add ghee or oil' },
+        { type: 'options', label: 'Choose milk feed (before meal)', options: [
+          { emoji: '🤱', name: 'Breast Milk', qty: 'On demand', note: '' },
+          { emoji: '🍼', name: 'Formula Milk', qty: '100 ml', note: '' },
+        ]},
+        { type: 'options', label: 'Choose one dinner cereal', options: [
+          { emoji: '🍚', name: 'Soft Dal Khichdi', qty: '3–4 tbsp', note: 'Add ghee or oil' },
+          { emoji: '🥣', name: 'Rice Porridge (Kanji)', qty: '3–4 tbsp', note: 'Thin consistency' },
+          { emoji: '🌾', name: 'Suji (Semolina) Porridge', qty: '3–4 tbsp', note: 'No salt, add ghee' },
+        ]},
       ]},
       { time: 'During night', icon: '🌛', name: 'Night Feed', items: [
-        { emoji: '🥛', name: 'Breast Milk', qty: 'On demand', note: 'Night feeds are important' },
+        { type: 'options', label: 'Night milk feed', options: [
+          { emoji: '🤱', name: 'Breast Milk', qty: 'On demand', note: 'Night feeds are important for milk supply' },
+          { emoji: '🍼', name: 'Formula Milk', qty: '100–120 ml', note: '' },
+        ]},
       ]},
     ],
     avoidFoods: ['Salt', 'Sugar', 'Honey', 'Whole nuts', 'Cow\'s milk as main drink', 'Raw eggs', 'Citrus fruits', 'Processed/packaged food'],
-    warning: '⚠️ If baby refuses a new food, try again after a few days. Never force-feed.',
+    warning: '⚠️ Introduce one new food at a time. If baby refuses, try again after 2–3 days. Never force-feed.',
   },
-  // [Include ALL other age groups exactly as in the original file - 9-11mo, 12-23mo, 2-5yr with their full meals, tips, etc.]
   '9-11mo': {
     intro: 'By 9 months, baby can eat a wider variety of mashed or finely chopped family foods. Offer 3 meals and 2 snacks daily.',
     color: '#dcfce7',
@@ -91,27 +137,75 @@ const DIET_PLANS = {
     ],
     meals: [
       { time: '7:00 – 8:00 AM', icon: '🌅', name: 'Breakfast', items: [
-        { emoji: '🥛', name: 'Breast Milk', qty: 'On demand', note: 'Offer before solids' },
-        { emoji: '🌾', name: 'Ragi / Oats Porridge', qty: '5–6 tbsp', note: 'With mashed banana' },
-        { emoji: '🍳', name: 'Mashed Egg Yolk', qty: '½ – 1 yolk', note: 'Well cooked, 3×/week' },
+        { type: 'options', label: 'Choose milk feed (start the day)', options: [
+          { emoji: '🤱', name: 'Breast Milk', qty: 'On demand', note: 'Offer before solids' },
+          { emoji: '🍼', name: 'Formula Milk', qty: '120 ml', note: '' },
+        ]},
+        { type: 'options', label: 'Choose one cereal', options: [
+          { emoji: '🌾', name: 'Ragi Porridge', qty: '5–6 tbsp', note: 'With mashed banana or dates' },
+          { emoji: '🥣', name: 'Oats Porridge', qty: '5–6 tbsp', note: 'Creamy with mashed fruit' },
+          { emoji: '🌽', name: 'Suji Upma (soft)', qty: '5–6 tbsp', note: 'No salt, add ghee' },
+          { emoji: '🍚', name: 'Soft Idli (mashed)', qty: '1–2 small idlis', note: 'With a little dal or coconut chutney' },
+        ]},
+        { type: 'options', label: 'Choose one protein (3× per week)', options: [
+          { emoji: '🍳', name: 'Mashed Egg Yolk', qty: '½ – 1 yolk', note: 'Well cooked' },
+          { emoji: '🫘', name: 'Mashed Moong Dal', qty: '2–3 tbsp', note: 'Egg-free option' },
+          { emoji: '🧀', name: 'Soft Paneer (mashed)', qty: '2–3 tbsp', note: 'Good protein & calcium' },
+        ]},
       ]},
       { time: '10:00 – 10:30 AM', icon: '🍎', name: 'Mid-Morning Snack', items: [
-        { emoji: '🍌', name: 'Soft Fruit (mashed)', qty: '3–4 tbsp', note: 'Banana, papaya, mango' },
-        { emoji: '🌾', name: 'Soft Biscuit / Ragi Ladoo', qty: '1–2 pieces', note: 'No-sugar variety' },
+        { type: 'options', label: 'Choose one fruit', options: [
+          { emoji: '🍌', name: 'Mashed Banana', qty: '3–4 tbsp', note: 'Soft and easy' },
+          { emoji: '🧡', name: 'Papaya (mashed)', qty: '3–4 tbsp', note: '' },
+          { emoji: '🥭', name: 'Mango Pulp', qty: '3–4 tbsp', note: 'Seasonal, no sugar added' },
+          { emoji: '🍎', name: 'Grated Soft Apple', qty: '3–4 tbsp', note: 'Or cooked apple puree' },
+        ]},
+        { type: 'options', label: 'Choose one light snack', options: [
+          { emoji: '🌾', name: 'Soft Ragi Ladoo (small)', qty: '1 piece', note: 'No jaggery excess' },
+          { emoji: '🍪', name: 'Plain Wheat Biscuit', qty: '1–2 pieces', note: 'No-sugar variety' },
+          { emoji: '🌾', name: 'Puffed Rice (soft)', qty: 'Small handful', note: 'Easy to hold, self-feed' },
+        ]},
       ]},
       { time: '12:00 – 1:00 PM', icon: '☀️', name: 'Lunch', items: [
-        { emoji: '🍚', name: 'Dal Rice (soft, mashed)', qty: '6–8 tbsp', note: 'With ½ tsp ghee' },
-        { emoji: '🥕', name: 'Mashed / finely chopped vegetables', qty: '4–5 tbsp', note: 'Carrot, beans, pumpkin' },
-        { emoji: '🥣', name: 'Curd', qty: '2–3 tbsp', note: 'Good probiotic source' },
+        { type: 'options', label: 'Choose one main dish', options: [
+          { emoji: '🍚', name: 'Dal Rice (soft, mashed)', qty: '6–8 tbsp', note: 'With ½ tsp ghee' },
+          { emoji: '🍚', name: 'Khichdi (rice + moong dal)', qty: '6–8 tbsp', note: 'Add ghee + mashed vegetables' },
+          { emoji: '🫓', name: 'Soft Roti soaked in Dal', qty: '½ roti + 4 tbsp dal', note: 'Tear and soak until very soft' },
+        ]},
+        { type: 'options', label: 'Choose one vegetable', options: [
+          { emoji: '🥕', name: 'Mashed Carrot', qty: '4–5 tbsp', note: '' },
+          { emoji: '🫘', name: 'Soft Green Beans (chopped)', qty: '4–5 tbsp', note: 'Boil very soft' },
+          { emoji: '🎃', name: 'Soft Pumpkin', qty: '4–5 tbsp', note: '' },
+          { emoji: '🥬', name: 'Mashed Spinach + Dal', qty: '4–5 tbsp', note: 'Good iron source' },
+        ]},
+        { type: 'options', label: 'Choose one probiotic', options: [
+          { emoji: '🥣', name: 'Curd (plain)', qty: '2–3 tbsp', note: 'Good probiotic' },
+          { emoji: '🍌', name: 'Mashed Banana', qty: '2–3 tbsp', note: 'If curd not tolerated' },
+        ]},
       ]},
       { time: '4:00 – 4:30 PM', icon: '🌆', name: 'Evening Snack', items: [
-        { emoji: '🥔', name: 'Soft Cooked Potato / Sweet Potato', qty: '4–5 tbsp', note: 'Mashed with a little butter' },
-        { emoji: '🥛', name: 'Breast Milk / Curd', qty: 'As desired', note: '' },
+        { type: 'options', label: 'Choose one starchy snack', options: [
+          { emoji: '🥔', name: 'Mashed Potato', qty: '4–5 tbsp', note: 'With a little butter' },
+          { emoji: '🍠', name: 'Mashed Sweet Potato', qty: '4–5 tbsp', note: 'Naturally sweet, no sugar needed' },
+          { emoji: '🌽', name: 'Soft Boiled Corn (mashed)', qty: '4–5 tbsp', note: '' },
+        ]},
+        { type: 'options', label: 'Choose one dairy drink', options: [
+          { emoji: '🤱', name: 'Breast Milk', qty: 'As desired', note: '' },
+          { emoji: '🍼', name: 'Formula Milk', qty: '100 ml', note: '' },
+          { emoji: '🥣', name: 'Plain Curd', qty: '3–4 tbsp', note: 'At room temperature' },
+        ]},
       ]},
       { time: '7:00 – 8:00 PM', icon: '🌙', name: 'Dinner', items: [
-        { emoji: '🫓', name: 'Soft Roti + Dal', qty: '½ roti (torn) + 4–5 tbsp dal', note: 'Dip roti in dal to soften' },
-        { emoji: '🥦', name: 'Boiled Soft Vegetables', qty: '4–5 tbsp', note: '' },
-        { emoji: '🥛', name: 'Breast Milk', qty: 'On demand', note: '' },
+        { type: 'options', label: 'Choose one dinner main', options: [
+          { emoji: '🫓', name: 'Soft Roti + Dal', qty: '½ roti (torn) + 4–5 tbsp dal', note: 'Dip roti in dal to soften' },
+          { emoji: '🍚', name: 'Khichdi (soft)', qty: '6–8 tbsp', note: 'With ghee' },
+          { emoji: '🌾', name: 'Suji Kheer (no sugar)', qty: '5–6 tbsp', note: 'Use dates for sweetness' },
+        ]},
+        { emoji: '🥦', name: 'Boiled Soft Vegetables (any)', qty: '4–5 tbsp', note: 'Carrot, beans, peas' },
+        { type: 'options', label: 'Bedtime milk (optional)', options: [
+          { emoji: '🤱', name: 'Breast Milk', qty: 'On demand', note: '' },
+          { emoji: '🍼', name: 'Formula Milk', qty: '100 ml', note: '' },
+        ]},
       ]},
     ],
     avoidFoods: ['Salt (limit strictly)', 'Sugar', 'Honey', 'Whole/hard nuts', 'Round hard foods (choking hazard)', 'Cow\'s milk as main drink', 'Junk food / chips'],
@@ -131,31 +225,78 @@ const DIET_PLANS = {
     ],
     meals: [
       { time: '7:00 – 8:00 AM', icon: '🌅', name: 'Breakfast', items: [
-        { emoji: '🥛', name: 'Breast Milk / Cow\'s Milk', qty: '100–150 ml', note: 'Or curd (½ cup)' },
-        { emoji: '🌾', name: 'Ragi Dosa / Idli / Soft Paratha', qty: '1–2 small pieces', note: 'With dal or vegetable filling' },
-        { emoji: '🍳', name: 'Egg (boiled / scrambled)', qty: '1 whole egg', note: '5×/week for brain development' },
+        { type: 'options', label: 'Choose one morning milk', options: [
+          { emoji: '🤱', name: 'Breast Milk', qty: '100–150 ml', note: 'Continue up to 2 years' },
+          { emoji: '🥛', name: 'Cow\'s Milk (warm)', qty: '100–150 ml', note: 'From 1 year onwards' },
+          { emoji: '🥣', name: 'Plain Curd', qty: '½ cup', note: 'Good probiotic source' },
+        ]},
+        { type: 'options', label: 'Choose one breakfast cereal / bread', options: [
+          { emoji: '🌾', name: 'Ragi Dosa (small)', qty: '1–2 small pieces', note: 'With dal or chutney' },
+          { emoji: '🥞', name: 'Soft Idli (2 small)', qty: '2 idlis', note: 'With sambar' },
+          { emoji: '🫓', name: 'Soft Whole Wheat Paratha', qty: '½ – 1 small paratha', note: 'With dal or vegetable stuffing' },
+          { emoji: '🌾', name: 'Upma / Poha', qty: '½ cup', note: 'With vegetables, no excess salt' },
+        ]},
+        { type: 'options', label: 'Choose one protein', options: [
+          { emoji: '🍳', name: 'Boiled Egg', qty: '1 whole egg', note: '5× per week for brain development' },
+          { emoji: '🍳', name: 'Scrambled Egg', qty: '1 egg', note: 'With a little ghee, no salt' },
+          { emoji: '🧀', name: 'Paneer Cubes (soft)', qty: '2–3 cubes', note: 'Egg-free protein option' },
+          { emoji: '🫘', name: 'Dal (thick)', qty: '3–4 tbsp', note: 'With breakfast cereal' },
+        ]},
       ]},
       { time: '10:30 AM', icon: '🍎', name: 'Mid-Morning Snack', items: [
-        { emoji: '🍌', name: 'Fresh Fruit', qty: '½ cup (chopped)', note: 'Banana, apple, mango, papaya' },
-        { emoji: '🌾', name: 'Whole grain biscuit', qty: '1–2 pieces', note: 'Low sugar variety' },
+        { type: 'options', label: 'Choose one fresh fruit', options: [
+          { emoji: '🍌', name: 'Banana (sliced)', qty: '½ banana', note: '' },
+          { emoji: '🍎', name: 'Apple (grated or soft slices)', qty: '½ cup', note: '' },
+          { emoji: '🥭', name: 'Mango Slices (seasonal)', qty: '½ cup', note: 'No added sugar' },
+          { emoji: '🧡', name: 'Papaya (chopped)', qty: '½ cup', note: '' },
+          { emoji: '🍇', name: 'Grapes (halved)', qty: '½ cup', note: 'Always cut in half — choking risk' },
+        ]},
+        { type: 'options', label: 'Choose one light snack', options: [
+          { emoji: '🌾', name: 'Whole Grain Biscuit', qty: '1–2 pieces', note: 'Low sugar variety' },
+          { emoji: '🌾', name: 'Puffed Rice (muri)', qty: 'Small bowl', note: 'Light and easy to eat' },
+          { emoji: '🌰', name: 'Finely Ground Nuts (in food)', qty: '1 tsp', note: 'Not whole nuts — choking risk' },
+        ]},
       ]},
       { time: '12:30 – 1:30 PM', icon: '☀️', name: 'Lunch', items: [
-        { emoji: '🍚', name: 'Rice + Dal + Sabzi', qty: '½ cup rice + 3–4 tbsp dal + 4 tbsp sabzi', note: 'Add ghee or oil' },
+        { type: 'options', label: 'Choose one carbohydrate', options: [
+          { emoji: '🍚', name: 'Soft Cooked Rice', qty: '½ cup', note: 'With dal and sabzi' },
+          { emoji: '🫓', name: 'Soft Roti (1–2 small)', qty: '1–2 rotis', note: 'Whole wheat preferred' },
+          { emoji: '🍚', name: 'Khichdi', qty: '½ cup', note: 'With vegetables and ghee' },
+        ]},
+        { type: 'options', label: 'Choose one protein / dal', options: [
+          { emoji: '🫘', name: 'Dal (any variety)', qty: '3–4 tbsp', note: 'Toor, moong, masoor — iron-rich' },
+          { emoji: '🫘', name: 'Rajma or Chhole (mashed)', qty: '3–4 tbsp', note: 'Good protein' },
+          { emoji: '🍗', name: 'Soft Chicken / Fish (shredded)', qty: '2–3 tbsp', note: 'Bone-free, well cooked' },
+        ]},
+        { emoji: '🥕', name: 'Cooked Vegetable Sabzi', qty: '4–5 tbsp', note: 'Varied colours for nutrients' },
         { emoji: '🥣', name: 'Curd / Raita', qty: '3–4 tbsp', note: '' },
-        { emoji: '🥕', name: 'Cooked Vegetables (soft)', qty: '4–5 tbsp', note: 'Varied colours for nutrients' },
       ]},
       { time: '4:00 – 4:30 PM', icon: '🌆', name: 'Afternoon Snack', items: [
-        { emoji: '🌽', name: 'Boiled Corn / Sweet Potato', qty: 'Small portion', note: '' },
-        { emoji: '🥜', name: 'Groundnut Chutney (no whole nuts)', qty: '2 tbsp', note: 'Grind finely — not whole nuts' },
-        { emoji: '🥛', name: 'Milk or curd', qty: '100 ml', note: '' },
+        { type: 'options', label: 'Choose one snack', options: [
+          { emoji: '🌽', name: 'Boiled Sweet Corn', qty: 'Small portion', note: 'No salt, no butter excess' },
+          { emoji: '🍠', name: 'Boiled Sweet Potato', qty: 'Small portion', note: 'Natural sweetness' },
+          { emoji: '🥜', name: 'Groundnut Chutney (finely ground)', qty: '2 tbsp', note: 'With roti piece' },
+          { emoji: '🧀', name: 'Paneer Cubes + Roti', qty: '2 cubes + ½ roti', note: '' },
+        ]},
+        { type: 'options', label: 'Choose one dairy drink', options: [
+          { emoji: '🥛', name: 'Cow\'s Milk (warm)', qty: '100 ml', note: '' },
+          { emoji: '🥣', name: 'Thin Lassi (no sugar)', qty: '100 ml', note: '' },
+          { emoji: '🤱', name: 'Breast Milk', qty: 'As desired', note: '' },
+        ]},
       ]},
       { time: '7:30 – 8:30 PM', icon: '🌙', name: 'Dinner', items: [
-        { emoji: '🫓', name: 'Roti (soft) + Dal / Paneer curry', qty: '1 roti + 4 tbsp', note: '' },
+        { type: 'options', label: 'Choose one dinner main', options: [
+          { emoji: '🫓', name: 'Soft Roti + Dal / Paneer curry', qty: '1 roti + 4 tbsp', note: '' },
+          { emoji: '🍚', name: 'Soft Khichdi', qty: '½ cup', note: 'If roti is difficult' },
+          { emoji: '🍚', name: 'Rice + Dal + Sabzi', qty: '½ cup rice + 3 tbsp dal', note: '' },
+        ]},
         { emoji: '🥦', name: 'Cooked Green Vegetables', qty: '4–5 tbsp', note: 'Spinach, beans, peas' },
-        { emoji: '🍚', name: 'Soft Khichdi (alternate)', qty: '½ cup', note: 'If roti difficult' },
       ]},
       { time: 'Bedtime', icon: '🌛', name: 'Bedtime Feed', items: [
-        { emoji: '🥛', name: 'Breast Milk / Warm milk', qty: '100–150 ml', note: '' },
+        { type: 'options', label: 'Choose bedtime milk', options: [
+          { emoji: '🤱', name: 'Breast Milk', qty: '100–150 ml', note: 'Continue as long as possible' },
+          { emoji: '🥛', name: 'Warm Cow\'s Milk', qty: '100–150 ml', note: 'Plain, no flavours' },
+        ]},
       ]},
     ],
     avoidFoods: ['Added salt (limit)', 'Added sugar (limit)', 'Honey (before 1 yr)', 'Whole nuts (choking)', 'Junk food, chips, biscuits', 'Aerated drinks', 'Unpasteurised milk'],
@@ -175,29 +316,79 @@ const DIET_PLANS = {
     ],
     meals: [
       { time: '7:30 – 8:30 AM', icon: '🌅', name: 'Breakfast', items: [
-        { emoji: '🥛', name: 'Milk', qty: '1 cup (200 ml)', note: '' },
-        { emoji: '🌾', name: 'Upma / Poha / Idli / Paratha', qty: '1–2 servings', note: 'With vegetable filling' },
-        { emoji: '🍳', name: 'Boiled Egg', qty: '1 egg', note: '5× per week' },
+        { type: 'options', label: 'Choose one morning milk', options: [
+          { emoji: '🥛', name: 'Cow\'s Milk (warm)', qty: '1 cup (200 ml)', note: '' },
+          { emoji: '🥛', name: 'Toned Milk with Ragi', qty: '1 cup', note: 'Extra calcium' },
+          { emoji: '🥣', name: 'Curd', qty: '½ cup', note: 'If milk not preferred' },
+        ]},
+        { type: 'options', label: 'Choose one breakfast dish', options: [
+          { emoji: '🌾', name: 'Upma (vegetable)', qty: '1 cup', note: 'With vegetables, low salt' },
+          { emoji: '🌾', name: 'Poha (flattened rice)', qty: '1 cup', note: 'With peanuts & vegetables' },
+          { emoji: '🥞', name: 'Idli + Sambar', qty: '2 idlis', note: '' },
+          { emoji: '🫓', name: 'Whole Wheat Paratha', qty: '1 paratha', note: 'With dal or vegetable stuffing' },
+          { emoji: '🌾', name: 'Ragi Dosa', qty: '1–2 dosas', note: 'With chutney or dal' },
+        ]},
+        { type: 'options', label: 'Choose one protein', options: [
+          { emoji: '🍳', name: 'Boiled Egg', qty: '1 egg', note: '5× per week' },
+          { emoji: '🍳', name: 'Omelette (no salt)', qty: '1 egg', note: 'With vegetables' },
+          { emoji: '🧀', name: 'Paneer Bhurji', qty: '2–3 tbsp', note: 'Egg-free option' },
+          { emoji: '🫘', name: 'Dal / Sprouts', qty: '3–4 tbsp', note: 'With breakfast cereal' },
+        ]},
       ]},
       { time: '10:30 – 11:00 AM', icon: '🍎', name: 'Morning Snack', items: [
-        { emoji: '🍌', name: 'Seasonal Fruit', qty: '1 medium fruit or ½ cup', note: 'Apple, banana, guava, mango' },
-        { emoji: '🌰', name: 'Roasted Groundnuts / Chana', qty: 'Small handful', note: 'Healthy protein snack' },
+        { type: 'options', label: 'Choose one seasonal fruit', options: [
+          { emoji: '🍌', name: 'Banana', qty: '1 medium', note: 'Quick energy' },
+          { emoji: '🍎', name: 'Apple (sliced)', qty: '½ – 1 apple', note: '' },
+          { emoji: '🍈', name: 'Guava (chopped)', qty: '½ cup', note: 'High vitamin C' },
+          { emoji: '🥭', name: 'Mango (seasonal)', qty: '½ cup', note: '' },
+          { emoji: '🍊', name: 'Orange / Mosambi', qty: '1 small', note: 'Vitamin C boosts iron absorption' },
+        ]},
+        { type: 'options', label: 'Choose one snack', options: [
+          { emoji: '🌰', name: 'Roasted Groundnuts', qty: 'Small handful', note: 'Healthy protein snack' },
+          { emoji: '🫘', name: 'Roasted Chana', qty: 'Small handful', note: 'Iron & protein rich' },
+          { emoji: '🌾', name: 'Makhana (fox nuts)', qty: '½ cup', note: 'Light and calcium-rich' },
+        ]},
       ]},
       { time: '1:00 – 2:00 PM', icon: '☀️', name: 'Lunch', items: [
-        { emoji: '🫓', name: 'Roti / Rice', qty: '2 rotis or ¾ cup rice', note: 'Whole wheat preferred' },
-        { emoji: '🫘', name: 'Dal / Rajma / Chhole', qty: '½ cup', note: 'Iron-rich legumes' },
-        { emoji: '🥬', name: 'Green Vegetable Sabzi', qty: '½ cup', note: 'Spinach, beans, broccoli' },
+        { type: 'options', label: 'Choose one carbohydrate', options: [
+          { emoji: '🍚', name: 'Rice (cooked)', qty: '¾ cup', note: 'With dal and sabzi' },
+          { emoji: '🫓', name: 'Whole Wheat Roti', qty: '2 rotis', note: 'Preferred over maida' },
+          { emoji: '🌾', name: 'Bajra / Jowar Roti', qty: '1–2 rotis', note: 'More iron than wheat' },
+        ]},
+        { type: 'options', label: 'Choose one dal / legume', options: [
+          { emoji: '🫘', name: 'Toor / Moong / Masoor Dal', qty: '½ cup', note: 'Iron-rich' },
+          { emoji: '🫘', name: 'Rajma (kidney beans)', qty: '½ cup', note: '' },
+          { emoji: '🫘', name: 'Chhole (chickpeas)', qty: '½ cup', note: '' },
+          { emoji: '🍗', name: 'Chicken / Fish curry', qty: '2–3 tbsp', note: 'Well cooked, bone-free' },
+        ]},
+        { emoji: '🥬', name: 'Green Vegetable Sabzi', qty: '½ cup', note: 'Spinach, beans, broccoli — iron-rich' },
         { emoji: '🥣', name: 'Curd', qty: '½ cup', note: 'Probiotics for digestion' },
       ]},
       { time: '4:30 – 5:00 PM', icon: '🌆', name: 'Evening Snack', items: [
-        { emoji: '🥜', name: 'Peanut Butter on Roti / Bread', qty: '1 tbsp on 1 piece', note: 'Or mixed nuts (chewed well)' },
-        { emoji: '🥛', name: 'Lassi / Buttermilk', qty: '1 glass', note: 'No added sugar' },
+        { type: 'options', label: 'Choose one healthy snack', options: [
+          { emoji: '🥜', name: 'Peanut Butter on Roti', qty: '1 tbsp on 1 piece', note: '' },
+          { emoji: '🍠', name: 'Boiled Sweet Potato', qty: '1 medium', note: 'Naturally sweet, no sugar' },
+          { emoji: '🌽', name: 'Boiled Corn', qty: '½ cob', note: '' },
+          { emoji: '🧀', name: 'Paneer + Roti', qty: '2 cubes + 1 small roti', note: '' },
+          { emoji: '🌾', name: 'Makhana (roasted)', qty: '½ cup', note: 'Light and calcium-rich' },
+        ]},
+        { type: 'options', label: 'Choose one drink', options: [
+          { emoji: '🥛', name: 'Lassi (plain, no sugar)', qty: '1 glass', note: '' },
+          { emoji: '🥛', name: 'Buttermilk (chaas)', qty: '1 glass', note: 'Good for digestion' },
+          { emoji: '🥛', name: 'Warm Cow\'s Milk', qty: '1 cup', note: '' },
+        ]},
       ]},
       { time: '8:00 – 9:00 PM', icon: '🌙', name: 'Dinner', items: [
-        { emoji: '🫓', name: 'Roti + Dal/Sabzi', qty: '1–2 rotis + ½ cup each', note: '' },
-        { emoji: '🍚', name: 'Rice (if preferred)', qty: '½ cup', note: '' },
-        { emoji: '🥦', name: 'Cooked Vegetables', qty: '½ cup', note: 'Varied colours' },
-        { emoji: '🥛', name: 'Warm Milk', qty: '1 cup', note: 'Before sleep for calcium' },
+        { type: 'options', label: 'Choose one dinner carbohydrate', options: [
+          { emoji: '🫓', name: 'Soft Roti + Dal', qty: '1–2 rotis + ½ cup dal', note: '' },
+          { emoji: '🍚', name: 'Rice + Dal + Sabzi', qty: '½ cup rice + ½ cup dal', note: '' },
+          { emoji: '🍚', name: 'Vegetable Khichdi', qty: '1 cup', note: 'One-pot balanced meal' },
+        ]},
+        { emoji: '🥦', name: 'Cooked Vegetables (any)', qty: '½ cup', note: 'Varied colours for vitamins' },
+        { type: 'options', label: 'Choose bedtime milk', options: [
+          { emoji: '🥛', name: 'Warm Cow\'s Milk', qty: '1 cup', note: 'Before sleep for calcium' },
+          { emoji: '🥛', name: 'Warm Turmeric Milk', qty: '1 cup', note: 'Immunity boost' },
+        ]},
       ]},
     ],
     avoidFoods: ['Chips, namkeen, biscuits (limit)', 'Aerated drinks', 'Excessive sugar (sweets, candy)', 'Excessive salt', 'Fast food (occasionally only)', 'Unpasteurised products'],
@@ -296,11 +487,27 @@ export default function DietPlan() {
 
   const totalMeals = dietData?.meals?.length || 0;
 
-  // Total checklist items across all meals
+  // Total checklist slots across all meals (each item or options-group = 1 slot)
   const totalCheckItems = useMemo(
     () => dietData?.meals?.reduce((s, m) => s + m.items.length, 0) ?? 0,
     [dietData]
   );
+
+  // Count how many slots are "done" — options slot: any key "mi-ii:*" present; regular: "mi-ii" present
+  const doneCount = useMemo(() => {
+    if (!dietData?.meals) return 0;
+    let count = 0;
+    dietData.meals.forEach((meal, mi) => {
+      meal.items.forEach((item, ii) => {
+        if (item.type === 'options') {
+          if (checks.some(k => k.startsWith(`${mi}-${ii}:`))) count++;
+        } else {
+          if (checks.includes(`${mi}-${ii}`)) count++;
+        }
+      });
+    });
+    return count;
+  }, [checks, dietData]);
 
   // Load today's checklist + streak when child / diet data is ready
   useEffect(() => {
@@ -348,8 +555,17 @@ export default function DietPlan() {
     }
   };
 
-  const toggleCheck = (key) => {
-    const next = checks.includes(key) ? checks.filter(k => k !== key) : [...checks, key];
+  // For regular items: toggle "mi-ii". For options: set "mi-ii:optIdx", clearing other options in same slot.
+  const selectCheck = (key, isOption, slotPrefix) => {
+    let next;
+    if (isOption) {
+      // remove any existing selection for this slot, then add new one
+      const alreadySelected = checks.includes(key);
+      next = checks.filter(k => !k.startsWith(slotPrefix + ':'));
+      if (!alreadySelected) next = [...next, key];
+    } else {
+      next = checks.includes(key) ? checks.filter(k => k !== key) : [...checks, key];
+    }
     setChecks(next);
     saveChecklist(next, checkNotes);
   };
@@ -478,7 +694,7 @@ export default function DietPlan() {
             <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
               {[
                 { key: 'plan', label: '📋 Daily Meal Plan' },
-                { key: 'checklist', label: `✅ Daily Checklist${checks.length > 0 ? ` (${checks.length}/${totalCheckItems})` : ''}` },
+                { key: 'checklist', label: `✅ Daily Checklist${doneCount > 0 ? ` (${doneCount}/${totalCheckItems})` : ''}` },
                 { key: 'superfoods', label: '⭐ Superfoods & Tips' },
               ].map(tab => (
                 <button
@@ -505,16 +721,39 @@ export default function DietPlan() {
                       </div>
                     </div>
                     <div style={{ padding: '14px 20px' }}>
-                      {meal.items.map((item, ii) => (
-                        <div key={ii} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '10px 0', borderBottom: ii < meal.items.length - 1 ? `1px solid ${C.border}` : 'none' }}>
-                          <span style={{ fontSize: 22, flexShrink: 0 }}>{item.emoji}</span>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontWeight: 600, fontSize: 14, color: C.text }}>{item.name}</div>
-                            <div style={{ fontSize: 12, color: C.teal, fontWeight: 500 }}>📏 {item.qty}</div>
-                            {item.note && <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>💡 {item.note}</div>}
+                      {meal.items.map((item, ii) => {
+                        const border = ii < meal.items.length - 1 ? `1px solid ${C.border}` : 'none';
+                        if (item.type === 'options') {
+                          return (
+                            <div key={ii} style={{ padding: '10px 0', borderBottom: border }}>
+                              <div style={{ fontSize: 11, fontWeight: 700, color: C.teal2, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 8 }}>
+                                🔀 {item.label}
+                              </div>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                                {item.options.map((opt, oi) => (
+                                  <div key={oi} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '6px 12px', background: C.teal4, border: `1px solid ${C.border}`, borderRadius: 10 }}>
+                                    <span style={{ fontSize: 16 }}>{opt.emoji}</span>
+                                    <div>
+                                      <div style={{ fontWeight: 600, fontSize: 13, color: C.text }}>{opt.name}</div>
+                                      <div style={{ fontSize: 11, color: C.muted }}>📏 {opt.qty}</div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        }
+                        return (
+                          <div key={ii} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '10px 0', borderBottom: border }}>
+                            <span style={{ fontSize: 22, flexShrink: 0 }}>{item.emoji}</span>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontWeight: 600, fontSize: 14, color: C.text }}>{item.name}</div>
+                              <div style={{ fontSize: 12, color: C.teal, fontWeight: 500 }}>📏 {item.qty}</div>
+                              {item.note && <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>💡 {item.note}</div>}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 ))}
@@ -534,13 +773,13 @@ export default function DietPlan() {
             {activeTab === 'checklist' && (
               <div>
                 {/* Day complete banner */}
-                {checkCompletedAt && (
+                {doneCount === totalCheckItems && totalCheckItems > 0 && (
                   <div style={{ background: 'linear-gradient(135deg,#d1fae5,#a7f3d0)', border: '1.5px solid #6ee7b7', borderRadius: 16, padding: '18px 24px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 14 }}>
                     <span style={{ fontSize: 36 }}>🎉</span>
                     <div>
                       <div style={{ fontWeight: 700, fontSize: 16, color: '#065f46' }}>Day Complete! Amazing job!</div>
                       <div style={{ fontSize: 13, color: '#047857', marginTop: 2 }}>
-                        All {totalCheckItems} meals completed today for {selectedChild?.name}.
+                        All {totalCheckItems} feeding slots completed today for {selectedChild?.name}.
                         {streak > 0 && <span> 🔥 <strong>{streak}-day streak!</strong></span>}
                       </div>
                     </div>
@@ -551,18 +790,18 @@ export default function DietPlan() {
                 <div style={{ background: '#fff', border: `1.5px solid ${C.border}`, borderRadius: 14, padding: '16px 20px', marginBottom: 20 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                     <span style={{ fontWeight: 700, fontSize: 14, color: C.text }}>Today's Progress</span>
-                    <span style={{ fontWeight: 700, fontSize: 14, color: C.teal }}>{checks.length} / {totalCheckItems} items</span>
+                    <span style={{ fontWeight: 700, fontSize: 14, color: C.teal }}>{doneCount} / {totalCheckItems} slots</span>
                   </div>
                   <div style={{ background: C.teal3, borderRadius: 99, height: 12, overflow: 'hidden' }}>
                     <div style={{
                       background: `linear-gradient(90deg,${C.teal},${C.teal2})`,
                       height: '100%',
                       borderRadius: 99,
-                      width: `${totalCheckItems > 0 ? Math.round((checks.length / totalCheckItems) * 100) : 0}%`,
+                      width: `${totalCheckItems > 0 ? Math.round((doneCount / totalCheckItems) * 100) : 0}%`,
                       transition: 'width .4s ease',
                     }} />
                   </div>
-                  {streak > 0 && !checkCompletedAt && (
+                  {streak > 0 && doneCount < totalCheckItems && (
                     <div style={{ marginTop: 8, fontSize: 12, color: C.muted }}>🔥 Current streak: <strong>{streak} day{streak !== 1 ? 's' : ''}</strong></div>
                   )}
                 </div>
@@ -571,42 +810,97 @@ export default function DietPlan() {
                   <div style={{ textAlign: 'center', padding: 40, color: C.muted }}>Loading checklist...</div>
                 ) : (
                   <div style={{ display: 'grid', gap: 14 }}>
-                    {dietData.meals.map((meal, mi) => (
-                      <div key={mi} style={{ background: '#fff', border: `1.5px solid ${C.border}`, borderRadius: 16, overflow: 'hidden' }}>
-                        <div style={{ background: dietData.color, padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <span style={{ fontSize: 20 }}>{meal.icon}</span>
-                          <div>
-                            <div style={{ fontWeight: 700, fontSize: 14, color: C.text }}>{meal.name}</div>
-                            <div style={{ fontSize: 12, color: C.muted }}>🕐 {meal.time}</div>
+                    {dietData.meals.map((meal, mi) => {
+                      const mealDone = meal.items.filter((item, ii) => {
+                        const slot = `${mi}-${ii}`;
+                        return item.type === 'options'
+                          ? checks.some(k => k.startsWith(slot + ':'))
+                          : checks.includes(slot);
+                      }).length;
+                      return (
+                        <div key={mi} style={{ background: '#fff', border: `1.5px solid ${C.border}`, borderRadius: 16, overflow: 'hidden' }}>
+                          <div style={{ background: dietData.color, padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <span style={{ fontSize: 20 }}>{meal.icon}</span>
+                            <div>
+                              <div style={{ fontWeight: 700, fontSize: 14, color: C.text }}>{meal.name}</div>
+                              <div style={{ fontSize: 12, color: C.muted }}>🕐 {meal.time}</div>
+                            </div>
+                            <div style={{ marginLeft: 'auto', fontSize: 12, color: C.teal, fontWeight: 600 }}>
+                              {mealDone}/{meal.items.length} done
+                            </div>
                           </div>
-                          <div style={{ marginLeft: 'auto', fontSize: 12, color: C.teal, fontWeight: 600 }}>
-                            {meal.items.filter((_, ii) => checks.includes(`${mi}-${ii}`)).length}/{meal.items.length} done
+                          <div style={{ padding: '10px 20px' }}>
+                            {meal.items.map((item, ii) => {
+                              const slot = `${mi}-${ii}`;
+                              const borderStyle = ii < meal.items.length - 1 ? `1px solid ${C.border}` : 'none';
+
+                              if (item.type === 'options') {
+                                const selected = checks.find(k => k.startsWith(slot + ':'));
+                                const slotDone = !!selected;
+                                return (
+                                  <div key={ii} style={{ padding: '10px 0', borderBottom: borderStyle }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                                      {slotDone
+                                        ? <span style={{ fontSize: 16 }}>✅</span>
+                                        : <span style={{ fontSize: 15, color: C.muted }}>⬜</span>}
+                                      <span style={{ fontSize: 12, fontWeight: 700, color: C.teal2, textTransform: 'uppercase', letterSpacing: '.5px' }}>
+                                        {item.label}
+                                      </span>
+                                    </div>
+                                    <div style={{ display: 'grid', gap: 6, paddingLeft: 8 }}>
+                                      {item.options.map((opt, oi) => {
+                                        const optKey = `${slot}:${oi}`;
+                                        const isSelected = checks.includes(optKey);
+                                        return (
+                                          <label key={oi} style={{
+                                            display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px',
+                                            borderRadius: 10, cursor: 'pointer', border: `1.5px solid ${isSelected ? C.teal : C.border}`,
+                                            background: isSelected ? C.teal4 : '#fafafa', transition: 'all .15s',
+                                          }}>
+                                            <input
+                                              type="radio"
+                                              name={`slot-${slot}`}
+                                              checked={isSelected}
+                                              onChange={() => selectCheck(optKey, true, slot)}
+                                              style={{ accentColor: C.teal, cursor: 'pointer', flexShrink: 0 }}
+                                            />
+                                            <span style={{ fontSize: 18, flexShrink: 0 }}>{opt.emoji}</span>
+                                            <div style={{ flex: 1 }}>
+                                              <div style={{ fontWeight: 600, fontSize: 13, color: isSelected ? C.teal2 : C.text }}>{opt.name}</div>
+                                              <div style={{ fontSize: 11, color: C.muted }}>📏 {opt.qty}{opt.note ? ` · ${opt.note}` : ''}</div>
+                                            </div>
+                                          </label>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                );
+                              }
+
+                              // Regular item — checkbox
+                              const checked = checks.includes(slot);
+                              return (
+                                <label key={ii} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: borderStyle, cursor: 'pointer' }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    onChange={() => selectCheck(slot, false, slot)}
+                                    style={{ width: 18, height: 18, accentColor: C.teal, cursor: 'pointer', flexShrink: 0 }}
+                                  />
+                                  <span style={{ fontSize: 20, flexShrink: 0 }}>{item.emoji}</span>
+                                  <div style={{ flex: 1 }}>
+                                    <div style={{ fontWeight: 600, fontSize: 14, color: checked ? C.muted : C.text, textDecoration: checked ? 'line-through' : 'none' }}>{item.name}</div>
+                                    <div style={{ fontSize: 12, color: C.teal, fontWeight: 500 }}>📏 {item.qty}</div>
+                                    {item.note && <div style={{ fontSize: 11, color: C.muted }}>💡 {item.note}</div>}
+                                  </div>
+                                  {checked && <span style={{ fontSize: 18 }}>✅</span>}
+                                </label>
+                              );
+                            })}
                           </div>
                         </div>
-                        <div style={{ padding: '10px 20px' }}>
-                          {meal.items.map((item, ii) => {
-                            const key = `${mi}-${ii}`;
-                            const checked = checks.includes(key);
-                            return (
-                              <label key={ii} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: ii < meal.items.length - 1 ? `1px solid ${C.border}` : 'none', cursor: 'pointer' }}>
-                                <input
-                                  type="checkbox"
-                                  checked={checked}
-                                  onChange={() => toggleCheck(key)}
-                                  style={{ width: 18, height: 18, accentColor: C.teal, cursor: 'pointer', flexShrink: 0 }}
-                                />
-                                <span style={{ fontSize: 20, flexShrink: 0 }}>{item.emoji}</span>
-                                <div style={{ flex: 1 }}>
-                                  <div style={{ fontWeight: 600, fontSize: 14, color: checked ? C.muted : C.text, textDecoration: checked ? 'line-through' : 'none' }}>{item.name}</div>
-                                  <div style={{ fontSize: 12, color: C.teal, fontWeight: 500 }}>📏 {item.qty}</div>
-                                </div>
-                                {checked && <span style={{ fontSize: 18 }}>✅</span>}
-                              </label>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
 
