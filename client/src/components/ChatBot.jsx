@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { chatbotAPI } from '../services/api';
 import { LANGUAGES } from '../context/LanguageContext';
+import { findAnswer } from '../data/chatbotKnowledge';
 
 /* ─── Language-specific greetings & suggestions ──────────────────────────── */
 const LANG_GREETINGS = {
@@ -187,18 +188,21 @@ export default function ChatBot() {
     setInput('');
 
     const userMsg = { role: 'user', text: msg, ts: Date.now() };
-    setMessages(prev => [...prev, userMsg]);
+    const nextHistory = [...messages, userMsg];
+    setMessages(nextHistory);
     setLoading(true);
 
     try {
-      const res = await chatbotAPI.query(msg, messages, chatLang || 'English');
-      const answer = res.data?.answer || "I'm not sure about that. Please ask your ASHA worker or call 108.";
+      const res = await chatbotAPI.query(msg, nextHistory, chatLang || 'English');
+      const answer = res.data?.answer || findAnswer(msg);
       const intent = res.data?.intent;
       setMessages(prev => [...prev, { role: 'bot', text: answer, intent, ts: Date.now() }]);
     } catch {
+      const fallbackAnswer = findAnswer(msg);
       setMessages(prev => [...prev, {
         role: 'bot',
-        text: 'I had trouble finding an answer. Please try rephrasing your question.\n\nFor urgent medical queries, please contact your ASHA worker or call **108**.',
+        text: fallbackAnswer,
+        intent: 'offline-fallback',
         ts: Date.now(),
       }]);
     } finally {
@@ -245,7 +249,7 @@ export default function ChatBot() {
   function clearChat() {
     setMessages([{
       role: 'bot',
-      text: 'Chat cleared. How can I help you?',
+      text: chatLang ? (LANG_GREETINGS[chatLang] || LANG_GREETINGS['English']) : 'Chat cleared. How can I help you?',
       ts: Date.now(),
     }]);
   }

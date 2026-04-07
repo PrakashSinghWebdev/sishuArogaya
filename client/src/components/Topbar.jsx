@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage, LANGUAGES } from '../context/LanguageContext';
-import { notificationAPI } from '../services/api';
 
 const Topbar = () => {
   const { user, logout } = useAuth();
   const { language, setLanguage, t } = useLanguage();
   const [showLangDropdown, setShowLangDropdown] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <div className="topbar d-flex align-items-center justify-content-between">

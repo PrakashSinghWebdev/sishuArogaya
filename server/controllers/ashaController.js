@@ -2,7 +2,23 @@ const AshaWorker = require('../models/AshaWorker');
 const Child = require('../models/Child');
 const { createAuditLog } = require('../utils/auditLogger');
 
-// GET /api/asha/profile — current ASHA's profile
+const normalizeVisitOutcome = (value) => {
+  switch (String(value || '').toLowerCase()) {
+    case 'normal':
+      return 'healthy';
+    case 'monitor':
+      return 'moderate';
+    case 'healthy':
+    case 'moderate':
+    case 'severe':
+    case 'referred':
+    case 'follow-up':
+      return String(value).toLowerCase();
+    default:
+      return 'healthy';
+  }
+};
+
 const getProfile = async (req, res) => {
   try {
     const asha = await AshaWorker.findOne({ userId: req.user._id }).populate('assignedChildren');
@@ -13,10 +29,22 @@ const getProfile = async (req, res) => {
   }
 };
 
-// POST /api/asha/visit — log a home visit
 const logVisit = async (req, res) => {
   try {
-    const { childId, weight, height, vaccineGiven, observations, outcome } = req.body;
+    const {
+      childId,
+      visitType,
+      weight,
+      height,
+      headCircumference,
+      temperature,
+      muac,
+      vaccineGiven,
+      vaccinesGiven,
+      observations,
+      notes,
+      outcome,
+    } = req.body;
 
     const asha = await AshaWorker.findOne({ userId: req.user._id });
     if (!asha) return res.status(404).json({ message: 'ASHA profile not found' });
@@ -24,7 +52,22 @@ const logVisit = async (req, res) => {
     const child = await Child.findOne({ _id: childId, ashaId: asha._id });
     if (!child) return res.status(403).json({ message: 'Child is not assigned to this ASHA worker' });
 
-    asha.visits.push({ childId, weight, height, vaccineGiven, observations, outcome });
+    const normalizedOutcome = normalizeVisitOutcome(outcome);
+    const normalizedVaccines = Array.isArray(vaccinesGiven) ? vaccinesGiven.filter(Boolean) : [];
+
+    asha.visits.push({
+      childId,
+      visitType,
+      weight,
+      height,
+      headCircumference,
+      temperature,
+      muac,
+      vaccineGiven: vaccineGiven || normalizedVaccines.join(', '),
+      vaccinesGiven: normalizedVaccines,
+      observations: observations || notes,
+      outcome: normalizedOutcome,
+    });
     asha.totalVisits += 1;
     await asha.save();
 
@@ -34,7 +77,7 @@ const logVisit = async (req, res) => {
       entityType: 'AshaVisit',
       entityId: asha.visits[asha.visits.length - 1]._id,
       details: `${req.user.name} logged a visit for child ${childId}`,
-      metadata: { childId, vaccineGiven, outcome },
+      metadata: { childId, visitType, vaccinesGiven: normalizedVaccines, outcome: normalizedOutcome },
     });
 
     res.status(201).json({ message: 'Visit logged successfully' });
@@ -43,7 +86,6 @@ const logVisit = async (req, res) => {
   }
 };
 
-// GET /api/asha/visits — all visits by this ASHA worker
 const getVisits = async (req, res) => {
   try {
     const asha = await AshaWorker.findOne({ userId: req.user._id })
@@ -55,7 +97,6 @@ const getVisits = async (req, res) => {
   }
 };
 
-// GET /api/asha/children — children assigned to this ASHA
 const getMyChildren = async (req, res) => {
   try {
     const asha = await AshaWorker.findOne({ userId: req.user._id });
@@ -67,7 +108,6 @@ const getMyChildren = async (req, res) => {
   }
 };
 
-// POST /api/asha/assign — assign a child to an ASHA worker (Admin only)
 const assignChild = async (req, res) => {
   try {
     const { childId, ashaWorkerId } = req.body;
@@ -78,7 +118,6 @@ const assignChild = async (req, res) => {
     const asha = await AshaWorker.findById(ashaWorkerId);
     if (!asha) return res.status(404).json({ message: 'ASHA worker not found' });
 
-    // Remove from previous ASHA if any
     const child = await Child.findById(childId);
     if (!child) return res.status(404).json({ message: 'Child not found' });
 
@@ -109,7 +148,6 @@ const assignChild = async (req, res) => {
   }
 };
 
-// POST /api/asha/unassign — remove a child from ASHA (Admin only)
 const unassignChild = async (req, res) => {
   try {
     const { childId } = req.body;
@@ -130,7 +168,6 @@ const unassignChild = async (req, res) => {
   }
 };
 
-// GET /api/asha/workers — all ASHA workers (Admin only)
 const listWorkers = async (req, res) => {
   try {
     const workers = await AshaWorker.find()
@@ -142,7 +179,6 @@ const listWorkers = async (req, res) => {
   }
 };
 
-// GET /api/asha/checkup-queue — ASHA gets their checkup queue
 const getCheckupQueue = async (req, res) => {
   try {
     const asha = await AshaWorker.findOne({ userId: req.user._id })
@@ -154,7 +190,6 @@ const getCheckupQueue = async (req, res) => {
   }
 };
 
-// POST /api/asha/checkup-queue — ASHA toggles a child in/out of checkup queue
 const toggleCheckupQueue = async (req, res) => {
   try {
     const { childId } = req.body;
@@ -163,7 +198,7 @@ const toggleCheckupQueue = async (req, res) => {
     const asha = await AshaWorker.findOne({ userId: req.user._id });
     if (!asha) return res.status(404).json({ message: 'ASHA profile not found' });
 
-    const idx = asha.checkupQueue.findIndex(id => id.toString() === childId);
+    const idx = asha.checkupQueue.findIndex((id) => id.toString() === childId);
     let action;
     if (idx === -1) {
       asha.checkupQueue.push(childId);

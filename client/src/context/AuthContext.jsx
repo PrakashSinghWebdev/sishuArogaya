@@ -20,7 +20,6 @@ export const AuthProvider = ({ children }) => {
       } catch {
         logout();
       } finally {
-        // Ensure loading always clears, even on race conditions
         setLoading(false);
       }
     };
@@ -38,15 +37,8 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Step 1: Login with email + password → returns userId for OTP step
   const login = async (email, password) => {
     const res = await api.post('/auth/login', { email, password });
-    return res.data; // { userId, message, otp? (dev) }
-  };
-
-  // Step 2: Verify OTP → store JWT
-  const verifyOTP = async (userId, otp) => {
-    const res = await api.post('/auth/verify-otp', { userId, otp });
     const { token: newToken, user: userData } = res.data;
     localStorage.setItem('sa_token', newToken);
     api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
@@ -62,14 +54,13 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
-  // Redirect path based on role
   const getDashboardPath = (role) => {
     const paths = { parent: '/parent/dashboard', asha: '/asha/dashboard', admin: '/admin/dashboard' };
     return paths[role] || '/login';
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, verifyOTP, logout, getDashboardPath }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout, getDashboardPath }}>
       {children}
     </AuthContext.Provider>
   );

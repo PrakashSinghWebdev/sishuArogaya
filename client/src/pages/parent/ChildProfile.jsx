@@ -4,8 +4,6 @@ import { childAPI, reportAPI } from '../../services/api';
 import { useLanguage } from '../../context/LanguageContext';
 import useSelectedChild from '../../hooks/useSelectedChild';
 
-const { t, navLinks } = useLanguage();
-
 const C = {
   teal: '#0891b2', teal2: '#0e7490', teal3: '#cffafe', teal4: '#f0fdff',
   bg: '#f8fffe', text: '#0c2340', muted: '#4a7a8a', border: '#c5e8ef',
@@ -57,6 +55,7 @@ function InfoRow({ icon, label, value }) {
 }
 
 export default function ChildProfile() {
+  const { t, navLinks } = useLanguage();
   const { children, selectedChild, selectedChildId, setSelectedChild, setChildren, loading } = useSelectedChild();
   const [showForm, setShowForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
@@ -221,13 +220,13 @@ export default function ChildProfile() {
         {SLIDES.map((src, i) => (
           <img key={src} src={src} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: i === slide ? 1 : 0, transition: 'opacity 1s ease' }} />
         ))}
-        <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg,${C.teal2}ee,${C.teal}bb)` }} />
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(255,255,255,.18)', border: '1px solid rgba(255,255,255,.35)', borderRadius: 100, padding: '5px 16px', fontSize: 11, fontWeight: 700, color: '#fff', letterSpacing: '.09em', textTransform: 'uppercase', marginBottom: 14 }}>🏥 Child Profile</div>
+      <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg,${C.teal2}ee,${C.teal}bb)` }} />
+      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(255,255,255,.18)', border: '1px solid rgba(255,255,255,.35)', borderRadius: 100, padding: '5px 16px', fontSize: 11, fontWeight: 700, color: '#fff', letterSpacing: '.09em', textTransform: 'uppercase', marginBottom: 14 }}>🏥 {t('myChild')}</div>
           <h1 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 'clamp(22px,3vw,36px)', fontWeight: 700, color: '#fff', textAlign: 'center', lineHeight: 1.2 }}>
-            Child's Complete <span style={{ color: C.teal3 }}>Health Profile</span>
+            {t('childInfoTitle')} <span style={{ color: C.teal3 }}>{t('viewProfile')}</span>
           </h1>
-          <p style={{ color: 'rgba(255,255,255,.75)', fontSize: 14, marginTop: 8, textAlign: 'center' }}>Track growth, vaccines, nutrition &amp; ASHA support</p>
+          <p style={{ color: 'rgba(255,255,255,.75)', fontSize: 14, marginTop: 8, textAlign: 'center' }}>{t('growth')}, {t('vaccines')}, {t('nutrition')} &amp; ASHA support</p>
         </div>
         <div style={{ position: 'absolute', bottom: 14, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 6, zIndex: 3 }}>
           {SLIDES.map((_, i) => <div key={i} onClick={() => setSlide(i)} style={{ width: i === slide ? 20 : 7, height: 7, borderRadius: 4, background: i === slide ? '#fff' : 'rgba(255,255,255,.45)', cursor: 'pointer', transition: 'all .3s' }} />)}
@@ -244,12 +243,12 @@ export default function ChildProfile() {
             </button>
             {selectedChild && (
               <button className="cp-btn cp-btn-teal" onClick={() => setShowEditForm(!showEditForm)}>
-                ✏️ {showEditForm ? 'Cancel Edit' : 'Edit Health Status'}
+                ✏️ {showEditForm ? t('cancel') : `${t('edit')} ${t('status')}`}
               </button>
             )}
             {selectedChild && (
               <button className="cp-btn cp-btn-out" onClick={handleDownload} disabled={dlLoading}>
-                {dlLoading ? '⏳ Downloading…' : '⬇️ Download Report'}
+                {dlLoading ? `${t('loading')}...` : `⬇️ ${t('downloadReport')}`}
               </button>
             )}
           </div>
@@ -337,7 +336,7 @@ export default function ChildProfile() {
                       </select>
                     </div>
                     <div>
-                      <label style={{ fontSize: 12, fontWeight: 600, color: C.muted, display: 'block', marginBottom: 5 }}>Blood Group</label>
+                      <label style={{ fontSize: 12, fontWeight: 600, color: C.muted, display: 'block', marginBottom: 5 }}>{t('bloodGroup')}</label>
                       <select value={form.bloodGroup} onChange={(e) => setForm({ ...form, bloodGroup: e.target.value })}
                         style={{ width: '100%', padding: '9px 12px', border: `1.5px solid ${C.border}`, borderRadius: 9, fontSize: 13, fontFamily: 'inherit', outline: 'none', color: C.text, background: '#fff' }}>
                         {['Unknown', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((g) => <option key={g}>{g}</option>)}
@@ -345,8 +344,8 @@ export default function ChildProfile() {
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
-                    <button type="submit" className="cp-btn cp-btn-teal" disabled={submitting}>{submitting ? 'Saving…' : '✓ Register Child'}</button>
-                    <button type="button" className="cp-btn cp-btn-out" onClick={() => setShowForm(false)}>Cancel</button>
+                    <button type="submit" className="cp-btn cp-btn-teal" disabled={submitting}>{submitting ? `${t('loading')}...` : `✓ ${t('addChild')}`}</button>
+                    <button type="button" className="cp-btn cp-btn-out" onClick={() => setShowForm(false)}>{t('cancel')}</button>
                   </div>
                 </form>
               </div>
@@ -355,9 +354,9 @@ export default function ChildProfile() {
             {!selectedChild ? (
               <div className="cp-card" style={{ textAlign: 'center', padding: '60px 24px' }}>
                 <div style={{ fontSize: 56, marginBottom: 16 }}>👶</div>
-                <h4 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 20, color: C.text, marginBottom: 10 }}>No child registered yet</h4>
-                <p style={{ color: C.muted, fontSize: 14 }}>Add a child profile to start tracking growth, vaccines, and reports.</p>
-                <button className="cp-btn cp-btn-teal" style={{ marginTop: 14 }} onClick={() => setShowForm(true)}>+ Add First Child</button>
+                <h4 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 20, color: C.text, marginBottom: 10 }}>{t('noRecords')}</h4>
+                <p style={{ color: C.muted, fontSize: 14 }}>{t('addChild')} {t('myChild').toLowerCase()} to start tracking {t('growth').toLowerCase()}, {t('vaccines').toLowerCase()}, and {t('reports').toLowerCase()}.</p>
+                <button className="cp-btn cp-btn-teal" style={{ marginTop: 14 }} onClick={() => setShowForm(true)}>+ {t('addChild')}</button>
               </div>
             ) : (
               <>
@@ -391,15 +390,15 @@ export default function ChildProfile() {
 
                 {/* Current Vitals Label */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '24px 0 16px' }}>
-                  <span style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 14, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '.08em' }}>Current Vitals</span>
+                  <span style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 14, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '.08em' }}>{t('status')}</span>
                   <div style={{ flex: 1, height: 1, background: C.border }} />
                 </div>
 
                 {/* Stat Grid */}
                 <div className="cp-grid4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 24 }}>
                   {[
-                    { icon: '⚖️', label: 'Weight', value: selectedChild.currentWeight ? `${selectedChild.currentWeight} kg` : '—', color: C.teal, trend: '↑' },
-                    { icon: '📏', label: 'Height', value: selectedChild.currentHeight ? `${selectedChild.currentHeight} cm` : '—', color: '#16a34a', trend: '↑' },
+                    { icon: '⚖️', label: t('weight'), value: selectedChild.currentWeight ? `${selectedChild.currentWeight} kg` : '—', color: C.teal, trend: '↑' },
+                    { icon: '📏', label: t('height'), value: selectedChild.currentHeight ? `${selectedChild.currentHeight} cm` : '—', color: '#16a34a', trend: '↑' },
                     { icon: '🔵', label: 'Head Circ.', value: selectedChild.headCircumference ? `${selectedChild.headCircumference} cm` : '—', color: '#d97706', trend: '→' },
                     { icon: '📊', label: 'BMI', value: selectedChild.bmi ? selectedChild.bmi.toFixed(1) : '—', color: '#2563eb', trend: '↑' },
                   ].map(({ icon, label, value, color, trend }) => (
@@ -416,12 +415,12 @@ export default function ChildProfile() {
                 <div className="cp-grid2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, alignItems: 'start' }}>
                   {/* Left: Personal Information */}
                   <div className="cp-card">
-                    <h5 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 16, fontWeight: 700, color: C.teal2, marginBottom: 16 }}>📋 Personal Information</h5>
-                    <InfoRow icon="🎂" label="Date of Birth" value={fmt(selectedChild.dob)} />
-                    <InfoRow icon="⏳" label="Age" value={calcAge(selectedChild.dob)} />
-                    <InfoRow icon="👤" label="Gender" value={selectedChild.gender} />
-                    <InfoRow icon="🩸" label="Blood Group" value={selectedChild.bloodGroup} />
-                    <InfoRow icon="📍" label="Location" value={selectedChild.location || selectedChild.village || '—'} />
+                    <h5 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 16, fontWeight: 700, color: C.teal2, marginBottom: 16 }}>📋 {t('childInfoTitle')}</h5>
+                    <InfoRow icon="🎂" label={t('dateOfBirth')} value={fmt(selectedChild.dob)} />
+                    <InfoRow icon="⏳" label={t('age')} value={calcAge(selectedChild.dob)} />
+                    <InfoRow icon="👤" label={t('gender')} value={selectedChild.gender} />
+                    <InfoRow icon="🩸" label={t('bloodGroup')} value={selectedChild.bloodGroup} />
+                    <InfoRow icon="📍" label={t('address')} value={selectedChild.location || selectedChild.village || '—'} />
                     <InfoRow icon="👩" label="Mother's Name" value={selectedChild.motherName || '—'} />
                     <InfoRow icon="👨" label="Father's Name" value={selectedChild.fatherName || '—'} />
                     <InfoRow icon="📞" label="Contact" value={selectedChild.contactPhone || '—'} />

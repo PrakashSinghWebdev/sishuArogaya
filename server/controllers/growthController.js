@@ -4,6 +4,17 @@ const AshaWorker = require('../models/AshaWorker');
 const { predictMalnutrition } = require('../utils/zScore');
 const { createAuditLog } = require('../utils/auditLogger');
 
+const getAgeMonthsFromDates = (dob, recordedDate = new Date()) => {
+  const start = new Date(dob);
+  const end = new Date(recordedDate);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return null;
+  }
+
+  const months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+  return Math.max(0, months);
+};
+
 const assertChildAccess = async (childId, user) => {
   const child = await Child.findById(childId);
   if (!child) return { error: { status: 404, message: 'Child not found' } };
@@ -22,25 +33,50 @@ const assertChildAccess = async (childId, user) => {
   return { child };
 };
 
-// POST /api/growth/add
 const addGrowthRecord = async (req, res) => {
   try {
-    const { childId, weight, height, headCircumference, ageMonths, notes } = req.body;
+    const {
+      childId,
+      weight,
+      height,
+      headCircumference,
+      hc,
+      ageMonths,
+      notes,
+      date,
+      recordedDate,
+    } = req.body;
 
     const access = await assertChildAccess(childId, req.user);
     if (access.error) return res.status(access.error.status).json({ message: access.error.message });
     const child = access.child;
 
-    const gender = child.gender;
-    const result = predictMalnutrition(weight, height, ageMonths, gender);
+    if (weight == null || height == null) {
+      return res.status(400).json({ message: 'Weight and height are required to save a growth record' });
+    }
+
+    const normalizedRecordedDate = recordedDate || date || new Date();
+    const normalizedAgeMonths =
+      ageMonths != null && ageMonths !== ''
+        ? Number(ageMonths)
+        : getAgeMonthsFromDates(child.dob, normalizedRecordedDate);
+
+    if (normalizedAgeMonths == null || Number.isNaN(normalizedAgeMonths)) {
+      return res.status(400).json({ message: 'A valid age in months or recorded date is required' });
+    }
+
+    const numericWeight = Number(weight);
+    const numericHeight = Number(height);
+    const result = predictMalnutrition(numericWeight, numericHeight, normalizedAgeMonths, child.gender);
 
     const record = await GrowthRecord.create({
       childId,
       recordedBy: req.user._id,
-      ageMonths,
-      weight,
-      height,
-      ...(headCircumference ? { headCircumference } : {}),
+      recordedDate: normalizedRecordedDate,
+      ageMonths: normalizedAgeMonths,
+      weight: numericWeight,
+      height: numericHeight,
+      ...(headCircumference || hc ? { headCircumference: Number(headCircumference || hc) } : {}),
       wazScore: result.waz,
       hazScore: result.haz,
       whzScore: result.whz,
@@ -48,10 +84,9 @@ const addGrowthRecord = async (req, res) => {
       notes,
     });
 
-    // Update child's current weight, height, and nutrition status
     await Child.findByIdAndUpdate(childId, {
-      currentWeight: weight,
-      currentHeight: height,
+      currentWeight: numericWeight,
+      currentHeight: numericHeight,
       nutritionStatus: result.prediction,
     });
 
@@ -61,7 +96,7 @@ const addGrowthRecord = async (req, res) => {
       entityType: 'GrowthRecord',
       entityId: record._id,
       details: `${req.user.name} recorded growth for ${child.name}`,
-      metadata: { childId, weight, height, ageMonths, prediction: result.prediction },
+      metadata: { childId, weight: numericWeight, height: numericHeight, ageMonths: normalizedAgeMonths, prediction: result.prediction },
     });
 
     res.status(201).json({ record, prediction: result });
@@ -70,7 +105,6 @@ const addGrowthRecord = async (req, res) => {
   }
 };
 
-// GET /api/growth/:childId
 const getGrowthHistory = async (req, res) => {
   try {
     const access = await assertChildAccess(req.params.childId, req.user);
@@ -85,7 +119,6 @@ const getGrowthHistory = async (req, res) => {
   }
 };
 
-// GET /api/growth/:childId/predict  — latest prediction
 const getPrediction = async (req, res) => {
   try {
     const access = await assertChildAccess(req.params.childId, req.user);
@@ -94,8 +127,7 @@ const getPrediction = async (req, res) => {
     const latest = await GrowthRecord.findOne({ childId: req.params.childId }).sort('-recordedDate');
     if (!latest) return res.status(404).json({ message: 'No growth records found' });
 
-    const child = access.child;
-    const result = predictMalnutrition(latest.weight, latest.height, latest.ageMonths, child.gender);
+    const result = predictMalnutrition(latest.weight, latest.height, latest.ageMonths, access.child.gender);
     res.json(result);
   } catch (err) {
     res.status(500).json({ message: err.message });

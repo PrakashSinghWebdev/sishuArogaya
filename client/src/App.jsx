@@ -1,61 +1,81 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { Suspense, lazy } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import ChatBot from './components/ChatBot';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Auth
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 
-// Parent Pages
-import ParentDashboard from './pages/parent/Dashboard';
-import ChildProfile from './pages/parent/ChildProfile';
-import VaccinationSchedule from './pages/parent/VaccinationSchedule';
-import GrowthMonitoring from './pages/parent/GrowthMonitoring';
-import DietPlan from './pages/parent/DietPlan';
-import AIHealthPrediction from './pages/parent/AIHealthPrediction';
-import ParentSchemes from './pages/parent/GovernmentSchemes';
-import HealthReports from './pages/parent/HealthReports';
-import ParentNotifications from './pages/parent/Notifications';
-import ParentSettings from './pages/parent/Settings';
+const ParentDashboard = lazy(() => import('./pages/parent/Dashboard'));
+const ChildProfile = lazy(() => import('./pages/parent/ChildProfile'));
+const VaccinationSchedule = lazy(() => import('./pages/parent/VaccinationSchedule'));
+const GrowthMonitoring = lazy(() => import('./pages/parent/GrowthMonitoring'));
+const DietPlan = lazy(() => import('./pages/parent/DietPlan'));
+const AIHealthPrediction = lazy(() => import('./pages/parent/AIHealthPrediction'));
+const ParentSchemes = lazy(() => import('./pages/parent/GovernmentSchemes'));
+const HealthReports = lazy(() => import('./pages/parent/HealthReports'));
+const ParentNotifications = lazy(() => import('./pages/parent/Notifications'));
+const ParentSettings = lazy(() => import('./pages/parent/Settings'));
 
-// ASHA Pages
-import AshaDashboard from './pages/asha/Dashboard';
-import MyChildrenList from './pages/asha/MyChildrenList';
-import ChildDetailView from './pages/asha/ChildDetailView';
-import LogHomeVisit from './pages/asha/LogHomeVisit';
-import VaccinationTracker from './pages/asha/VaccinationTracker';
-import GrowthRecords from './pages/asha/GrowthRecords';
-import MalnutritionReport from './pages/asha/MalnutritionReport';
-import VisitHistoryLog from './pages/asha/VisitHistoryLog';
-import AreaCoverageMap from './pages/asha/AreaCoverageMap';
-import AshaNotifications from './pages/asha/NotificationsAlerts';
-import GenerateReport from './pages/asha/GenerateReport';
-import AshaProfileSettings from './pages/asha/ProfileSettings';
+const AshaDashboard = lazy(() => import('./pages/asha/Dashboard'));
+const MyChildrenList = lazy(() => import('./pages/asha/MyChildrenList'));
+const ChildDetailView = lazy(() => import('./pages/asha/ChildDetailView'));
+const LogHomeVisit = lazy(() => import('./pages/asha/LogHomeVisit'));
+const VaccinationTracker = lazy(() => import('./pages/asha/VaccinationTracker'));
+const GrowthRecords = lazy(() => import('./pages/asha/GrowthRecords'));
+const MalnutritionReport = lazy(() => import('./pages/asha/MalnutritionReport'));
+const VisitHistoryLog = lazy(() => import('./pages/asha/VisitHistoryLog'));
+const AreaCoverageMap = lazy(() => import('./pages/asha/AreaCoverageMap'));
+const AshaNotifications = lazy(() => import('./pages/asha/NotificationsAlerts'));
+const GenerateReport = lazy(() => import('./pages/asha/GenerateReport'));
+const AshaProfileSettings = lazy(() => import('./pages/asha/ProfileSettings'));
 
-// Admin Pages
-import AdminDashboard from './pages/admin/Dashboard';
-import DistrictHeatmap from './pages/admin/DistrictHeatmap';
-import AnalyticsReports from './pages/admin/AnalyticsReports';
-import ChildrenRegistry from './pages/admin/ChildrenRegistry';
-import AshaWorkerManagement from './pages/admin/AshaWorkerManagement';
-import HealthCentreDirectory from './pages/admin/HealthCentreDirectory';
-import VaccinationData from './pages/admin/VaccinationData';
-import MalnutritionCases from './pages/admin/MalnutritionCases';
-import AdminSchemes from './pages/admin/GovernmentSchemes';
-import BlockwiseReports from './pages/admin/BlockwiseReports';
-import NotificationsPanel from './pages/admin/NotificationsPanel';
-import UserManagement from './pages/admin/UserManagement';
-import AuditLogs from './pages/admin/AuditLogs';
-import AdminSettings from './pages/admin/SettingsConfiguration';
+const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
+const DistrictHeatmap = lazy(() => import('./pages/admin/DistrictHeatmap'));
+const AnalyticsReports = lazy(() => import('./pages/admin/AnalyticsReports'));
+const ChildrenRegistry = lazy(() => import('./pages/admin/ChildrenRegistry'));
+const AshaWorkerManagement = lazy(() => import('./pages/admin/AshaWorkerManagement'));
+const HealthCentreDirectory = lazy(() => import('./pages/admin/HealthCentreDirectory'));
+const VaccinationData = lazy(() => import('./pages/admin/VaccinationData'));
+const MalnutritionCases = lazy(() => import('./pages/admin/MalnutritionCases'));
+const AdminSchemes = lazy(() => import('./pages/admin/GovernmentSchemes'));
+const BlockwiseReports = lazy(() => import('./pages/admin/BlockwiseReports'));
+const NotificationsPanel = lazy(() => import('./pages/admin/NotificationsPanel'));
+const UserManagement = lazy(() => import('./pages/admin/UserManagement'));
+const AuditLogs = lazy(() => import('./pages/admin/AuditLogs'));
+const AdminSettings = lazy(() => import('./pages/admin/SettingsConfiguration'));
 
-function App() {
+function RouteFallback() {
   return (
-    <LanguageProvider>
-    <AuthProvider>
-      <Router>
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#f8fafc',
+        color: '#0f172a',
+        fontFamily: "'Segoe UI', sans-serif",
+        fontSize: 16,
+        fontWeight: 600,
+      }}
+    >
+      Loading...
+    </div>
+  );
+}
+
+function AppRoutes() {
+  const location = useLocation();
+  const hideChatBot = location.pathname === '/login' || location.pathname === '/register';
+
+  return (
+    <>
+      <Suspense fallback={<RouteFallback />}>
         <Routes>
           {/* Public */}
           <Route path="/login" element={<Login />} />
@@ -113,9 +133,22 @@ function App() {
           {/* 404 */}
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
-        <ChatBot />
-      </Router>
-    </AuthProvider>
+      </Suspense>
+      {!hideChatBot ? <ChatBot /> : null}
+    </>
+  );
+}
+
+function App() {
+  return (
+    <LanguageProvider>
+      <AuthProvider>
+        <Router>
+          <ErrorBoundary>
+            <AppRoutes />
+          </ErrorBoundary>
+        </Router>
+      </AuthProvider>
     </LanguageProvider>
   );
 }

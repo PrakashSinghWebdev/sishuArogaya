@@ -34,7 +34,8 @@ const seedUsers = [
 
 async function seed() {
   try {
-    await mongoose.connect(process.env.MONGO_URI);
+const connectDB = require('./config/db');
+await connectDB();
     console.log('MongoDB connected');
 
     for (const u of seedUsers) {

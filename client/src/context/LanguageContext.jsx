@@ -768,15 +768,15 @@ export function LanguageProvider({ children }) {
 
   // Initialize language detection
   useEffect(() => {
-    detectLanguage().then(setLanguageState).catch(() => {});
-    if (localStorage.getItem('sa_language')) return; // already manually set
-    const browserLang = (navigator.language || 'en').split('-')[0].toLowerCase();
-    for (const lang of LANGUAGES) {
-      if (lang.locale.includes(browserLang) && lang.code !== language) {
-        setSuggestedLanguageState(lang.code);
-        break;
-      }
+    const saved = localStorage.getItem('sa_language');
+
+    if (saved && LANGUAGES.some((lang) => lang.code === saved)) {
+      setLanguageState(saved);
+    } else {
+      setLanguageState('English');
     }
+
+    setSuggestedLanguageState(null);
   }, []);
 
   const setLanguage = (lang) => {

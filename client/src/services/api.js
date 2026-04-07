@@ -20,22 +20,18 @@ api.interceptors.response.use(
     const requestUrl = error.config?.url || '';
     const isAuthEndpoint =
       requestUrl.includes('/auth/login') ||
-      requestUrl.includes('/auth/verify-otp') ||
       requestUrl.includes('/auth/register') ||
       requestUrl.includes('/chatbot/');
 
     if (status === 401 && !isAuthEndpoint) {
       localStorage.removeItem('sa_token');
-      // Removed aggressive redirect - let AuthContext handle logout & navigation
     }
     return Promise.reject(error);
   }
 );
 
-// ——— Auth ———
 export const authAPI = {
   login: (data) => api.post('/auth/login', data),
-  verifyOTP: (data) => api.post('/auth/verify-otp', data),
   register: (data) => api.post('/auth/register', data),
   getMe: () => api.get('/auth/me'),
   changePassword: (data) => api.put('/auth/change-password', data),
@@ -43,7 +39,6 @@ export const authAPI = {
   resetPassword: (data) => api.post('/auth/reset-password', data),
 };
 
-// ——— Child ———
 export const childAPI = {
   list: (params) => api.get('/child', { params }),
   get: (id) => api.get(`/child/${id}`),
@@ -51,14 +46,12 @@ export const childAPI = {
   update: (id, data) => api.put(`/child/update/${id}`, data),
 };
 
-// ——— Growth ———
 export const growthAPI = {
   add: (data) => api.post('/growth/add', data),
   getHistory: (childId) => api.get(`/growth/${childId}`),
   getPrediction: (childId) => api.get(`/growth/${childId}/predict`),
 };
 
-// ——— Vaccination ———
 export const vaccinationAPI = {
   getSchedule: (childId) => api.get(`/vaccination/${childId}`),
   update: (data) => api.put('/vaccination/update', data),
@@ -66,7 +59,6 @@ export const vaccinationAPI = {
   parentMarkDone: (vaccineId) => api.put('/vaccination/parent-mark-done', { vaccineId }),
 };
 
-// ——— ASHA ———
 export const ashaAPI = {
   getProfile: () => api.get('/asha/profile'),
   getMyChildren: () => api.get('/asha/children'),
@@ -79,7 +71,6 @@ export const ashaAPI = {
   toggleCheckupQueue: (data) => api.post('/asha/checkup-queue', data),
 };
 
-// ——— Admin ———
 export const adminAPI = {
   getDashboard: () => api.get('/admin/dashboard'),
   getHeatmap: () => api.get('/admin/heatmap'),
@@ -89,14 +80,12 @@ export const adminAPI = {
   getAuditLogs: (params) => api.get('/admin/audit-logs', { params }),
 };
 
-// ——— Schemes ———
 export const schemeAPI = {
   list: () => api.get('/schemes'),
   create: (data) => api.post('/schemes', data),
   update: (id, data) => api.put(`/schemes/${id}`, data),
 };
 
-// ——— Notifications ———
 export const notificationAPI = {
   list: () => api.get('/notifications'),
   send: (data) => api.post('/notifications/send', data),
@@ -104,21 +93,26 @@ export const notificationAPI = {
   markAllRead: () => api.put('/notifications/read-all'),
 };
 
-// ——— Reports ———
 export const reportAPI = {
   childPDF: (childId) => api.get(`/reports/child/${childId}`, { responseType: 'blob' }),
   districtExcel: (districtId) => api.get(`/reports/district/${districtId}`, { responseType: 'blob' }),
 };
 
-// ——— Diet ———
 export const dietAPI = {
   getByAgeGroup: (ageGroup) => api.get(`/diet/${ageGroup}`),
   getByAge: (months) => api.get(`/diet/age/${months}`),
 };
 
-// ——— Chatbot ———
 export const chatbotAPI = {
   query: (message, history = [], language = 'English') => api.post('/chatbot/query', { message, history, language }),
+};
+
+export const hospitalAPI = {
+  nearby: (lat, lng, radius = 30000, type = 'all') =>
+    api.get('/hospitals/nearby', { params: { lat, lng, radius, type } }),
+  search: (q, lat, lng) =>
+    api.get('/hospitals/search', { params: { q, lat, lng } }),
+  list: (params) => api.get('/hospitals', { params }),
 };
 
 export default api;

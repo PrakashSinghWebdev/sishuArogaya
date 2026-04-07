@@ -328,33 +328,33 @@ export default function DietPlan() {
           </h1>
           {selectedChild && ageMonths != null && (
             <p style={{ color: C.muted, marginTop: 6, fontSize: 14 }}>
-              For <strong>{selectedChild.name}</strong> — {ageGroup?.label} ({ageMonths} months)
+              {t('dietPlanFor')} <strong>{selectedChild.name}</strong> — {ageGroup?.label} ({ageMonths} {t('ageMonths')})
             </p>
           )}
         </div>
 
         {childLoading ? (
-          <div style={{ textAlign: 'center', padding: 60, color: C.muted }}>Loading…</div>
+          <div style={{ textAlign: 'center', padding: 60, color: C.muted }}>{t('loading')}...</div>
         ) : !selectedChild ? (
           <div style={{ background: '#fff', border: '1.5px solid #c5e8ef', borderRadius: 16, padding: 60, textAlign: 'center' }}>
             <div style={{ fontSize: 48, marginBottom: 16 }}>👶</div>
-            <p style={{ color: C.muted }}>No child profile found. <Link to="/parent/child-profile" style={{ color: C.teal }}>Add a child</Link></p>
+            <p style={{ color: C.muted }}>{t('noRecords')}. <Link to="/parent/child-profile" style={{ color: C.teal }}>{t('addChild')}</Link></p>
           </div>
         ) : dietLoading ? (
           <div style={{ background: '#fff', border: '1.5px solid #c5e8ef', borderRadius: 16, padding: 60, textAlign: 'center' }}>
             <div style={{ display: 'inline-block', width: 40, height: 40, border: '3px solid #c5e8ef', borderTopColor: C.teal, borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-            <div style={{ marginTop: 16, color: C.muted }}>Loading diet plan...</div>
+            <div style={{ marginTop: 16, color: C.muted }}>{t('loading')} {t('dietPlan').toLowerCase()}...</div>
           </div>
         ) : error ? (
           <div style={{ background: '#fee2e2', border: '1.5px solid #fca5a5', borderRadius: 16, padding: 40, textAlign: 'center' }}>
             <div style={{ color: '#b91c1c', fontSize: 14, fontWeight: 600, marginBottom: 8 }}>⚠️ {error}</div>
             <button onClick={() => window.location.reload()} style={{ padding: '8px 16px', background: C.teal, color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer' }}>
-              Retry
+              {t('refresh')}
             </button>
           </div>
         ) : !dietData ? (
           <div style={{ background: '#fff', border: '1.5px solid #c5e8ef', borderRadius: 16, padding: 40, textAlign: 'center', color: C.muted }}>
-            No diet plan available for this age group.
+            {t('noData')}
           </div>
         ) : (
           <div>

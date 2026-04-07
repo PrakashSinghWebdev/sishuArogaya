@@ -14,7 +14,7 @@ const app = express();
 
 // Security middleware
 app.use(helmet());
-app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173', credentials: true }));
+app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5175', credentials: true }));
 
 // Rate limiting
 const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
@@ -40,7 +40,8 @@ app.use('/api/schemes', require('./routes/schemes'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/reports', require('./routes/reports'));
 app.use('/api/chatbot', require('./routes/chatbot'));
-app.use('/api/diet', require('./routes/diet'));
+app.use('/api/diet',      require('./routes/diet'));
+app.use('/api/hospitals', require('./routes/hospitals'));
 
 // Health check
 app.get('/api/health', (req, res) => res.json({ status: 'OK', project: 'Sishu Arogaya' }));
@@ -56,3 +57,4 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Sishu Arogaya server running on port ${PORT}`));
+

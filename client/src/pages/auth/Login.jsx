@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { authAPI } from '../../services/api';
 
 const CAPTIONS = [
   { e: 'AI', t: 'Early detection saves lives', d: 'AI malnutrition prediction using WHO z-score standards' },
@@ -26,19 +27,22 @@ const ROLES = [
 ];
 
 const ROTATE_MS = 4500;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_REGEX = /^\d{10}$/;
 
 export default function SishuLogin() {
-  const { login, verifyOTP, getDashboardPath } = useAuth();
+  const { login, getDashboardPath } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
 
   const [cur, setCur] = useState(0);
   const [role, setRole] = useState(0);
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [otp, setOtp] = useState('');
   const [userId, setUserId] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [remember, setRemember] = useState(false);
   const [emailErr, setEmailErr] = useState(false);
@@ -66,6 +70,26 @@ export default function SishuLogin() {
     return () => clearInterval(timerRef.current);
   }, []);
 
+  const isLoginStep = step === 'login';
+  const isForgotRequestStep = step === 'forgot-request';
+
+  const title = isLoginStep
+    ? t('loginTitle')
+    : isForgotRequestStep
+      ? 'Forgot Password'
+      : 'Reset Password';
+
+  const subtitle = isLoginStep
+    ? t('loginSubtitle')
+    : isForgotRequestStep
+      ? 'Enter your registered email to receive a reset OTP.'
+      : 'Enter the OTP and choose a new password.';
+
+  const isValidLoginIdentifier = (value) => {
+    const input = value.trim();
+    return EMAIL_REGEX.test(input) || PHONE_REGEX.test(input);
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     let ok = true;
@@ -75,7 +99,7 @@ export default function SishuLogin() {
     setEmailErr(false);
     setPassErr(false);
 
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!email || !isValidLoginIdentifier(email)) {
       setEmailErr(true);
       ok = false;
     }
@@ -87,11 +111,10 @@ export default function SishuLogin() {
 
     setLoading(true);
     try {
-      const data = await login(email, password);
-      setUserId(data.userId);
-      setOtp(data.otp || '');
-      setInfo(data.otp ? `Dev OTP: ${data.otp}` : data.message || 'OTP sent successfully.');
-      setStep(2);
+      const userData = await login(email, password);
+      setRedirected(true);
+      setInfo('Login successful. Redirecting...');
+      setTimeout(() => navigate(getDashboardPath(userData.role)), 500);
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed. Check credentials.');
     } finally {
@@ -99,31 +122,80 @@ export default function SishuLogin() {
     }
   };
 
-  const handleVerifyOTP = async (e) => {
+  const handleForgotPassword = async (e) => {
     e.preventDefault();
     setError('');
     setInfo('');
+    setEmailErr(false);
 
-    if (!otp.trim()) {
-      setError('Please enter the OTP sent to your email.');
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setEmailErr(true);
       return;
     }
 
     setLoading(true);
     try {
-      const userData = await verifyOTP(userId, otp.trim());
-      setRedirected(true);
-      setTimeout(() => navigate(getDashboardPath(userData.role)), 500);
+      const { data } = await authAPI.forgotPassword({ email });
+      setUserId(data.userId || '');
+      setOtp(data.otp || '');
+      setInfo(data.otp ? `Dev OTP: ${data.otp}` : data.message || 'Password reset OTP sent.');
+      setStep('forgot-reset');
     } catch (err) {
-      setError(err.response?.data?.message || 'Invalid or expired OTP.');
+      setError(err.response?.data?.message || 'Unable to send reset OTP right now.');
     } finally {
       setLoading(false);
     }
   };
 
-  const resetToLogin = () => {
-    setStep(1);
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    setError('');
+    setInfo('');
+    setPassErr(false);
+
+    if (!otp.trim()) {
+      setError('Please enter the reset OTP.');
+      return;
+    }
+
+    if (!newPassword || newPassword.length < 6) {
+      setPassErr(true);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data } = await authAPI.resetPassword({
+        userId,
+        otp: otp.trim(),
+        newPassword,
+      });
+      setPassword('');
+      setNewPassword('');
+      setOtp('');
+      setInfo(data.message || 'Password reset successful. Please login.');
+      setStep('login');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Unable to reset password.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const startForgotFlow = () => {
+    setError('');
+    setInfo('');
+    setEmailErr(false);
+    setPassErr(false);
     setOtp('');
+    setNewPassword('');
+    setStep('forgot-request');
+  };
+
+  const resetToLogin = () => {
+    setStep('login');
+    setOtp('');
+    setNewPassword('');
     setError('');
     setInfo('');
     setRedirected(false);
@@ -226,12 +298,10 @@ export default function SishuLogin() {
               </div>
             </div>
 
-            <div className="login-card__title">{step === 1 ? t('loginTitle') : t('otpVerify')}</div>
-            <div className="login-card__subtitle">
-              {step === 1 ? t('loginSubtitle') : t('otpSubtitle')}
-            </div>
+            <div className="login-card__title">{title}</div>
+            <div className="login-card__subtitle">{subtitle}</div>
 
-            {step === 1 ? (
+            {isLoginStep ? (
               <>
                 <div className="login-card__roles">
                   {ROLES.map((item, index) => (
@@ -256,14 +326,14 @@ export default function SishuLogin() {
                     <div className="login-card__input-wrap">
                       <span className="login-card__input-icon">@</span>
                       <input
-                        type="email"
+                        type="text"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder={ROLES[role].ph}
                         className={`login-card__input ${emailErr ? 'has-error' : ''}`}
                       />
                     </div>
-                    {emailErr ? <div className="login-card__error">Please enter a valid email address.</div> : null}
+                    {emailErr ? <div className="login-card__error">Please enter a valid email address or 10-digit phone number.</div> : null}
                   </div>
 
                   <div className="login-card__field">
@@ -294,7 +364,9 @@ export default function SishuLogin() {
                       <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
                       {t('keepSignedIn')}
                     </label>
-<button type="button" className="login-card__meta-link forgot-btn" onClick={() => alert('Forgot password clicked! Backend endpoint added. Enter email to get reset OTP (dev mode returns OTP). Restart backend terminal (Ctrl+C then rerun start command).')}>{t('forgotPassword')}</button>
+                    <button type="button" className="login-card__meta-link forgot-btn" onClick={startForgotFlow}>
+                      {t('forgotPassword')}
+                    </button>
                   </div>
 
                   <button type="submit" disabled={loading} className="login-card__submit">
@@ -302,12 +374,40 @@ export default function SishuLogin() {
                   </button>
                 </form>
               </>
-            ) : (
-              <form onSubmit={handleVerifyOTP} noValidate>
+            ) : isForgotRequestStep ? (
+              <form onSubmit={handleForgotPassword} noValidate>
                 {error ? <div className="login-card__alert login-card__alert--error">{error}</div> : null}
                 {info ? <div className="login-card__alert login-card__alert--info">{info}</div> : null}
 
-                <div className="login-card__otp-badge">Secure OTP Verification</div>
+                <div className="login-card__field">
+                  <label className="login-card__label">{t('email')}</label>
+                  <div className="login-card__input-wrap">
+                    <span className="login-card__input-icon">@</span>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder={ROLES[role].ph}
+                      className={`login-card__input ${emailErr ? 'has-error' : ''}`}
+                    />
+                  </div>
+                  {emailErr ? <div className="login-card__error">Please enter a valid email address.</div> : null}
+                </div>
+
+                <button type="submit" disabled={loading} className="login-card__submit">
+                  {loading ? <span className="login-card__spinner" /> : 'Send Reset OTP'}
+                </button>
+
+                <button type="button" className="login-card__secondary" onClick={resetToLogin}>
+                  {t('backToLogin')}
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleResetPassword} noValidate>
+                {error ? <div className="login-card__alert login-card__alert--error">{error}</div> : null}
+                {info ? <div className="login-card__alert login-card__alert--info">{info}</div> : null}
+
+                <div className="login-card__otp-badge">Reset Password OTP</div>
 
                 <div className="login-card__field">
                   <label className="login-card__label">{t('otpLabel')}</label>
@@ -325,8 +425,31 @@ export default function SishuLogin() {
                   </div>
                 </div>
 
-                <button type="submit" disabled={loading || redirected} className="login-card__submit">
-                  {loading ? <span className="login-card__spinner" /> : redirected ? t('redirecting') : t('verifyLogin')}
+                <div className="login-card__field">
+                  <label className="login-card__label">New Password</label>
+                  <div className="login-card__input-wrap">
+                    <span className="login-card__input-icon">#</span>
+                    <input
+                      type={showPw ? 'text' : 'password'}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Enter new password"
+                      className={`login-card__input login-card__input--password ${passErr ? 'has-error' : ''}`}
+                    />
+                    <button
+                      type="button"
+                      className="login-card__toggle"
+                      onClick={() => setShowPw((prev) => !prev)}
+                      aria-label={showPw ? 'Hide password' : 'Show password'}
+                    >
+                      {showPw ? 'Hide' : 'Show'}
+                    </button>
+                  </div>
+                  {passErr ? <div className="login-card__error">Password must be at least 6 characters.</div> : null}
+                </div>
+
+                <button type="submit" disabled={loading} className="login-card__submit">
+                  {loading ? <span className="login-card__spinner" /> : 'Reset Password'}
                 </button>
 
                 <button type="button" className="login-card__secondary" onClick={resetToLogin}>
@@ -336,7 +459,7 @@ export default function SishuLogin() {
             )}
 
             <div className="login-card__footer">
-              {step === 1 ? (
+              {isLoginStep ? (
                 <>
                   {t('noAccount')}{' '}
                   <Link to="/register" className="login-card__footer-link">
@@ -344,7 +467,7 @@ export default function SishuLogin() {
                   </Link>
                 </>
               ) : (
-                <>{t('otpRequired')}</>
+                <>Use the OTP sent to your email to complete the password reset.</>
               )}
               <br />
               <br />

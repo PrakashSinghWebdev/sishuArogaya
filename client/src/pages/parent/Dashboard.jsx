@@ -97,7 +97,7 @@ function SectionHeader({ title, linkTo, linkLabel }) {
 export default function ParentDashboard() {
   const { user } = useAuth();
   const location = useLocation();
-  const { navLinks } = useLanguage();
+  const { navLinks, t } = useLanguage();
   const { children, selectedChild, selectedChildId, setSelectedChild, loading: childLoading } = useSelectedChild();
 
   const [vaccines,      setVaccines]      = useState([]);
@@ -165,12 +165,12 @@ export default function ParentDashboard() {
                : selectedChild ? 42 : 0;
 
   const heroText = useMemo(() => {
-    if (!selectedChild) return 'Add a child profile to start tracking vaccination, growth, and nutrition updates.';
-    if (due[0])         return `${selectedChild.name} has ${due[0].vaccineName} due soon. Stay on top of the schedule.`;
-    return `${selectedChild.name}'s health records are up to date and ready to monitor.`;
-  }, [selectedChild, due]);
+    if (!selectedChild) return `${t('addChild')} ${t('myChild').toLowerCase()} to start tracking ${t('vaccines').toLowerCase()}, ${t('growth').toLowerCase()}, and ${t('nutrition').toLowerCase()} updates.`;
+    if (due[0])         return `${selectedChild.name} has ${due[0].vaccineName} ${t('due').toLowerCase()} soon.`;
+    return `${selectedChild.name}'s ${t('healthScore').toLowerCase()} and records are up to date.`;
+  }, [selectedChild, due, t]);
 
-  const firstName   = user?.name?.split(' ')[0] || 'Parent';
+  const firstName   = user?.name?.split(' ')[0] || t('myChild');
   const userInitial = (user?.name || 'P')[0].toUpperCase();
   const today       = new Date().toLocaleDateString('en-IN', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
@@ -358,7 +358,7 @@ export default function ParentDashboard() {
           <div className="sa-hero-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 24 }}>
             <div style={{ color: '#fff', animation: 'fadeUp .5s ease both' }}>
               <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', color: '#cffafe', marginBottom: 8 }}>
-                Parent Dashboard
+                {t('dashboard')}
               </div>
               <h1 style={{
                 fontFamily: "'Libre Baskerville', serif",
@@ -366,15 +366,15 @@ export default function ParentDashboard() {
                 fontWeight: 700, color: '#fff',
                 margin: '0 0 10px', lineHeight: 1.2,
               }}>
-                Welcome back, {firstName}
+                {t('welcome')}, {firstName}
               </h1>
               <p style={{ color: 'rgba(255,255,255,.82)', fontSize: 14, margin: '0 0 20px', maxWidth: 480 }}>
                 {heroText}
               </p>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {QUICK_ACTIONS.slice(0, 4).map(({ emoji, label, to }) => (
+                {QUICK_ACTIONS.slice(0, 4).map(({ emoji, labelKey, label, to }) => (
                   <Link key={to} to={to} className="sa-hero-btn">
-                    {emoji} {label}
+                    {emoji} {t(labelKey) || label}
                   </Link>
                 ))}
               </div>
@@ -447,20 +447,20 @@ export default function ParentDashboard() {
             }}>
               <div>
                 <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', color: '#cffafe', marginBottom: 8 }}>
-                  Parent Portal — Home
+                  {t('home')} • {t('dashboard')}
                 </div>
                 <h2 style={{ fontFamily: "'Libre Baskerville', serif", fontSize: 26, fontWeight: 700, margin: '0 0 10px', color: '#fff' }}>
-                  Welcome, {firstName}! 👋
+                  {t('welcome')}, {firstName}!
                 </h2>
                 <p style={{ color: 'rgba(255,255,255,.82)', fontSize: 14, margin: '0 0 20px', maxWidth: 440 }}>
-                  You're logged in. Register your child's profile to track vaccinations, growth, diet plans and health reports.
+                  {t('registerTitle')}. {t('childInfoTitle')} to track {t('vaccines').toLowerCase()}, {t('growth').toLowerCase()}, {t('dietPlan').toLowerCase()} and {t('reports').toLowerCase()}.
                 </p>
                 <Link to="/parent/child-profile" style={{
                   display: 'inline-block', padding: '11px 28px', borderRadius: 9,
                   background: '#fff', color: '#0891b2', fontWeight: 700, fontSize: 14,
                   textDecoration: 'none', boxShadow: '0 4px 14px rgba(0,0,0,.15)',
                 }}>
-                  + Register Your Child
+                  + {t('addChild')}
                 </Link>
               </div>
               <div style={{ fontSize: 80, opacity: .3 }}>👶</div>
@@ -468,14 +468,14 @@ export default function ParentDashboard() {
 
             <div className="sa-grid4" style={{ marginBottom: 28 }}>
               {[
-                { emoji: '💉', label: 'Vaccination Tracker', desc: 'Track every dose from birth to 5 years', to: '/parent/vaccination' },
-                { emoji: '📈', label: 'Growth Monitoring',   desc: 'Log weight & height with WHO z-scores', to: '/parent/growth' },
-                { emoji: '🥗', label: 'Diet Plans',          desc: 'Age-appropriate meal plans for your child', to: '/parent/diet-plan' },
-                { emoji: '🏛️', label: 'Govt Schemes',        desc: 'ICDS, PMMVY, JSY & more schemes', to: '/parent/schemes' },
-                { emoji: '📋', label: 'Health Reports',      desc: 'Download PDF health reports anytime', to: '/parent/reports' },
-                { emoji: '🔔', label: 'Notifications',       desc: 'Alerts for due vaccines & checkups', to: '/parent/notifications' },
-                { emoji: '👶', label: 'Child Profile',       desc: 'Register and manage your child', to: '/parent/child-profile' },
-                { emoji: '⚙️', label: 'Settings',            desc: 'Update your account & preferences', to: '/parent/settings' },
+                { emoji: '💉', label: t('vaccines'),      desc: `${t('vaccines')} tracker`, to: '/parent/vaccination' },
+                { emoji: '📈', label: t('growth'),        desc: `${t('growth')} monitoring`, to: '/parent/growth' },
+                { emoji: '🥗', label: t('dietPlan'),      desc: `${t('dietPlan')} ${t('for') || ''}`.trim(), to: '/parent/diet-plan' },
+                { emoji: '🏛️', label: t('schemes'),      desc: t('governmentSchemes'), to: '/parent/schemes' },
+                { emoji: '📋', label: t('reports'),       desc: t('downloadReport'), to: '/parent/reports' },
+                { emoji: '🔔', label: t('notifications'), desc: `${t('notifications')} & ${t('reminder') || 'alerts'}`, to: '/parent/notifications' },
+                { emoji: '👶', label: t('myChild'),       desc: t('childInfoTitle'), to: '/parent/child-profile' },
+                { emoji: '⚙️', label: t('settings'),      desc: t('langTitle'), to: '/parent/settings' },
               ].map(({ emoji, label, desc, to }) => (
                 <Link key={to} to={to} className="sa-card sa-card-hover" style={{ padding: '20px 16px', textDecoration: 'none', display: 'block' }}>
                   <div style={{ fontSize: 28, marginBottom: 10 }}>{emoji}</div>

@@ -1,8 +1,11 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const AshaWorker = require('../models/AshaWorker');
-const { generateOTP, getOTPExpiry, sendOTPEmail, sendOTPSMS } = require('../utils/otp');
+
 const { createAuditLog } = require('../utils/auditLogger');
+const { generateOTP } = require('../utils/generateOTP');
+const sendEmail = require('../utils/sendEmail').sendEmail;
+const getOTPExpiry = (minutes = 10) => new Date(Date.now() + minutes * 60 * 1000);
 
 const signToken = (id) =>
   jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRE || '7d' });
@@ -10,18 +13,61 @@ const signToken = (id) =>
 // POST /api/auth/register
 const register = async (req, res) => {
   try {
-    const { name, email, phone, password, role, ashaId, district, block } = req.body;
+    const {
+      name,
+      firstName,
+      lastName,
+      email,
+      phone,
+      mobile,
+      aadhar,
+      dob,
+      password,
+      role,
+      ashaId,
+      district,
+      block,
+    } = req.body;
     const normalizedEmail = email?.trim().toLowerCase();
-    const normalizedPhone = phone?.trim();
+    const normalizedPhone = String(phone || mobile || '').trim();
+    const fullName = (name || `${firstName || ''} ${lastName || ''}`).trim();
+
+    if (!fullName || !normalizedEmail || !normalizedPhone || !password || !role) {
+      return res.status(400).json({ message: 'Name, email, phone, password, and role are required' });
+    }
+
+    if (!['parent', 'asha', 'admin'].includes(role)) {
+      return res.status(400).json({ message: 'Invalid role selected' });
+    }
+
+    if (role === 'asha' && (!ashaId?.trim() || !district?.trim() || !block?.trim())) {
+      return res.status(400).json({ message: 'ASHA ID, district, and block are required for ASHA registration' });
+    }
 
     const existing = await User.findOne({ $or: [{ email: normalizedEmail }, { phone: normalizedPhone }] });
     if (existing) return res.status(400).json({ message: 'Email or phone already registered' });
 
-    const user = await User.create({ name, email: normalizedEmail, phone: normalizedPhone, password, role });
+    const user = await User.create({
+      name: fullName,
+      firstName: firstName?.trim(),
+      lastName: lastName?.trim(),
+      email: normalizedEmail,
+      phone: normalizedPhone,
+      aadhar: aadhar?.trim(),
+      dob: dob || undefined,
+      district: district?.trim(),
+      block: block?.trim(),
+      password,
+      role,
+    });
 
-    // If registering as ASHA worker, create AshaWorker record
     if (role === 'asha') {
-      await AshaWorker.create({ userId: user._id, ashaId, district, block });
+      await AshaWorker.create({
+        userId: user._id,
+        ashaId: ashaId.trim(),
+        district: district.trim(),
+        block: block.trim(),
+      });
     }
 
     await createAuditLog({
@@ -40,7 +86,7 @@ const register = async (req, res) => {
   }
 };
 
-// POST /api/auth/login  — step 1: validate credentials, send OTP
+// POST /api/auth/login
 const login = async (req, res) => {
   try {
     const identifier = req.body.email?.trim() || req.body.identifier?.trim() || '';
@@ -57,71 +103,24 @@ const login = async (req, res) => {
     }
     if (!user.isActive) return res.status(403).json({ message: 'Account deactivated' });
 
-    const otp = generateOTP();
-    user.otp = otp;
-    user.otpExpiry = getOTPExpiry();
-    await user.save({ validateBeforeSave: false });
-
-    await createAuditLog({
-      req,
-      actor: user,
-      action: 'LOGIN_OTP_SENT',
-      entityType: 'Auth',
-      entityId: user._id,
-      targetUserId: user._id,
-      details: `OTP generated for ${user.email}`,
-    });
-
-    // Send OTP via email and SMS in parallel
-    const deliveryResults = await Promise.allSettled([
-      sendOTPEmail(user.email, otp, user.name),
-      user.phone ? sendOTPSMS(user.phone, otp) : Promise.resolve(),
-    ]);
-
-    const emailFailed = deliveryResults[0].status === 'rejected';
-    const smsFailed   = deliveryResults[1].status === 'rejected';
-
-    if (emailFailed) console.warn('Email OTP failed:', deliveryResults[0].reason?.message);
-    if (smsFailed)   console.warn('SMS OTP failed:',   deliveryResults[1].reason?.message);
-
-    // In development, return OTP in response if both channels fail
-    if (emailFailed && smsFailed && process.env.NODE_ENV !== 'production') {
-      return res.json({ message: 'OTP generated (dev mode — delivery failed)', otp, userId: user._id });
-    }
-
-    const sentVia = [!emailFailed && 'email', !smsFailed && user.phone && 'SMS'].filter(Boolean).join(' & ');
-    res.json({ message: `OTP sent via ${sentVia || 'registered contact'}`, userId: user._id });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
-
-// POST /api/auth/verify-otp — step 2: verify OTP, return JWT
-const verifyOTP = async (req, res) => {
-  try {
-    const { userId, otp } = req.body;
-
-    const user = await User.findById(userId).select('+otp +otpExpiry');
-    if (!user) return res.status(404).json({ message: 'User not found' });
-
-    if (user.otp !== otp) return res.status(400).json({ message: 'Invalid OTP' });
-    if (user.otpExpiry < new Date()) return res.status(400).json({ message: 'OTP expired' });
-
     user.otp = undefined;
     user.otpExpiry = undefined;
     await user.save({ validateBeforeSave: false });
 
     const token = signToken(user._id);
+
     await createAuditLog({
       req,
       actor: user,
-      action: 'LOGIN_VERIFIED',
+      action: 'LOGIN_SUCCESS',
       entityType: 'Auth',
       entityId: user._id,
       targetUserId: user._id,
-      details: `${user.name} completed OTP verification`,
+      details: `${user.name} logged in successfully`,
     });
+
     res.json({
+      message: 'Login successful',
       token,
       user: { id: user._id, name: user.name, email: user.email, role: user.role },
     });
@@ -166,6 +165,10 @@ const forgotPassword = async (req, res) => {
     const { email } = req.body;
     const normalizedEmail = email?.trim().toLowerCase();
 
+    if (!normalizedEmail) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
     const user = await User.findOne({ email: normalizedEmail });
     if (!user) return res.status(404).json({ message: 'Email not found' });
 
@@ -174,16 +177,25 @@ const forgotPassword = async (req, res) => {
     user.otpExpiry = getOTPExpiry();
     await user.save({ validateBeforeSave: false });
 
-    // Send OTP
     try {
-      await sendOTPEmail(user.email, otp, user.name);
-    } catch {
+      await sendEmail(user.email, otp);
+    } catch (emailErr) {
+      console.warn('Password reset OTP email failed:', emailErr.message);
+
       if (process.env.NODE_ENV !== 'production') {
-        return res.json({ message: 'Dev OTP', otp, userId: user._id });
+        return res.json({
+          message: 'Email service unavailable. Using development OTP fallback.',
+          otp,
+          userId: user._id,
+        });
       }
+
+      return res.status(503).json({
+        message: 'Password reset email service is temporarily unavailable. Please try again later.',
+      });
     }
 
-    res.json({ message: 'Password reset OTP sent to your email' });
+    res.json({ message: 'Password reset OTP sent to your email', userId: user._id });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -220,4 +232,4 @@ const resetPassword = async (req, res) => {
   }
 };
 
-module.exports = { register, login, verifyOTP, getMe, changePassword, forgotPassword, resetPassword };
+module.exports = { register, login, getMe, changePassword, forgotPassword, resetPassword };

@@ -4,11 +4,16 @@ const visitSchema = new mongoose.Schema(
   {
     childId: { type: mongoose.Schema.Types.ObjectId, ref: 'Child', required: true },
     visitDate: { type: Date, default: Date.now },
+    visitType: { type: String },
     weight: { type: Number },
     height: { type: Number },
+    headCircumference: { type: Number },
+    temperature: { type: Number },
+    muac: { type: Number },
     vaccineGiven: { type: String },
+    vaccinesGiven: [{ type: String }],
     observations: { type: String },
-    outcome: { type: String, enum: ['normal', 'referred', 'follow-up'], default: 'normal' },
+    outcome: { type: String, enum: ['healthy', 'moderate', 'severe', 'referred', 'follow-up'], default: 'healthy' },
     status: { type: String, enum: ['completed', 'missed'], default: 'completed' },
   },
   { timestamps: true }

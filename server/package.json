@@ -9,9 +9,12 @@
     "seed": "node seed.js",
     "seed:who": "node seedWHO.js",
     "seed:data": "node seedFullData.js",
-    "seed:all": "node seed.js && node seedWHO.js && node seedFullData.js"
+    "seed:all": "node seed.js && node seedWHO.js && node seedFullData.js",
+    "seed:hospitals": "node seedHospitals.js",
+    "seed:hospitals:force": "node seedHospitals.js --force"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@sendgrid/mail": "^8.1.6",
     "axios": "^1.14.0",
     "bcryptjs": "^2.4.3",
