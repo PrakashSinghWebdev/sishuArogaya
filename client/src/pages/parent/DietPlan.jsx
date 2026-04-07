@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { childAPI, dietAPI } from '../../services/api';
+import { childAPI, dietAPI, dietChecklistAPI } from '../../services/api';
 import { useLanguage } from '../../context/LanguageContext';
 import useSelectedChild from '../../hooks/useSelectedChild';
 
@@ -246,6 +246,16 @@ export default function DietPlan() {
   const [showCustomForm, setShowCustomForm] = useState(false);
   const [customMeal, setCustomMeal] = useState({ name: '', time: '', items: '' });
 
+  // Checklist state
+  const [checks, setChecks] = useState([]);
+  const [checkNotes, setCheckNotes] = useState('');
+  const [checkCompletedAt, setCheckCompletedAt] = useState(null);
+  const [streak, setStreak] = useState(0);
+  const [checkLoading, setCheckLoading] = useState(false);
+  const [checkSaving, setCheckSaving] = useState(false);
+
+  const todayStr = useMemo(() => new Date().toISOString().slice(0, 10), []);
+
   const handleSaveCustomDiet = () => {
     console.log('Saving custom diet:', customMeal);
     alert(`Custom diet "${customMeal.name}" saved for ${selectedChild?.name}!`);
@@ -285,6 +295,64 @@ export default function DietPlan() {
   }, [ageGroup]);
 
   const totalMeals = dietData?.meals?.length || 0;
+
+  // Total checklist items across all meals
+  const totalCheckItems = useMemo(
+    () => dietData?.meals?.reduce((s, m) => s + m.items.length, 0) ?? 0,
+    [dietData]
+  );
+
+  // Load today's checklist + streak when child / diet data is ready
+  useEffect(() => {
+    if (!selectedChild?._id || !ageGroup?.tag) return;
+    const childId = selectedChild._id;
+
+    const load = async () => {
+      setCheckLoading(true);
+      try {
+        const [clRes, stRes] = await Promise.all([
+          dietChecklistAPI.get(childId, todayStr),
+          dietChecklistAPI.streak(childId),
+        ]);
+        setChecks(clRes.data.checks ?? []);
+        setCheckNotes(clRes.data.notes ?? '');
+        setCheckCompletedAt(clRes.data.completedAt ?? null);
+        setStreak(stRes.data.streak ?? 0);
+      } catch {
+        // silently ignore — checklist is optional
+      } finally {
+        setCheckLoading(false);
+      }
+    };
+    load();
+  }, [selectedChild?._id, ageGroup?.tag, todayStr]);
+
+  // Save checklist to backend
+  const saveChecklist = async (newChecks, newNotes) => {
+    if (!selectedChild?._id || !ageGroup?.tag) return;
+    setCheckSaving(true);
+    try {
+      const res = await dietChecklistAPI.save({
+        childId: selectedChild._id,
+        date: todayStr,
+        ageGroup: ageGroup.tag,
+        checks: newChecks,
+        notes: newNotes,
+        totalItems: totalCheckItems,
+      });
+      setCheckCompletedAt(res.data.completedAt ?? null);
+    } catch {
+      // silent
+    } finally {
+      setCheckSaving(false);
+    }
+  };
+
+  const toggleCheck = (key) => {
+    const next = checks.includes(key) ? checks.filter(k => k !== key) : [...checks, key];
+    setChecks(next);
+    saveChecklist(next, checkNotes);
+  };
 
   return (
     <div style={{ fontFamily: "'DM Sans', sans-serif", background: C.bg, minHeight: '100vh', color: C.text }}>
@@ -407,19 +475,20 @@ export default function DietPlan() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
-              <button 
-                onClick={() => setActiveTab('plan')}
-                style={{ padding: '9px 22px', borderRadius: 10, fontWeight: 600, fontSize: 13, cursor: 'pointer', border: '1.5px solid #c5e8ef', background: activeTab === 'plan' ? C.teal : '#fff', color: activeTab === 'plan' ? '#fff' : C.muted }}
-              >
-                📋 Daily Meal Plan
-              </button>
-              <button 
-                onClick={() => setActiveTab('superfoods')}
-                style={{ padding: '9px 22px', borderRadius: 10, fontWeight: 600, fontSize: 13, cursor: 'pointer', border: '1.5px solid #c5e8ef', background: activeTab === 'superfoods' ? C.teal : '#fff', color: activeTab === 'superfoods' ? '#fff' : C.muted }}
-              >
-                ⭐ Superfoods & Tips
-              </button>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+              {[
+                { key: 'plan', label: '📋 Daily Meal Plan' },
+                { key: 'checklist', label: `✅ Daily Checklist${checks.length > 0 ? ` (${checks.length}/${totalCheckItems})` : ''}` },
+                { key: 'superfoods', label: '⭐ Superfoods & Tips' },
+              ].map(tab => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  style={{ padding: '9px 22px', borderRadius: 10, fontWeight: 600, fontSize: 13, cursor: 'pointer', border: '1.5px solid #c5e8ef', background: activeTab === tab.key ? C.teal : '#fff', color: activeTab === tab.key ? '#fff' : C.muted }}
+                >
+                  {tab.label}
+                </button>
+              ))}
             </div>
 
             {activeTab === 'plan' && (
@@ -458,6 +527,103 @@ export default function DietPlan() {
                       </span>
                     ))}
                   </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'checklist' && (
+              <div>
+                {/* Day complete banner */}
+                {checkCompletedAt && (
+                  <div style={{ background: 'linear-gradient(135deg,#d1fae5,#a7f3d0)', border: '1.5px solid #6ee7b7', borderRadius: 16, padding: '18px 24px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 14 }}>
+                    <span style={{ fontSize: 36 }}>🎉</span>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: 16, color: '#065f46' }}>Day Complete! Amazing job!</div>
+                      <div style={{ fontSize: 13, color: '#047857', marginTop: 2 }}>
+                        All {totalCheckItems} meals completed today for {selectedChild?.name}.
+                        {streak > 0 && <span> 🔥 <strong>{streak}-day streak!</strong></span>}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Progress bar */}
+                <div style={{ background: '#fff', border: `1.5px solid ${C.border}`, borderRadius: 14, padding: '16px 20px', marginBottom: 20 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                    <span style={{ fontWeight: 700, fontSize: 14, color: C.text }}>Today's Progress</span>
+                    <span style={{ fontWeight: 700, fontSize: 14, color: C.teal }}>{checks.length} / {totalCheckItems} items</span>
+                  </div>
+                  <div style={{ background: C.teal3, borderRadius: 99, height: 12, overflow: 'hidden' }}>
+                    <div style={{
+                      background: `linear-gradient(90deg,${C.teal},${C.teal2})`,
+                      height: '100%',
+                      borderRadius: 99,
+                      width: `${totalCheckItems > 0 ? Math.round((checks.length / totalCheckItems) * 100) : 0}%`,
+                      transition: 'width .4s ease',
+                    }} />
+                  </div>
+                  {streak > 0 && !checkCompletedAt && (
+                    <div style={{ marginTop: 8, fontSize: 12, color: C.muted }}>🔥 Current streak: <strong>{streak} day{streak !== 1 ? 's' : ''}</strong></div>
+                  )}
+                </div>
+
+                {checkLoading ? (
+                  <div style={{ textAlign: 'center', padding: 40, color: C.muted }}>Loading checklist...</div>
+                ) : (
+                  <div style={{ display: 'grid', gap: 14 }}>
+                    {dietData.meals.map((meal, mi) => (
+                      <div key={mi} style={{ background: '#fff', border: `1.5px solid ${C.border}`, borderRadius: 16, overflow: 'hidden' }}>
+                        <div style={{ background: dietData.color, padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span style={{ fontSize: 20 }}>{meal.icon}</span>
+                          <div>
+                            <div style={{ fontWeight: 700, fontSize: 14, color: C.text }}>{meal.name}</div>
+                            <div style={{ fontSize: 12, color: C.muted }}>🕐 {meal.time}</div>
+                          </div>
+                          <div style={{ marginLeft: 'auto', fontSize: 12, color: C.teal, fontWeight: 600 }}>
+                            {meal.items.filter((_, ii) => checks.includes(`${mi}-${ii}`)).length}/{meal.items.length} done
+                          </div>
+                        </div>
+                        <div style={{ padding: '10px 20px' }}>
+                          {meal.items.map((item, ii) => {
+                            const key = `${mi}-${ii}`;
+                            const checked = checks.includes(key);
+                            return (
+                              <label key={ii} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: ii < meal.items.length - 1 ? `1px solid ${C.border}` : 'none', cursor: 'pointer' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={() => toggleCheck(key)}
+                                  style={{ width: 18, height: 18, accentColor: C.teal, cursor: 'pointer', flexShrink: 0 }}
+                                />
+                                <span style={{ fontSize: 20, flexShrink: 0 }}>{item.emoji}</span>
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ fontWeight: 600, fontSize: 14, color: checked ? C.muted : C.text, textDecoration: checked ? 'line-through' : 'none' }}>{item.name}</div>
+                                  <div style={{ fontSize: 12, color: C.teal, fontWeight: 500 }}>📏 {item.qty}</div>
+                                </div>
+                                {checked && <span style={{ fontSize: 18 }}>✅</span>}
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Notes */}
+                <div style={{ background: '#fff', border: `1.5px solid ${C.border}`, borderRadius: 14, padding: 20, marginTop: 20 }}>
+                  <label style={{ fontWeight: 600, fontSize: 14, color: C.text, display: 'block', marginBottom: 8 }}>📝 Notes for today</label>
+                  <textarea
+                    rows={3}
+                    placeholder="Any observations about meals today... (e.g. baby refused spinach)"
+                    value={checkNotes}
+                    onChange={e => {
+                      setCheckNotes(e.target.value);
+                      saveChecklist(checks, e.target.value);
+                    }}
+                    style={{ width: '100%', padding: 12, border: `1.5px solid ${C.border}`, borderRadius: 10, fontSize: 13, resize: 'vertical', fontFamily: 'inherit', outline: 'none' }}
+                  />
+                  {checkSaving && <div style={{ fontSize: 11, color: C.muted, marginTop: 4 }}>Saving...</div>}
                 </div>
               </div>
             )}

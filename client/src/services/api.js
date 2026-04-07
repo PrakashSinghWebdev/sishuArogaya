@@ -107,6 +107,12 @@ export const chatbotAPI = {
   query: (message, history = [], language = 'English') => api.post('/chatbot/query', { message, history, language }),
 };
 
+export const dietChecklistAPI = {
+  get: (childId, date) => api.get('/diet/checklist', { params: { childId, date } }),
+  save: (data) => api.put('/diet/checklist', data),
+  streak: (childId) => api.get('/diet/checklist/streak', { params: { childId } }),
+};
+
 export const hospitalAPI = {
   nearby: (lat, lng, radius = 30000, type = 'all') =>
     api.get('/hospitals/nearby', { params: { lat, lng, radius, type } }),
