@@ -26,7 +26,7 @@ const OVERPASS_EPS   = [
   'https://lz4.overpass-api.de/api/interpreter',
 ];
 const OSRM           = 'https://router.project-osrm.org/route/v1/driving';
-const RADIUS_M       = 30_000; // 30 km in metres
+const RADIUS_M       = 15_000; // 15 km in metres
 
 /* ── amenity config ──────────────────────────────────── */
 const A = {
@@ -315,41 +315,48 @@ export default function HospitalMap({ height = '100%', showSearchBar = true }) {
     setIsTracking(true);
     setGpsError('');
 
-    watchRef.current = navigator.geolocation.watchPosition(
-      ({ coords }) => {
-        const pos = { lat: coords.latitude, lng: coords.longitude };
-        const isFirst = !userPosRef.current;
-        updateUserPos(pos.lat, pos.lng, followRef.current);
-        setIsTracking(true);
-        setIsFollowing(followRef.current);
+    const onSuccess = ({ coords }) => {
+      const pos = { lat: coords.latitude, lng: coords.longitude };
+      const isFirst = !userPosRef.current;
+      updateUserPos(pos.lat, pos.lng, followRef.current);
+      setIsTracking(true);
+      setIsFollowing(followRef.current);
+      if (isFirst || followRef.current) {
+        if (!fetchedOnceRef.current || followRef.current) {
+          fetchedOnceRef.current = true;
+          fetchHospitals(pos);
+        }
+      }
+    };
 
-        /* fetch hospitals on first fix or whenever following */
-        if (isFirst || followRef.current) {
-          if (!fetchedOnceRef.current || followRef.current) {
-            fetchedOnceRef.current = true;
-            fetchHospitals(pos);
-          }
+    const onError = (err) => {
+      setIsTracking(false);
+      setIsFollowing(false);
+      if (!userPosRef.current) {
+        if (err.code === 1) {
+          setGpsError('🔒 Location permission denied. Click the lock icon in your browser → set Location to "Allow" → tap 📍 GPS.');
+        } else if (err.code === 2) {
+          setGpsError('📡 Location unavailable. Enable GPS/Location on your device then tap 📍 GPS.');
+        } else {
+          setGpsError('⏱️ Location timed out. Check your GPS signal and tap 📍 GPS.');
         }
-      },
-      (err) => {
-        setIsTracking(false);
-        setIsFollowing(false);
-        /* only show error if we've never had a fix */
-        if (!userPosRef.current) {
-          if (err.code === 1) {
-            setGpsError(
-              '🔒 Location permission denied. ' +
-              'Click the lock icon in your browser address bar → ' +
-              'set Location to "Allow" → then tap the 📍 GPS button.'
-            );
-          } else if (err.code === 2) {
-            setGpsError('📡 Location unavailable. Enable GPS on your device and tap 📍 GPS.');
-          } else {
-            setGpsError('⏱️ Location timed out. Tap 📍 GPS to try again.');
-          }
-        }
-      },
-      { enableHighAccuracy: true, timeout: 20000, maximumAge: 5000 }
+      }
+    };
+
+    /* Step 1: fast one-shot fix with maximumAge:0 to get real current position
+       (not a stale cached one from a previous city) */
+    navigator.geolocation.getCurrentPosition(onSuccess, onError, {
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 0,   // ← NEVER use cached position; always get fresh coords
+    });
+
+    /* Step 2: continuous watch — maximumAge:0 so every update is fresh GPS,
+       not the cached Uttarakhand/old coordinates */
+    watchRef.current = navigator.geolocation.watchPosition(
+      onSuccess,
+      onError,
+      { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 }
     );
   }, [fetchHospitals, updateUserPos]);
 
@@ -677,7 +684,7 @@ export default function HospitalMap({ height = '100%', showSearchBar = true }) {
           <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,.3)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1200, pointerEvents:'none' }}>
             <div style={{ background:'rgba(12,35,64,.92)', borderRadius:14, padding:'18px 28px', display:'flex', flexDirection:'column', alignItems:'center', gap:10 }}>
               <div style={{ width:28, height:28, border:'3px solid #cffafe', borderTopColor:'transparent', borderRadius:'50%', animation:'spin .7s linear infinite' }} />
-              <span style={{ color:'#cffafe', fontSize:13, fontWeight:600 }}>Searching hospitals within 30 km…</span>
+              <span style={{ color:'#cffafe', fontSize:13, fontWeight:600 }}>Searching hospitals within 15 km…</span>
             </div>
           </div>
         )}
@@ -720,7 +727,7 @@ export default function HospitalMap({ height = '100%', showSearchBar = true }) {
         {/* ── Status Bar ── */}
         <div style={{ position:'absolute', bottom: showPanel ? 300 : 8, left:'50%', transform:'translateX(-50%)', background:'rgba(12,35,64,.88)', color:'#cffafe', backdropFilter:'blur(4px)', borderRadius:20, padding:'5px 16px', fontSize:11, fontWeight:600, pointerEvents:'none', zIndex:1000, whiteSpace:'nowrap', display:'flex', alignItems:'center', gap:6 }}>
           {status==='loading'  && <><span style={{ width:10, height:10, border:'2px solid #cffafe', borderTopColor:'transparent', borderRadius:'50%', display:'inline-block', animation:'spin .7s linear infinite' }} />Searching…</>}
-          {status==='done'     && `${filtered.length} facilities found${isTracking ? ' · 🟢 Live GPS' : ''}`}
+          {status==='done'     && `${filtered.length} facilities within 15 km${isTracking ? ' · 🟢 Live GPS' : ''}`}
           {status==='fallback' && `${filtered.length} cached facilities${isTracking ? ' · 🟢 GPS active' : ' · Tap 📍 to use your location'}`}
           {status==='error'    && '⚠️ Could not load map'}
           {status==='idle'     && 'Tap 📍 GPS to find hospitals near you'}

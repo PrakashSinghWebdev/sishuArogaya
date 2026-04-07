@@ -11,7 +11,10 @@
     "seed:data": "node seedFullData.js",
     "seed:all": "node seed.js && node seedWHO.js && node seedFullData.js",
     "seed:hospitals": "node seedHospitals.js",
-    "seed:hospitals:force": "node seedHospitals.js --force"
+    "seed:hospitals:force": "node seedHospitals.js --force",
+    "seed:schemes": "node seedSchemes.js",
+    "seed:schemes:force": "node seedSchemes.js --force",
+    "seed:everything": "node seed.js && node seedHospitals.js && node seedSchemes.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { schemeAPI } from '../../services/api';
 
@@ -19,101 +19,36 @@ const NAV = [
   ['🔔 Notifications', '/parent/notifications'],
 ];
 
-const STATIC_SCHEMES = [
-  {
-    _id: 'static-1',
-    icon: '🍼',
-    name: 'Integrated Child Development Services',
-    shortName: 'ICDS',
-    description: 'Free supplementary nutrition, immunization, health check-ups, and pre-school education for children under 6 years and pregnant/lactating mothers.',
-    tags: ['Nutrition', 'Immunization', 'Health Check-up', 'Pre-school'],
-    isEnrolled: true,
-    enrolledStatus: 'Active since Jan 2024',
-    borderColor: '#059669',
-    category: 'nutrition',
-  },
-  {
-    _id: 'static-2',
-    icon: '💰',
-    name: 'Pradhan Mantri Matru Vandana Yojana',
-    shortName: 'PMMVY',
-    description: '₹5,000 cash benefit provided in 3 installments for pregnant and lactating mothers to compensate for wage loss and improve health-seeking behavior.',
-    tags: ['Cash Benefit', '₹5,000', '3 Installments', 'Maternity'],
-    isEnrolled: true,
-    enrolledStatus: '₹3,000 received · ₹2,000 pending',
-    borderColor: '#f59e0b',
-    category: 'financial',
-  },
-  {
-    _id: 'static-3',
-    icon: '🏥',
-    name: 'Janani Suraksha Yojana',
-    shortName: 'JSY',
-    description: 'Cash assistance for institutional delivery. Rural beneficiaries receive ₹1,400 and urban beneficiaries receive ₹1,000 to promote safe deliveries.',
-    tags: ['Cash Assistance', '₹1,400', 'Institutional Delivery', 'Rural'],
-    isEnrolled: true,
-    enrolledStatus: 'Payment disbursed ✓',
-    borderColor: '#1d4ed8',
-    category: 'vaccination',
-  },
-  {
-    _id: 'static-4',
-    icon: '👧',
-    name: 'Sukanya Samriddhi Yojana',
-    shortName: 'SSY',
-    description: 'Girl Child Savings Scheme — tax-free returns up to 8.2% p.a. Deposit between ₹250–₹1.5 lakh per year for a girl child under 10 years.',
-    tags: ['Girl Child', '8.2% p.a.', 'Tax-free', 'Savings'],
-    isEnrolled: false,
-    borderColor: '#7c3aed',
-    category: 'financial',
-  },
-  {
-    _id: 'static-5',
-    icon: '🩺',
-    name: 'Ayushman Bharat — PMJAY',
-    shortName: 'PMJAY',
-    description: '₹5 lakh health insurance coverage per family per year for secondary and tertiary care hospitalization at empaneled public and private hospitals.',
-    tags: ['₹5 Lakh Cover', 'Hospitalization', '25,000+ Hospitals', 'Free'],
-    isEnrolled: false,
-    borderColor: '#0891b2',
-    category: 'other',
-  },
-];
+const CATEGORY_COLOR = {
+  nutrition:   '#059669',
+  vaccination: '#1d4ed8',
+  financial:   '#f59e0b',
+  education:   '#7c3aed',
+  other:       '#0891b2',
+};
 
-function isEnrolledScheme(scheme) {
-  if (scheme.isEnrolled) return true;
-  if (scheme.category === 'nutrition' || scheme.category === 'vaccination') return true;
-  return false;
-}
+const CATEGORY_LABEL = {
+  nutrition:   '🥗 Nutrition',
+  vaccination: '💉 Vaccination',
+  financial:   '💰 Financial',
+  education:   '📚 Education',
+  other:       '🏛️ Other',
+};
 
-function schemeColor(scheme) {
-  if (scheme.borderColor) return scheme.borderColor;
-  const map = {
-    nutrition: '#059669',
-    vaccination: '#1d4ed8',
-    financial: '#f59e0b',
-    education: '#7c3aed',
-    other: '#0891b2',
-  };
-  return map[scheme.category] || '#0891b2';
+function schemeColor(s) {
+  return CATEGORY_COLOR[s.category] || '#0891b2';
 }
 
 export default function GovernmentSchemes() {
-  const [slide, setSlide] = useState(0);
-  const slideRef = useRef(0);
-  const [apiSchemes, setApiSchemes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [statusModal, setStatusModal] = useState(null); // scheme object
+  const [slide,       setSlide]       = useState(0);
+  const slideRef                      = useRef(0);
+  const [schemes,     setSchemes]     = useState([]);
+  const [loading,     setLoading]     = useState(true);
+  const [error,       setError]       = useState('');
+  const [filter,      setFilter]      = useState('all');
+  const [modal,       setModal]       = useState(null);  // scheme object for detail modal
 
-  const handleCheckStatus = (scheme) => setStatusModal(scheme);
-  const handleCheckEligibility = (scheme) => {
-    if (scheme.applyLink) {
-      window.open(scheme.applyLink, '_blank', 'noopener,noreferrer');
-    } else {
-      setStatusModal(scheme);
-    }
-  };
-
+  /* ── auto-slide ── */
   useEffect(() => {
     const id = setInterval(() => {
       slideRef.current = (slideRef.current + 1) % SLIDES.length;
@@ -122,16 +57,22 @@ export default function GovernmentSchemes() {
     return () => clearInterval(id);
   }, []);
 
+  /* ── fetch schemes from backend ── */
   useEffect(() => {
     schemeAPI.list()
-      .then(r => setApiSchemes(r.data || []))
-      .catch(console.error)
+      .then(r => {
+        const data = r.data || [];
+        setSchemes(data);
+        setError('');
+      })
+      .catch(() => setError('Could not load schemes from server. Showing cached data.'))
       .finally(() => setLoading(false));
   }, []);
 
-  const enrolledSchemes = STATIC_SCHEMES.filter(isEnrolledScheme);
-  const applySchemes = STATIC_SCHEMES.filter(s => !isEnrolledScheme(s));
-  const dynamicSchemes = apiSchemes.filter(s => !STATIC_SCHEMES.some(ss => ss.shortName === s.shortName || ss.name === s.name));
+  /* ── filter ── */
+  const displayed = filter === 'all' ? schemes : schemes.filter(s => s.category === filter);
+
+  const openModal = (scheme) => setModal(scheme);
 
   return (
     <>
@@ -142,66 +83,86 @@ export default function GovernmentSchemes() {
         :root {
           --teal: #0891b2; --teal2: #0e7490; --teal3: #cffafe; --teal4: #f0fdff;
           --bg: #f8fffe; --text: #0c2340; --muted: #4a7a8a; --border: #c5e8ef;
-          --red: #ef4444; --green: #059669; --amber: #f59e0b; --blue: #1d4ed8;
         }
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .fade-up { animation: fadeUp 0.5s ease both; }
-        .spinner { width: 40px; height: 40px; border: 3px solid var(--teal3); border-top-color: var(--teal); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto; }
-        nav.topnav { position: sticky; top: 0; z-index: 100; background: #fff; height: 64px; display: flex; align-items: center; box-shadow: 0 2px 8px rgba(8,145,178,.08); border-bottom: 2px solid #cffafe; padding: 0 28px; gap: 0; }
-        .nav-brand { font-family: 'Libre Baskerville', serif; font-size: 1.18rem; font-weight: 700; color: var(--teal2); margin-right: 32px; white-space: nowrap; text-decoration: none; }
-        .navlinks { display: flex; gap: 2px; flex-wrap: nowrap; overflow-x: auto; }
-        .navlinks a { font-size: .82rem; font-weight: 500; color: var(--muted); padding: 6px 11px; border-radius: 7px; text-decoration: none; white-space: nowrap; transition: background .15s, color .15s; }
-        .navlinks a:hover { background: var(--teal4); color: var(--teal2); }
-        .navlinks a.active { background: var(--teal3); color: var(--teal2); font-weight: 600; }
-        .hero { position: relative; height: 240px; overflow: hidden; }
-        .hero-slide { position: absolute; inset: 0; background-size: cover; background-position: center; transition: opacity 0.8s ease; }
-        .hero-overlay { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(8,145,178,.82) 0%, rgba(14,116,144,.72) 100%); }
-        .hero-content { position: relative; z-index: 2; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0 20px; }
-        .hero-badge { display: inline-block; background: rgba(255,255,255,.18); color: #fff; font-size: .78rem; font-weight: 600; padding: 4px 14px; border-radius: 20px; border: 1px solid rgba(255,255,255,.35); margin-bottom: 10px; letter-spacing: .04em; }
-        .hero-title { font-family: 'Libre Baskerville', serif; font-size: clamp(1.4rem, 3.5vw, 2.1rem); font-weight: 700; color: #fff; }
-        .hero-title span { color: #cffafe; }
-        main { max-width: 1280px; margin: 0 auto; padding: 28px 20px 48px; }
-        .page-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 28px; }
-        .page-header h2 { font-family: 'Libre Baskerville', serif; font-size: 1.35rem; font-weight: 700; color: var(--text); }
-        .section-label { font-family: 'Libre Baskerville', serif; font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
-        .section-label .pill { font-family: 'DM Sans', sans-serif; font-size: .72rem; font-weight: 600; padding: 3px 10px; border-radius: 20px; }
-        .pill-green { background: #d1fae5; color: #059669; }
-        .pill-blue { background: #dbeafe; color: #1d4ed8; }
-        .schemes-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; margin-bottom: 32px; }
-        .scheme-card { background: #fff; border: 1.5px solid var(--border); border-radius: 14px; overflow: hidden; box-shadow: 0 2px 10px rgba(8,145,178,.07); transition: transform .15s, box-shadow .15s; }
-        .scheme-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(8,145,178,.12); }
-        .scheme-header { display: flex; align-items: center; gap: 12px; padding: 16px 18px 14px; border-bottom: 1px solid var(--border); }
-        .scheme-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0; }
-        .scheme-name { font-weight: 700; font-size: .96rem; color: var(--text); margin-bottom: 3px; line-height: 1.3; }
-        .scheme-short { font-size: .72rem; font-weight: 600; padding: 2px 8px; border-radius: 6px; display: inline-block; }
-        .enrolled-pill { background: #d1fae5; color: #059669; font-size: .7rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; margin-left: auto; flex-shrink: 0; }
-        .apply-pill { background: #dbeafe; color: #1d4ed8; font-size: .7rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; margin-left: auto; flex-shrink: 0; }
-        .scheme-body { padding: 14px 18px 16px; }
-        .scheme-desc { font-size: .84rem; color: var(--muted); line-height: 1.6; margin-bottom: 12px; }
-        .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
-        .tag { background: var(--teal4); color: var(--teal2); font-size: .72rem; font-weight: 600; padding: 3px 10px; border-radius: 20px; border: 1px solid var(--border); }
-        .enrolled-box { background: #d1fae5; border-radius: 8px; padding: 8px 12px; font-size: .8rem; color: #065f46; font-weight: 500; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
-        .info-box { background: var(--teal4); border-radius: 8px; padding: 8px 12px; font-size: .8rem; color: var(--teal2); font-weight: 500; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
-        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 9px; font-size: .82rem; font-weight: 600; cursor: pointer; border: none; text-decoration: none; transition: filter .15s, transform .1s; }
-        .btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
-        .btn-teal { background: var(--teal); color: #fff; }
-        .btn-outline { background: #fff; color: var(--teal2); border: 1.5px solid var(--border); }
-        .btn-green { background: #059669; color: #fff; }
-        .divider { border: none; border-top: 1.5px solid var(--border); margin: 28px 0; }
-        .dynamic-section { margin-bottom: 32px; }
-        .dynamic-card { background: #fff; border: 1.5px solid var(--border); border-radius: 14px; padding: 18px; margin-bottom: 14px; }
-        .dynamic-card-title { font-weight: 700; font-size: .96rem; margin-bottom: 6px; }
-        .dynamic-card-desc { font-size: .84rem; color: var(--muted); margin-bottom: 8px; }
-        .contact-banner { background: linear-gradient(135deg, var(--teal) 0%, var(--teal2) 100%); border-radius: 16px; padding: 28px 32px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 18px; margin-bottom: 24px; }
-        .contact-text h3 { font-family: 'Libre Baskerville', serif; font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 4px; }
-        .contact-text p { font-size: .86rem; color: rgba(255,255,255,.85); }
-        .btn-white { background: #fff; color: var(--teal2); }
-        footer.footbar { background: var(--teal2); color: rgba(255,255,255,.9); text-align: center; padding: 18px 24px; font-size: .8rem; }
-        @media (max-width: 768px) {
-          nav.topnav .navlinks { display: none; }
-          .schemes-grid { grid-template-columns: 1fr; }
-          .contact-banner { flex-direction: column; text-align: center; }
+        @keyframes fadeUp { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:none; } }
+        @keyframes spin   { to { transform:rotate(360deg); } }
+        .fade-up  { animation: fadeUp .45s ease both; }
+        .spinner  { width:38px; height:38px; border:3px solid var(--teal3); border-top-color:var(--teal); border-radius:50%; animation:spin .8s linear infinite; margin:0 auto; }
+
+        /* nav */
+        nav.topnav { position:sticky; top:0; z-index:100; background:#fff; height:64px; display:flex; align-items:center; box-shadow:0 2px 8px rgba(8,145,178,.08); border-bottom:2px solid #cffafe; padding:0 28px; gap:0; }
+        .nav-brand  { font-family:'Libre Baskerville',serif; font-size:1.18rem; font-weight:700; color:var(--teal2); margin-right:32px; white-space:nowrap; text-decoration:none; }
+        .navlinks   { display:flex; gap:2px; flex-wrap:nowrap; overflow-x:auto; }
+        .navlinks a { font-size:.82rem; font-weight:500; color:var(--muted); padding:6px 11px; border-radius:7px; text-decoration:none; white-space:nowrap; transition:background .15s,color .15s; }
+        .navlinks a:hover  { background:var(--teal4); color:var(--teal2); }
+        .navlinks a.active { background:var(--teal3); color:var(--teal2); font-weight:600; }
+
+        /* hero */
+        .hero { position:relative; height:220px; overflow:hidden; }
+        .hero-slide   { position:absolute; inset:0; background-size:cover; background-position:center; transition:opacity .8s ease; }
+        .hero-overlay { position:absolute; inset:0; background:linear-gradient(135deg,rgba(8,145,178,.82) 0%,rgba(14,116,144,.72) 100%); }
+        .hero-content { position:relative; z-index:2; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:0 20px; }
+        .hero-badge   { display:inline-block; background:rgba(255,255,255,.18); color:#fff; font-size:.78rem; font-weight:600; padding:4px 14px; border-radius:20px; border:1px solid rgba(255,255,255,.35); margin-bottom:10px; }
+        .hero-title   { font-family:'Libre Baskerville',serif; font-size:clamp(1.3rem,3.5vw,2rem); font-weight:700; color:#fff; }
+        .hero-title span { color:#cffafe; }
+
+        /* layout */
+        main { max-width:1280px; margin:0 auto; padding:28px 20px 56px; }
+
+        /* filter bar */
+        .filter-bar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:28px; }
+        .filter-btn { padding:7px 18px; border-radius:20px; border:1.5px solid var(--border); background:#fff; color:var(--muted); font-size:.82rem; font-weight:600; cursor:pointer; transition:all .15s; }
+        .filter-btn:hover  { background:var(--teal4); color:var(--teal2); border-color:var(--teal3); }
+        .filter-btn.active { background:var(--teal); color:#fff; border-color:var(--teal); }
+
+        /* grid */
+        .schemes-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:20px; }
+
+        /* card */
+        .scheme-card { background:#fff; border:1.5px solid var(--border); border-radius:16px; overflow:hidden; box-shadow:0 2px 10px rgba(8,145,178,.07); transition:transform .15s,box-shadow .15s; display:flex; flex-direction:column; }
+        .scheme-card:hover { transform:translateY(-3px); box-shadow:0 8px 24px rgba(8,145,178,.14); }
+        .card-top  { display:flex; align-items:flex-start; gap:12px; padding:18px 18px 12px; }
+        .card-icon { width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.5rem; flex-shrink:0; }
+        .card-meta { flex:1; min-width:0; }
+        .card-name { font-weight:700; font-size:.97rem; color:var(--text); line-height:1.3; margin-bottom:4px; }
+        .card-badges { display:flex; flex-wrap:wrap; gap:4px; }
+        .badge-short { font-size:.7rem; font-weight:700; padding:2px 8px; border-radius:6px; }
+        .badge-cat   { font-size:.7rem; font-weight:600; padding:2px 8px; border-radius:6px; background:#f1f5f9; color:#64748b; }
+        .card-body { padding:0 18px 16px; flex:1; display:flex; flex-direction:column; }
+        .card-desc { font-size:.84rem; color:var(--muted); line-height:1.65; margin-bottom:10px; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+        .card-tags { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:12px; }
+        .tag { background:var(--teal4); color:var(--teal2); font-size:.7rem; font-weight:600; padding:3px 9px; border-radius:20px; border:1px solid var(--border); }
+        .card-footer { display:flex; gap:8px; margin-top:auto; }
+
+        /* buttons */
+        .btn { display:inline-flex; align-items:center; gap:5px; padding:8px 16px; border-radius:9px; font-size:.82rem; font-weight:600; cursor:pointer; border:none; text-decoration:none; transition:filter .15s,transform .1s; white-space:nowrap; }
+        .btn:hover { filter:brightness(1.07); transform:translateY(-1px); }
+        .btn-primary { background:var(--teal); color:#fff; }
+        .btn-outline { background:#fff; color:var(--teal2); border:1.5px solid var(--border); }
+        .btn-green   { background:#059669; color:#fff; }
+        .btn-purple  { background:#7c3aed; color:#fff; }
+        .btn-amber   { background:#d97706; color:#fff; }
+
+        /* info/contact banner */
+        .info-banner { background:linear-gradient(135deg,var(--teal) 0%,var(--teal2) 100%); border-radius:16px; padding:28px 32px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; margin-top:40px; }
+        .info-banner h3 { font-family:'Libre Baskerville',serif; font-size:1.1rem; font-weight:700; color:#fff; margin-bottom:4px; }
+        .info-banner p  { font-size:.86rem; color:rgba(255,255,255,.88); }
+        .btn-white { background:#fff; color:var(--teal2); }
+
+        /* modal backdrop */
+        .modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1000; display:flex; align-items:center; justify-content:center; padding:20px; }
+        .modal-box { background:#fff; border-radius:18px; padding:28px; max-width:520px; width:100%; box-shadow:0 24px 64px rgba(0,0,0,.22); position:relative; max-height:90vh; overflow-y:auto; }
+        .modal-close { position:absolute; top:14px; right:16px; background:none; border:none; font-size:20px; cursor:pointer; color:#4a7a8a; line-height:1; }
+        .modal-title { font-weight:700; font-size:1.1rem; color:var(--text); margin-bottom:4px; }
+        .modal-short { font-size:.78rem; font-weight:600; color:var(--teal); margin-bottom:14px; display:block; }
+        .modal-section-label { font-size:.72rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:5px; margin-top:12px; }
+        .modal-section-text  { font-size:.88rem; color:var(--text); line-height:1.7; }
+        .modal-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:20px; }
+
+        @media (max-width:640px) {
+          nav.topnav .navlinks { display:none; }
+          .schemes-grid { grid-template-columns:1fr; }
+          .info-banner  { flex-direction:column; text-align:center; }
         }
       `}</style>
 
@@ -218,219 +179,199 @@ export default function GovernmentSchemes() {
       {/* Hero */}
       <section className="hero">
         {SLIDES.map((src, i) => (
-          <div
-            key={i}
-            className="hero-slide"
-            style={{ backgroundImage: `url(${src})`, opacity: slide === i ? 1 : 0 }}
-          />
+          <div key={i} className="hero-slide" style={{ backgroundImage:`url(${src})`, opacity:slide===i?1:0 }} />
         ))}
         <div className="hero-overlay" />
         <div className="hero-content fade-up">
-          <span className="hero-badge">🏥 Government Schemes</span>
+          <span className="hero-badge">🏛️ Government Schemes</span>
           <h1 className="hero-title">Welfare Schemes for <span>Your Family</span></h1>
         </div>
       </section>
 
       <main>
-        <div className="page-header">
-          <h2>🏛️ Government Welfare Schemes</h2>
-        </div>
+        {/* error */}
+        {error && (
+          <div style={{ background:'#fff7ed', border:'1px solid #fed7aa', borderRadius:10, padding:'10px 16px', marginBottom:20, fontSize:'.85rem', color:'#c2410c' }}>
+            ⚠️ {error}
+          </div>
+        )}
 
         {loading ? (
-          <div style={{ padding: '60px 0', textAlign: 'center' }}>
+          <div style={{ padding:'60px 0', textAlign:'center' }}>
             <div className="spinner" />
-            <p style={{ marginTop: 14, color: 'var(--muted)', fontSize: '.9rem' }}>Loading schemes…</p>
+            <p style={{ marginTop:14, color:'var(--muted)', fontSize:'.9rem' }}>Loading schemes from database…</p>
           </div>
         ) : (
           <>
-            {/* Currently Enrolled */}
-            <div className="section-label fade-up">
-              ✓ Currently Enrolled
-              <span className="pill pill-green">{enrolledSchemes.length} Active</span>
-            </div>
-            <div className="schemes-grid">
-              {enrolledSchemes.map(scheme => {
-                const color = schemeColor(scheme);
-                return (
-                  <div key={scheme._id} className="scheme-card fade-up" style={{ borderTop: `4px solid ${color}` }}>
-                    <div className="scheme-header">
-                      <div className="scheme-icon" style={{ background: color + '18' }}>{scheme.icon}</div>
-                      <div style={{ flex: 1 }}>
-                        <div className="scheme-name">{scheme.name}</div>
-                        <span className="scheme-short" style={{ background: color + '18', color }}>{scheme.shortName}</span>
-                      </div>
-                      <span className="enrolled-pill">✓ Enrolled</span>
-                    </div>
-                    <div className="scheme-body">
-                      <p className="scheme-desc">{scheme.description}</p>
-                      {scheme.tags && (
-                        <div className="tags">
-                          {scheme.tags.map(t => <span key={t} className="tag">{t}</span>)}
-                        </div>
-                      )}
-                      {scheme.enrolledStatus && (
-                        <div className="enrolled-box">
-                          <span>✅</span>
-                          <span>{scheme.enrolledStatus}</span>
-                        </div>
-                      )}
-                      <button className="btn btn-green" onClick={() => handleCheckStatus(scheme)}>Check Status →</button>
-                    </div>
-                  </div>
-                );
-              })}
+            {/* Count + Filter bar */}
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:12, marginBottom:20 }}>
+              <h2 style={{ fontFamily:"'Libre Baskerville',serif", fontSize:'1.25rem', fontWeight:700, color:'var(--text)' }}>
+                🏛️ {schemes.length} Government Welfare Schemes
+              </h2>
+              <span style={{ fontSize:'.82rem', color:'var(--muted)' }}>Live data from database</span>
             </div>
 
-            <hr className="divider" />
-
-            {/* Apply Now */}
-            <div className="section-label fade-up">
-              🎯 Apply Now — You're Eligible
-              <span className="pill pill-blue">{applySchemes.length} Available</span>
+            <div className="filter-bar">
+              {[['all','All Schemes','📍'],['nutrition','Nutrition','🥗'],['vaccination','Vaccination','💉'],['financial','Financial','💰'],['education','Education','📚'],['other','Other','🏛️']].map(([key,label,emoji]) => (
+                <button key={key} className={`filter-btn${filter===key?' active':''}`} onClick={() => setFilter(key)}>
+                  {emoji} {label}
+                </button>
+              ))}
             </div>
-            <div className="schemes-grid">
-              {applySchemes.map(scheme => {
-                const color = schemeColor(scheme);
-                return (
-                  <div key={scheme._id} className="scheme-card fade-up" style={{ borderTop: `4px solid ${color}` }}>
-                    <div className="scheme-header">
-                      <div className="scheme-icon" style={{ background: color + '18' }}>{scheme.icon}</div>
-                      <div style={{ flex: 1 }}>
-                        <div className="scheme-name">{scheme.name}</div>
-                        <span className="scheme-short" style={{ background: color + '18', color }}>{scheme.shortName}</span>
-                      </div>
-                      <span className="apply-pill">Apply Now</span>
-                    </div>
-                    <div className="scheme-body">
-                      <p className="scheme-desc">{scheme.description}</p>
-                      {scheme.tags && (
-                        <div className="tags">
-                          {scheme.tags.map(t => <span key={t} className="tag">{t}</span>)}
+
+            {displayed.length === 0 ? (
+              <div style={{ textAlign:'center', padding:'48px 0', color:'var(--muted)' }}>
+                No schemes found for this category.
+              </div>
+            ) : (
+              <div className="schemes-grid">
+                {displayed.map((scheme, idx) => {
+                  const color = schemeColor(scheme);
+                  const hasLink = !!scheme.applyLink;
+                  return (
+                    <div key={scheme._id} className="scheme-card fade-up" style={{ borderTop:`4px solid ${color}`, animationDelay:`${idx * 0.05}s` }}>
+                      <div className="card-top">
+                        <div className="card-icon" style={{ background:`${color}18` }}>
+                          {scheme.icon || '🏛️'}
                         </div>
-                      )}
-                      <div className="info-box">
-                        <span>ℹ️</span>
-                        <span>You may be eligible based on your profile. Contact your ASHA worker to apply.</span>
-                      </div>
-                      <button className="btn btn-teal" onClick={() => handleCheckEligibility(scheme)}>Check Eligibility →</button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Dynamic API schemes */}
-            {dynamicSchemes.length > 0 && (
-              <>
-                <hr className="divider" />
-                <div className="section-label fade-up">
-                  🔄 Additional Schemes
-                  <span className="pill pill-blue">{dynamicSchemes.length}</span>
-                </div>
-                <div className="schemes-grid">
-                  {dynamicSchemes.map(scheme => {
-                    const color = schemeColor(scheme);
-                    const enrolled = isEnrolledScheme(scheme);
-                    return (
-                      <div key={scheme._id} className="scheme-card fade-up" style={{ borderTop: `4px solid ${color}` }}>
-                        <div className="scheme-header">
-                          <div className="scheme-icon" style={{ background: color + '18', fontSize: '1.3rem' }}>🏛️</div>
-                          <div style={{ flex: 1 }}>
-                            <div className="scheme-name">{scheme.name}</div>
-                            {scheme.shortName && <span className="scheme-short" style={{ background: color + '18', color }}>{scheme.shortName}</span>}
+                        <div className="card-meta">
+                          <div className="card-name">{scheme.name}</div>
+                          <div className="card-badges">
+                            {scheme.shortName && (
+                              <span className="badge-short" style={{ background:`${color}18`, color }}>{scheme.shortName}</span>
+                            )}
+                            <span className="badge-cat">{CATEGORY_LABEL[scheme.category] || scheme.category}</span>
                           </div>
-                          {enrolled ? <span className="enrolled-pill">✓ Enrolled</span> : <span className="apply-pill">Apply Now</span>}
-                        </div>
-                        <div className="scheme-body">
-                          <p className="scheme-desc">{scheme.description}</p>
-                          {scheme.eligibilityCriteria && (
-                            <div style={{ fontSize: '.8rem', color: 'var(--muted)', marginBottom: 8 }}>
-                              <strong>Eligibility:</strong> {scheme.eligibilityCriteria}
-                            </div>
-                          )}
-                          {scheme.benefits && (
-                            <div style={{ fontSize: '.8rem', color: 'var(--muted)', marginBottom: 10 }}>
-                              <strong>Benefits:</strong> {scheme.benefits}
-                            </div>
-                          )}
-                          {scheme.applyLink
-                            ? <a href={scheme.applyLink} target="_blank" rel="noreferrer" className="btn btn-teal">Check Eligibility →</a>
-                            : <button className="btn btn-outline">Check Eligibility →</button>
-                          }
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              </>
+
+                      <div className="card-body">
+                        <p className="card-desc">{scheme.description}</p>
+
+                        {scheme.tags?.length > 0 && (
+                          <div className="card-tags">
+                            {scheme.tags.map(t => <span key={t} className="tag">{t}</span>)}
+                          </div>
+                        )}
+
+                        <div className="card-footer">
+                          {/* Primary CTA — opens official government portal */}
+                          {hasLink ? (
+                            <a
+                              href={scheme.applyLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="btn btn-primary"
+                              style={{ flex:1, justifyContent:'center' }}
+                            >
+                              Apply / Check Online 🔗
+                            </a>
+                          ) : (
+                            <button
+                              className="btn btn-primary"
+                              style={{ flex:1, justifyContent:'center' }}
+                              onClick={() => openModal(scheme)}
+                            >
+                              Check Eligibility →
+                            </button>
+                          )}
+                          {/* Details button */}
+                          <button
+                            className="btn btn-outline"
+                            onClick={() => openModal(scheme)}
+                            title="View full details"
+                          >
+                            Details
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
 
-            {/* ASHA Contact Banner */}
-            <div className="contact-banner fade-up">
-              <div className="contact-text">
+            {/* ASHA / Helpline Banner */}
+            <div className="info-banner fade-up">
+              <div>
                 <h3>📞 Need Help Applying?</h3>
-                <p>Your assigned ASHA worker can help you enroll in any of these schemes. Contact them directly for assistance with applications and documentation.</p>
-                <p style={{ marginTop: 6, fontWeight: 600, color: '#cffafe' }}>ASHA Helpline: 1800-180-1104 · Mon–Sat, 9 AM – 6 PM</p>
+                <p>Your ASHA worker can help you enroll in any scheme. Contact them or call the national helpline.</p>
+                <p style={{ marginTop:6, fontWeight:600, color:'#cffafe' }}>
+                  ASHA Helpline: 1800-180-1104 &nbsp;·&nbsp; Mon–Sat, 9 AM – 6 PM
+                </p>
               </div>
-              <a href="tel:18001801104" className="btn btn-white">📞 Call Now</a>
+              <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
+                <a href="tel:18001801104" className="btn btn-white">📞 Call Helpline</a>
+                <a href="https://nhm.gov.in" target="_blank" rel="noreferrer" className="btn btn-white">🌐 NHM Portal</a>
+              </div>
             </div>
           </>
         )}
       </main>
 
-      {/* Status / Eligibility Modal */}
-      {statusModal && (
-        <div
-          onClick={() => setStatusModal(null)}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
-        >
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{ background: '#fff', borderRadius: 16, padding: 28, maxWidth: 480, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,.2)', position: 'relative' }}
-          >
-            <button onClick={() => setStatusModal(null)} style={{ position: 'absolute', top: 12, right: 14, background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#4a7a8a' }}>✕</button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-              <div style={{ fontSize: 28 }}>{statusModal.icon || '🏛️'}</div>
+      {/* ── Detail / Eligibility Modal ── */}
+      {modal && (
+        <div className="modal-backdrop" onClick={() => setModal(null)}>
+          <div className="modal-box" onClick={e => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setModal(null)}>✕</button>
+
+            {/* header */}
+            <div style={{ display:'flex', alignItems:'center', gap:14, marginBottom:16 }}>
+              <div style={{ width:52, height:52, borderRadius:14, background:`${schemeColor(modal)}18`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.7rem', flexShrink:0 }}>
+                {modal.icon || '🏛️'}
+              </div>
               <div>
-                <div style={{ fontWeight: 700, fontSize: 16, color: '#0c2340' }}>{statusModal.name}</div>
-                {statusModal.shortName && <div style={{ fontSize: 12, color: '#0891b2', fontWeight: 600 }}>{statusModal.shortName}</div>}
+                <div className="modal-title">{modal.name}</div>
+                {modal.shortName && <span className="modal-short">{modal.shortName} · {CATEGORY_LABEL[modal.category]}</span>}
               </div>
             </div>
-            {statusModal.enrolledStatus && (
-              <div style={{ background: '#d1fae5', border: '1px solid #86efac', borderRadius: 8, padding: '10px 14px', marginBottom: 12, fontSize: 13, color: '#065f46', fontWeight: 600 }}>
-                ✅ Status: {statusModal.enrolledStatus}
+
+            {/* tags */}
+            {modal.tags?.length > 0 && (
+              <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginBottom:14 }}>
+                {modal.tags.map(t => (
+                  <span key={t} style={{ background:`${schemeColor(modal)}12`, color:schemeColor(modal), fontSize:'.72rem', fontWeight:600, padding:'3px 10px', borderRadius:20 }}>{t}</span>
+                ))}
               </div>
             )}
-            {statusModal.eligibilityCriteria && (
-              <div style={{ marginBottom: 10 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: '#4a7a8a', textTransform: 'uppercase', marginBottom: 4 }}>Eligibility</div>
-                <div style={{ fontSize: 13, color: '#0c2340', lineHeight: 1.6 }}>{statusModal.eligibilityCriteria}</div>
-              </div>
+
+            <div className="modal-section-label">About this Scheme</div>
+            <div className="modal-section-text">{modal.description}</div>
+
+            {modal.eligibilityCriteria && (
+              <>
+                <div className="modal-section-label">Who is Eligible?</div>
+                <div className="modal-section-text">{modal.eligibilityCriteria}</div>
+              </>
             )}
-            {statusModal.benefits && (
-              <div style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: '#4a7a8a', textTransform: 'uppercase', marginBottom: 4 }}>Benefits</div>
-                <div style={{ fontSize: 13, color: '#0c2340', lineHeight: 1.6 }}>{statusModal.benefits}</div>
-              </div>
+
+            {modal.benefits && (
+              <>
+                <div className="modal-section-label">Benefits</div>
+                <div className="modal-section-text">{modal.benefits}</div>
+              </>
             )}
-            <p style={{ fontSize: 13, color: '#4a7a8a', marginBottom: 16, lineHeight: 1.6 }}>{statusModal.description}</p>
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              {statusModal.applyLink && (
-                <a href={statusModal.applyLink} target="_blank" rel="noreferrer"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 18px', borderRadius: 9, background: '#0891b2', color: '#fff', fontWeight: 600, fontSize: 13, textDecoration: 'none' }}>
-                  🔗 Apply / Check Online
+
+            {/* actions */}
+            <div className="modal-actions">
+              {modal.applyLink && (
+                <a
+                  href={modal.applyLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-primary"
+                >
+                  🔗 Apply / Check Online (Official Portal)
                 </a>
               )}
-              <button onClick={() => setStatusModal(null)}
-                style={{ padding: '9px 18px', borderRadius: 9, border: '1.5px solid #c5e8ef', background: '#fff', color: '#0e7490', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
-                Close
-              </button>
+              <a href="tel:18001801104" className="btn btn-green">📞 Call ASHA Helpline</a>
+              <button className="btn btn-outline" onClick={() => setModal(null)}>Close</button>
             </div>
           </div>
         </div>
       )}
 
-      <footer className="footbar">
+      <footer style={{ background:'#0e7490', color:'rgba(255,255,255,.9)', textAlign:'center', padding:'18px 24px', fontSize:'.8rem' }}>
         Sishu Arogaya © 2024 · Government Integrated Child Health Monitoring System · DBUU Dehradun
       </footer>
     </>

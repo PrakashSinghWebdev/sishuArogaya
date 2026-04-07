@@ -10,5 +10,8 @@
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "@sendgrid/mail": "^8.1.6"
   }
 }
