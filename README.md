@@ -42,8 +42,8 @@ Shishu Aarogya is a comprehensive, multi-role digital health platform designed t
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/your-username/shishu-aarogya.git
-   cd shishu-aarogya
+   git clone https://github.com/PrakashSinghWebdev/sishuArogaya.git
+   cd sishu-aarogya
    ```
 
 2. **Server Setup:**
@@ -74,6 +74,7 @@ Detailed documentation is available in the `docs/` folder:
 - [Product Requirements (PRD)](docs/PRD.md)
 - [Search System Implementation](docs/SEARCH_SYSTEM.md)
 - [Features & Translation Guide](docs/FEATURES_GUIDE.md)
+- [Voice Guide Implementation](docs/VOICE_GUIDE.md)
 
 ## 🛡️ License
 This project is licensed under the MIT License.
