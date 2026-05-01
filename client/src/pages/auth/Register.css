@@ -48,7 +48,7 @@
 .login-card__brand-subtitle { margin-top: 1px; font-size: 11px; color: #4a7a8a; }
 .login-card__title { margin-bottom: 4px; font-family: 'Libre Baskerville', serif; font-size: 23px; font-weight: 700; color: #0c2340; }
 .login-card__subtitle { margin-bottom: 24px; font-size: 13px; color: #4a7a8a; }
-.login-card__roles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; padding: 5px; margin-bottom: 22px; border-radius: 11px; background: #cffafe; }
+.login-card__roles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; padding: 5px; margin-bottom: 22px; border-radius: 11px; background: #cffafe; }
 .login-card__role { padding: 8px 4px; border: none; border-radius: 8px; background: transparent; color: #4a7a8a; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500; display: flex; flex-direction: column; align-items: center; gap: 3px; transition: all .25s; }
 .login-card__role.is-active { background: #fff; color: #0e7490; box-shadow: 0 2px 8px rgba(8,145,178,.15); }
 .login-card__role-icon { font-size: 13px; font-weight: 700; }
