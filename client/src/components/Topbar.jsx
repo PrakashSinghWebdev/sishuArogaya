@@ -1,23 +1,25 @@
-import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useLanguage, LANGUAGES } from '../context/LanguageContext';
+import { LANGUAGES, normalizeText, useLanguage } from '../context/LanguageContext';
 
 const Topbar = () => {
   const { user, logout } = useAuth();
   const { language, setLanguage, t } = useLanguage();
-  const [showLangDropdown, setShowLangDropdown] = useState(false);
   const navigate = useNavigate();
+
+  const activeLang = LANGUAGES.find((lang) => lang.code === language);
+  const portalLabel = user?.role
+    ? t(user.role === 'asha' ? 'ashaPortal' : user.role === 'admin' ? 'adminPortal' : 'profileTitle')
+    : t('home');
 
   return (
     <div className="topbar d-flex align-items-center justify-content-between">
       <div className="fw-semibold text-muted" style={{ fontSize: '0.9rem' }}>
         <i className="bi bi-geo-alt-fill me-1 text-success"></i>
-        {t('ashaPortal')} — {t('adminPortal')}
+        {portalLabel}
       </div>
 
       <div className="d-flex align-items-center gap-3">
-        {/* Notifications bell */}
         <Link
           to={`/${user?.role}/notifications`}
           className="text-secondary position-relative"
@@ -26,45 +28,78 @@ const Topbar = () => {
           <i className="bi bi-bell fs-5"></i>
         </Link>
 
-        {/* Language Dropdown */}
         <div className="dropdown">
-          <button 
-            className="btn btn-sm btn-outline-secondary dropdown-toggle d-flex align-items-center gap-1" 
+          <button
+            className="btn btn-sm btn-outline-secondary dropdown-toggle d-flex align-items-center gap-2 px-3"
             data-bs-toggle="dropdown"
-            onClick={() => setShowLangDropdown(!showLangDropdown)}
+            onClick={() => {}}
+            style={{ borderRadius: '20px', fontWeight: 600 }}
           >
-            <span style={{ fontSize: '0.75rem', width: 16, height: 16, borderRadius: '50%', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              🌐
+            <span style={{ fontSize: '1rem' }}>{activeLang?.flag || '🌐'}</span>
+            <span className="d-none d-md-inline" style={{ fontSize: '0.8rem' }}>
+              {activeLang?.label}
             </span>
-            {LANGUAGES.find(l => l.code === language)?.label?.slice(0, 3)}
+            <span className="d-md-none" style={{ fontSize: '0.8rem' }}>
+              {language?.slice(0, 3)}
+            </span>
           </button>
-          <ul className="dropdown-menu dropdown-menu-end" style={{ maxHeight: 200, overflowY: 'auto' }}>
-            {LANGUAGES.slice(0, 10).map(lang => (  // Top 10 for space
-              <li key={lang.code}>
-                <button 
-                  className="dropdown-item d-flex align-items-center gap-2" 
-                  onClick={() => {
-                    setLanguage(lang.code);
-                    setShowLangDropdown(false);
-                  }}
-                >
-                  <span>{lang.flag}</span>
-                  <span>{lang.label}</span>
-                </button>
-              </li>
-            ))}
-            <li><hr className="dropdown-divider" /></li>
-            <li>
-              <button className="dropdown-item text-muted small" onClick={() => navigate('/parent/settings')}>
-                {t('settings')} → Full list
+
+          <ul
+            className="dropdown-menu dropdown-menu-end shadow-lg border-0 py-3"
+            style={{
+              width: 'min(90vw, 420px)',
+              maxHeight: '450px',
+              overflowY: 'auto',
+              borderRadius: '16px',
+              padding: '12px',
+            }}
+          >
+            <div className="px-3 pb-2 mb-2 border-bottom">
+              <h6 className="mb-0 small fw-bold text-muted text-uppercase" style={{ letterSpacing: '0.05em' }}>
+                {t('langTitle')}
+              </h6>
+            </div>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, 1fr)',
+                gap: '4px',
+              }}
+            >
+              {LANGUAGES.map((lang) => (
+                <li key={lang.code} style={{ listStyle: 'none' }}>
+                  <button
+                    className={`dropdown-item d-flex align-items-center gap-2 py-2 rounded-3 ${
+                      language === lang.code ? 'bg-primary text-white' : ''
+                    }`}
+                    onClick={() => setLanguage(lang.code)}
+                    style={{ fontSize: '0.85rem', transition: 'all 0.2s' }}
+                  >
+                    <span className="fs-6">{lang.flag}</span>
+                    <span className="text-truncate">{lang.label}</span>
+                  </button>
+                </li>
+              ))}
+            </div>
+
+            <li><hr className="dropdown-divider mx-3" /></li>
+            <li className="px-2">
+              <button
+                className="btn btn-link btn-sm text-decoration-none w-100 text-center text-muted fw-semibold"
+                onClick={() => navigate(`/${user?.role || 'parent'}/settings`)}
+              >
+                {normalizeText(`${t('settings')} →`)}
               </button>
             </li>
           </ul>
         </div>
 
-        {/* User dropdown */}
         <div className="dropdown">
-          <button className="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+          <button
+            className="btn btn-sm btn-outline-secondary dropdown-toggle"
+            data-bs-toggle="dropdown"
+          >
             <i className="bi bi-person-circle me-1"></i>
             {user?.name}
           </button>
@@ -76,8 +111,9 @@ const Topbar = () => {
             </li>
             <li><hr className="dropdown-divider" /></li>
             <li>
-              <button className="dropdown-item text-danger" onClick={logout}>
-                <i className="bi bi-box-arrow-right me-2"></i>{t('logout')}
+              <button className="dropdown-item text-danger" onClick={() => { logout(); navigate('/login'); }}>
+                <i className="bi bi-box-arrow-right me-2"></i>
+                {t('logout')}
               </button>
             </li>
           </ul>

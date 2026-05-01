@@ -22,7 +22,7 @@ const visitSchema = new mongoose.Schema(
 const ashaWorkerSchema = new mongoose.Schema(
   {
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    ashaId: { type: String, unique: true, required: true }, // Govt. ASHA ID
+    ashaId: { type: String, unique: true, required: true, sparse: true }, // Govt. ASHA ID (ASHA-XXXX)
     district: { type: String, required: true },
     block: { type: String, required: true },
     village: { type: String },
@@ -34,5 +34,24 @@ const ashaWorkerSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Generate unique ashaId before save
+ashaWorkerSchema.pre('save', async function (next) {
+  if (this.ashaId) return next();
+
+  let ashaId;
+  let isUnique = false;
+  const AshaWorker = mongoose.model('AshaWorker');
+
+  while (!isUnique) {
+    const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+    ashaId = `ASHA-${random}`;
+    const existing = await AshaWorker.findOne({ ashaId });
+    if (!existing) isUnique = true;
+  }
+
+  this.ashaId = ashaId;
+  next();
+});
 
 module.exports = mongoose.model('AshaWorker', ashaWorkerSchema);

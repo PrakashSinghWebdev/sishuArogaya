@@ -1,10 +1,10 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { childAPI, dietAPI, dietChecklistAPI } from '../../services/api';
-import { useLanguage } from '../../context/LanguageContext';
+import { normalizeText, useLanguage } from '../../context/LanguageContext';
 import useSelectedChild from '../../hooks/useSelectedChild';
 
-const C = {
+const themeColors = {
   teal: '#0891b2', teal2: '#0e7490', teal3: '#cffafe', teal4: '#f0fdff',
   bg: '#f8fffe', text: '#0c2340', muted: '#4a7a8a', border: '#c5e8ef',
 };
@@ -396,6 +396,23 @@ const DIET_PLANS = {
   },
 };
 
+const normalizeUiData = (value) => {
+  if (typeof value === 'string') return normalizeText(value);
+  if (Array.isArray(value)) return value.map(normalizeUiData);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, normalizeUiData(entry)]));
+  }
+  return value;
+};
+
+const hasRenderableDietPlan = (plan) =>
+  !!plan &&
+  typeof plan === 'object' &&
+  typeof plan.intro === 'string' &&
+  Array.isArray(plan.meals) &&
+  plan.meals.length > 0 &&
+  plan.meals.some((meal) => Array.isArray(meal?.items) && meal.items.length > 0);
+
 const SUPERFOODS = [
   { name: 'Ragi (Finger Millet)', desc: 'Rich in calcium & iron — excellent for bone development', emoji: '🌾' },
   { name: 'Spinach (Palak)', desc: 'High in iron & folate — supports brain and blood', emoji: '🥬' },
@@ -449,7 +466,7 @@ export default function DietPlan() {
 
   const handleSaveCustomDiet = () => {
     console.log('Saving custom diet:', customMeal);
-    alert(`Custom diet "${customMeal.name}" saved for ${selectedChild?.name}!`);
+    alert(normalizeText(`Custom diet "${customMeal.name}" saved for ${selectedChild?.name}!`));
     setShowCustomForm(false);
     setCustomMeal({ name: '', time: '', items: '' });
   };
@@ -459,21 +476,31 @@ export default function DietPlan() {
     return selectedChild.ageInMonths ?? calcAgeMonths(selectedChild.dob);
   }, [selectedChild]);
 
-  const ageGroup = useMemo(() => getAgeGroup(ageMonths), [ageMonths]);
+  const ageGroup = useMemo(() => normalizeUiData(getAgeGroup(ageMonths)), [ageMonths]);
 
   useEffect(() => {
     if (!ageGroup?.tag) return;
     
     const fetchDiet = async () => {
+      const staticFallback = ageGroup?.tag ? normalizeUiData(DIET_PLANS[ageGroup.tag]) : null;
+
       try {
         setDietLoading(true);
         setError('');
         const res = await dietAPI.getByAgeGroup(ageGroup.tag);
-        setDietData(res.data);
+        const normalized = normalizeUiData(res.data);
+
+        if (hasRenderableDietPlan(normalized)) {
+          setDietData(normalized);
+        } else if (staticFallback) {
+          setDietData(staticFallback);
+        } else {
+          setDietData(normalized);
+          setError('Diet data unavailable for age group');
+        }
       } catch (err) {
-        console.log('Using static diet fallback');
-        if (ageGroup?.tag && DIET_PLANS[ageGroup.tag]) {
-          setDietData(DIET_PLANS[ageGroup.tag]);
+        if (staticFallback) {
+          setDietData(staticFallback);
         } else {
           setError('Diet data unavailable for age group');
         }
@@ -571,35 +598,38 @@ export default function DietPlan() {
   };
 
   return (
-    <div style={{ fontFamily: "'DM Sans', sans-serif", background: C.bg, minHeight: '100vh', color: C.text }}>
+    <div style={{ fontFamily: "'DM Sans', sans-serif", background: themeColors.bg, minHeight: '100vh', color: themeColors.text }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap');
         *{box-sizing:border-box}
         @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
         @keyframes spin{to{transform:rotate(360deg)}}
-        .dp-card{background:#fff;border:1.5px solid ${C.border};border-radius:16px;box-shadow:0 2px 12px rgba(8,145,178,.07);padding:20px}
-        .dp-tab{padding:9px 22px;border-radius:10px;font-weight:600;font-size:13px;cursor:pointer;border:1.5px solid ${C.border};background:#fff;color:${C.muted};transition:all .2s;font-family:inherit}
-        .dp-tab.active{background:${C.teal};color:#fff;border-color:${C.teal}}
-        .dp-nav-link{padding:5px 11px;border-radius:6px;font-size:13px;font-weight:500;color:${C.text};text-decoration:none;white-space:nowrap;transition:background .15s}
-        .dp-nav-link:hover{background:${C.teal3};color:${C.teal2}}
-        .dp-nav-link.active{background:${C.teal4};color:${C.teal};font-weight:600}
+        .dp-card{background:#fff;border:1.5px solid ${themeColors.border};border-radius:16px;box-shadow:0 2px 12px rgba(8,145,178,.07);padding:20px}
+        .dp-tab{padding:9px 22px;border-radius:10px;font-weight:600;font-size:13px;cursor:pointer;border:1.5px solid ${themeColors.border};background:#fff;color:${themeColors.muted};transition:all .2s;font-family:inherit}
+        .dp-tab.active{background:${themeColors.teal};color:#fff;border-color:${themeColors.teal}}
+        .dp-nav-link{padding:5px 11px;border-radius:6px;font-size:13px;font-weight:500;color:${themeColors.text};text-decoration:none;white-space:nowrap;transition:background .15s}
+        .dp-nav-link:hover{background:${themeColors.teal3};color:${themeColors.teal2}}
+        .dp-nav-link.active{background:${themeColors.teal4};color:${themeColors.teal};font-weight:600}
         @media(max-width:700px){.dp-nav-links{display:none!important}}
       `}</style>
 
-      <nav style={{ position: 'sticky', top: 0, zIndex: 100, background: '#fff', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', padding: '0 24px', height: 62, boxShadow: '0 2px 12px rgba(8,145,178,.08)', gap: 16 }}>
+      <nav style={{ position: 'sticky', top: 0, zIndex: 100, background: '#fff', borderBottom: `1px solid ${themeColors.border}`, display: 'flex', alignItems: 'center', padding: '0 24px', height: 62, boxShadow: '0 2px 12px rgba(8,145,178,.08)', gap: 16 }}>
         <Link to="/parent/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', flexShrink: 0 }}>
-          <div style={{ width: 36, height: 36, background: `linear-gradient(135deg,${C.teal},${C.teal2})`, borderRadius: 9, display: 'grid', placeItems: 'center', fontSize: 18 }}>🌿</div>
-          <span style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 16, fontWeight: 700, color: C.teal2 }}>Sishu Arogaya</span>
+          <div style={{ width: 36, height: 36, background: `linear-gradient(135deg,${themeColors.teal},${themeColors.teal2})`, borderRadius: 9, display: 'grid', placeItems: 'center', fontSize: 18 }}>🏥</div>
+          <div>
+            <div style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 16, fontWeight: 700, color: themeColors.teal2, lineHeight: 1.1 }}>Shishu Aarogya</div>
+            <div style={{ fontSize: 9, color: '#4a7a8a', fontWeight: 500, lineHeight: 1 }}>National Child Health Portal</div>
+          </div>
         </Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, overflowX: 'auto' }}>
-          {(navLinks.length ? navLinks : NAV).map(([label, to]) => (
-            <Link key={to} to={to} style={{ padding: '5px 11px', borderRadius: 6, fontSize: 13, textDecoration: 'none', whiteSpace: 'nowrap', transition: 'background .15s', ...(to === '/parent/diet-plan' ? { background: C.teal4, color: C.teal, fontWeight: 600 } : { background: 'transparent', color: C.text, fontWeight: 500 }) }}>
-              {label}
+          {(navLinks && navLinks.length ? navLinks : NAV).map(([label, to]) => (
+            <Link key={to} to={to} style={{ padding: '5px 11px', borderRadius: 6, fontSize: 13, textDecoration: 'none', whiteSpace: 'nowrap', transition: 'background .15s', ...(to === '/parent/diet-plan' ? { background: themeColors.teal4, color: themeColors.teal, fontWeight: 600 } : { background: 'transparent', color: themeColors.text, fontWeight: 500 }) }}>
+              {normalizeText(label)}
             </Link>
           ))}
         </div>
         {children.length > 1 && selectedChild && (
-          <select value={selectedChild._id || ''} style={{ padding: '7px 12px', borderRadius: 9, border: `1.5px solid ${C.border}`, fontSize: 13, color: C.text, outline: 'none', cursor: 'pointer' }} disabled>
+          <select value={selectedChild._id || ''} style={{ padding: '7px 12px', borderRadius: 9, border: `1.5px solid ${themeColors.border}`, fontSize: 13, color: themeColors.text, outline: 'none', cursor: 'pointer' }} disabled>
             {children.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
           </select>
         )}
@@ -607,77 +637,77 @@ export default function DietPlan() {
 
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 24px 60px' }}>
         <div style={{ marginBottom: 24 }}>
-          <h1 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 26, fontWeight: 700, color: C.text, margin: 0 }}>
+          <h1 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 26, fontWeight: 700, color: themeColors.text, margin: 0 }}>
             🥗 {t('dietPlan')}
           </h1>
           {selectedChild && ageMonths != null && (
-            <p style={{ color: C.muted, marginTop: 6, fontSize: 14 }}>
+            <p style={{ color: themeColors.muted, marginTop: 6, fontSize: 14 }}>
               {t('dietPlanFor')} <strong>{selectedChild.name}</strong> — {ageGroup?.label} ({ageMonths} {t('ageMonths')})
             </p>
           )}
         </div>
 
         {childLoading ? (
-          <div style={{ textAlign: 'center', padding: 60, color: C.muted }}>{t('loading')}...</div>
+          <div style={{ textAlign: 'center', padding: 60, color: themeColors.muted }}>{t('loading')}...</div>
         ) : !selectedChild ? (
           <div style={{ background: '#fff', border: '1.5px solid #c5e8ef', borderRadius: 16, padding: 60, textAlign: 'center' }}>
             <div style={{ fontSize: 48, marginBottom: 16 }}>👶</div>
-            <p style={{ color: C.muted }}>{t('noRecords')}. <Link to="/parent/child-profile" style={{ color: C.teal }}>{t('addChild')}</Link></p>
+            <p style={{ color: themeColors.muted }}>{t('noRecords')}. <Link to="/parent/child-profile" style={{ color: themeColors.teal }}>{t('addChild')}</Link></p>
           </div>
         ) : dietLoading ? (
           <div style={{ background: '#fff', border: '1.5px solid #c5e8ef', borderRadius: 16, padding: 60, textAlign: 'center' }}>
-            <div style={{ display: 'inline-block', width: 40, height: 40, border: '3px solid #c5e8ef', borderTopColor: C.teal, borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-            <div style={{ marginTop: 16, color: C.muted }}>{t('loading')} {t('dietPlan').toLowerCase()}...</div>
+            <div style={{ display: 'inline-block', width: 40, height: 40, border: '3px solid #c5e8ef', borderTopColor: themeColors.teal, borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+            <div style={{ marginTop: 16, color: themeColors.muted }}>{t('loading')} {t('dietPlan').toLowerCase()}...</div>
           </div>
         ) : error ? (
           <div style={{ background: '#fee2e2', border: '1.5px solid #fca5a5', borderRadius: 16, padding: 40, textAlign: 'center' }}>
             <div style={{ color: '#b91c1c', fontSize: 14, fontWeight: 600, marginBottom: 8 }}>⚠️ {error}</div>
-            <button onClick={() => window.location.reload()} style={{ padding: '8px 16px', background: C.teal, color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer' }}>
+            <button onClick={() => window.location.reload()} style={{ padding: '8px 16px', background: themeColors.teal, color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer' }}>
               {t('refresh')}
             </button>
           </div>
         ) : !dietData ? (
-          <div style={{ background: '#fff', border: '1.5px solid #c5e8ef', borderRadius: 16, padding: 40, textAlign: 'center', color: C.muted }}>
+          <div style={{ background: '#fff', border: '1.5px solid #c5e8ef', borderRadius: 16, padding: 40, textAlign: 'center', color: themeColors.muted }}>
             {t('noData')}
           </div>
         ) : (
           <div>
             <button 
               onClick={() => setShowCustomForm(!showCustomForm)}
-              style={{ padding: '10px 20px', background: C.teal, color: 'white', border: 'none', borderRadius: 10, fontWeight: 600, cursor: 'pointer', fontSize: 13, marginBottom: 24 }}
+              style={{ padding: '10px 20px', background: themeColors.teal, color: 'white', border: 'none', borderRadius: 10, fontWeight: 600, cursor: 'pointer', fontSize: 13, marginBottom: 24 }}
             >
               {showCustomForm ? t('cancel') : t('add')}
             </button>
             
             {showCustomForm && (
               <div style={{ background: '#fff', border: '1.5px solid #c5e8ef', borderRadius: 16, padding: 24, marginBottom: 24 }}>
-                <h5 style={{ marginBottom: 16, color: C.teal2 }}>Create Custom Diet for {selectedChild?.name}</h5>
+                <h5 style={{ marginBottom: 16, color: themeColors.teal2 }}>Create Custom Diet for {selectedChild?.name}</h5>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
                   <input 
                     placeholder="Meal name (e.g. Breakfast)" 
                     value={customMeal.name} 
                     onChange={e => setCustomMeal({...customMeal, name: e.target.value})}
-                    style={{ padding: 12, border: `1.5px solid ${C.border}`, borderRadius: 10, fontSize: 13 }}
+                    style={{ padding: 12, border: `1.5px solid ${themeColors.border}`, borderRadius: 10, fontSize: 13 }}
                   />
                   <input 
                     placeholder="Time (e.g. 8 AM)" 
                     value={customMeal.time} 
                     onChange={e => setCustomMeal({...customMeal, time: e.target.value})}
-                    style={{ padding: 12, border: `1.5px solid ${C.border}`, borderRadius: 10, fontSize: 13 }}
+                    style={{ padding: 12, border: `1.5px solid ${themeColors.border}`, borderRadius: 10, fontSize: 13 }}
                   />
                   <textarea 
                     placeholder="Foods (e.g. Oatmeal, banana, milk)" 
                     value={customMeal.items} 
                     onChange={e => setCustomMeal({...customMeal, items: e.target.value})}
                     rows={3}
-                    style={{ padding: 12, border: `1.5px solid ${C.border}`, borderRadius: 10, fontSize: 13, gridColumn: '1 / -1' }}
+                    style={{ padding: 12, border: `1.5px solid ${themeColors.border}`, borderRadius: 10, fontSize: 13, gridColumn: '1 / -1' }}
                   />
                 </div>
                 <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
                   <button 
                     onClick={handleSaveCustomDiet}
                     disabled={!customMeal.name || !customMeal.items}
-                    style={{ padding: '12px 24px', background: C.teal, color: 'white', border: 'none', borderRadius: 10, fontWeight: 600, cursor: customMeal.name && customMeal.items ? 'pointer' : 'not-allowed' }}
+                    style={{ padding: '12px 24px', background: themeColors.teal, color: 'white', border: 'none', borderRadius: 10, fontWeight: 600, cursor: customMeal.name && customMeal.items ? 'pointer' : 'not-allowed' }}
                   >
                     💾 Save Custom Diet
                   </button>
@@ -685,8 +715,8 @@ export default function DietPlan() {
               </div>
             )}
 
-            <div style={{ background: dietData.color, border: `1.5px solid ${C.border}`, borderRadius: 14, padding: '16px 20px', marginBottom: 24 }}>
-              <div style={{ fontWeight: 700, fontSize: 15, color: C.text, marginBottom: 6 }}>
+            <div style={{ background: dietData.color, border: `1.5px solid ${themeColors.border}`, borderRadius: 14, padding: '16px 20px', marginBottom: 24 }}>
+              <div style={{ fontWeight: 700, fontSize: 15, color: themeColors.text, marginBottom: 6 }}>
                 📅 {ageGroup.label} — {totalMeals} feeding sessions per day
               </div>
             </div>
@@ -700,7 +730,7 @@ export default function DietPlan() {
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
-                  style={{ padding: '9px 22px', borderRadius: 10, fontWeight: 600, fontSize: 13, cursor: 'pointer', border: '1.5px solid #c5e8ef', background: activeTab === tab.key ? C.teal : '#fff', color: activeTab === tab.key ? '#fff' : C.muted }}
+                  style={{ padding: '9px 22px', borderRadius: 10, fontWeight: 600, fontSize: 13, cursor: 'pointer', border: '1.5px solid #c5e8ef', background: activeTab === tab.key ? themeColors.teal : '#fff', color: activeTab === tab.key ? '#fff' : themeColors.muted }}
                 >
                   {tab.label}
                 </button>
@@ -715,27 +745,27 @@ export default function DietPlan() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <span style={{ fontSize: 22 }}>{meal.icon}</span>
                         <div>
-                          <div style={{ fontWeight: 700, fontSize: 15, color: C.text }}>{meal.name}</div>
-                          <div style={{ fontSize: 12, color: C.muted }}>🕐 {meal.time}</div>
+                          <div style={{ fontWeight: 700, fontSize: 15, color: themeColors.text }}>{meal.name}</div>
+                          <div style={{ fontSize: 12, color: themeColors.muted }}>🕐 {meal.time}</div>
                         </div>
                       </div>
                     </div>
                     <div style={{ padding: '14px 20px' }}>
                       {meal.items.map((item, ii) => {
-                        const border = ii < meal.items.length - 1 ? `1px solid ${C.border}` : 'none';
+                        const border = ii < meal.items.length - 1 ? `1px solid ${themeColors.border}` : 'none';
                         if (item.type === 'options') {
                           return (
                             <div key={ii} style={{ padding: '10px 0', borderBottom: border }}>
-                              <div style={{ fontSize: 11, fontWeight: 700, color: C.teal2, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 8 }}>
+                              <div style={{ fontSize: 11, fontWeight: 700, color: themeColors.teal2, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 8 }}>
                                 🔀 {item.label}
                               </div>
                               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                                 {item.options.map((opt, oi) => (
-                                  <div key={oi} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '6px 12px', background: C.teal4, border: `1px solid ${C.border}`, borderRadius: 10 }}>
+                                  <div key={oi} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '6px 12px', background: themeColors.teal4, border: `1px solid ${themeColors.border}`, borderRadius: 10 }}>
                                     <span style={{ fontSize: 16 }}>{opt.emoji}</span>
                                     <div>
-                                      <div style={{ fontWeight: 600, fontSize: 13, color: C.text }}>{opt.name}</div>
-                                      <div style={{ fontSize: 11, color: C.muted }}>📏 {opt.qty}</div>
+                                      <div style={{ fontWeight: 600, fontSize: 13, color: themeColors.text }}>{opt.name}</div>
+                                      <div style={{ fontSize: 11, color: themeColors.muted }}>📏 {opt.qty}</div>
                                     </div>
                                   </div>
                                 ))}
@@ -747,9 +777,9 @@ export default function DietPlan() {
                           <div key={ii} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '10px 0', borderBottom: border }}>
                             <span style={{ fontSize: 22, flexShrink: 0 }}>{item.emoji}</span>
                             <div style={{ flex: 1 }}>
-                              <div style={{ fontWeight: 600, fontSize: 14, color: C.text }}>{item.name}</div>
-                              <div style={{ fontSize: 12, color: C.teal, fontWeight: 500 }}>📏 {item.qty}</div>
-                              {item.note && <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>💡 {item.note}</div>}
+                              <div style={{ fontWeight: 600, fontSize: 14, color: themeColors.text }}>{item.name}</div>
+                              <div style={{ fontSize: 12, color: themeColors.teal, fontWeight: 500 }}>📏 {item.qty}</div>
+                              {item.note && <div style={{ fontSize: 11, color: themeColors.muted, marginTop: 2 }}>💡 {item.note}</div>}
                             </div>
                           </div>
                         );
@@ -787,14 +817,14 @@ export default function DietPlan() {
                 )}
 
                 {/* Progress bar */}
-                <div style={{ background: '#fff', border: `1.5px solid ${C.border}`, borderRadius: 14, padding: '16px 20px', marginBottom: 20 }}>
+                <div style={{ background: '#fff', border: `1.5px solid ${themeColors.border}`, borderRadius: 14, padding: '16px 20px', marginBottom: 20 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                    <span style={{ fontWeight: 700, fontSize: 14, color: C.text }}>Today's Progress</span>
-                    <span style={{ fontWeight: 700, fontSize: 14, color: C.teal }}>{doneCount} / {totalCheckItems} slots</span>
+                    <span style={{ fontWeight: 700, fontSize: 14, color: themeColors.text }}>Today's Progress</span>
+                    <span style={{ fontWeight: 700, fontSize: 14, color: themeColors.teal }}>{doneCount} / {totalCheckItems} slots</span>
                   </div>
-                  <div style={{ background: C.teal3, borderRadius: 99, height: 12, overflow: 'hidden' }}>
+                  <div style={{ background: themeColors.teal3, borderRadius: 99, height: 12, overflow: 'hidden' }}>
                     <div style={{
-                      background: `linear-gradient(90deg,${C.teal},${C.teal2})`,
+                      background: `linear-gradient(90deg,${themeColors.teal},${themeColors.teal2})`,
                       height: '100%',
                       borderRadius: 99,
                       width: `${totalCheckItems > 0 ? Math.round((doneCount / totalCheckItems) * 100) : 0}%`,
@@ -802,12 +832,12 @@ export default function DietPlan() {
                     }} />
                   </div>
                   {streak > 0 && doneCount < totalCheckItems && (
-                    <div style={{ marginTop: 8, fontSize: 12, color: C.muted }}>🔥 Current streak: <strong>{streak} day{streak !== 1 ? 's' : ''}</strong></div>
+                    <div style={{ marginTop: 8, fontSize: 12, color: themeColors.muted }}>🔥 Current streak: <strong>{streak} day{streak !== 1 ? 's' : ''}</strong></div>
                   )}
                 </div>
 
                 {checkLoading ? (
-                  <div style={{ textAlign: 'center', padding: 40, color: C.muted }}>Loading checklist...</div>
+                  <div style={{ textAlign: 'center', padding: 40, color: themeColors.muted }}>Loading checklist...</div>
                 ) : (
                   <div style={{ display: 'grid', gap: 14 }}>
                     {dietData.meals.map((meal, mi) => {
@@ -818,21 +848,21 @@ export default function DietPlan() {
                           : checks.includes(slot);
                       }).length;
                       return (
-                        <div key={mi} style={{ background: '#fff', border: `1.5px solid ${C.border}`, borderRadius: 16, overflow: 'hidden' }}>
+                        <div key={mi} style={{ background: '#fff', border: `1.5px solid ${themeColors.border}`, borderRadius: 16, overflow: 'hidden' }}>
                           <div style={{ background: dietData.color, padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 10 }}>
                             <span style={{ fontSize: 20 }}>{meal.icon}</span>
                             <div>
-                              <div style={{ fontWeight: 700, fontSize: 14, color: C.text }}>{meal.name}</div>
-                              <div style={{ fontSize: 12, color: C.muted }}>🕐 {meal.time}</div>
+                              <div style={{ fontWeight: 700, fontSize: 14, color: themeColors.text }}>{meal.name}</div>
+                              <div style={{ fontSize: 12, color: themeColors.muted }}>🕐 {meal.time}</div>
                             </div>
-                            <div style={{ marginLeft: 'auto', fontSize: 12, color: C.teal, fontWeight: 600 }}>
+                            <div style={{ marginLeft: 'auto', fontSize: 12, color: themeColors.teal, fontWeight: 600 }}>
                               {mealDone}/{meal.items.length} done
                             </div>
                           </div>
                           <div style={{ padding: '10px 20px' }}>
                             {meal.items.map((item, ii) => {
                               const slot = `${mi}-${ii}`;
-                              const borderStyle = ii < meal.items.length - 1 ? `1px solid ${C.border}` : 'none';
+                              const borderStyle = ii < meal.items.length - 1 ? `1px solid ${themeColors.border}` : 'none';
 
                               if (item.type === 'options') {
                                 const selected = checks.find(k => k.startsWith(slot + ':'));
@@ -842,8 +872,8 @@ export default function DietPlan() {
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                                       {slotDone
                                         ? <span style={{ fontSize: 16 }}>✅</span>
-                                        : <span style={{ fontSize: 15, color: C.muted }}>⬜</span>}
-                                      <span style={{ fontSize: 12, fontWeight: 700, color: C.teal2, textTransform: 'uppercase', letterSpacing: '.5px' }}>
+                                        : <span style={{ fontSize: 15, color: themeColors.muted }}>⬜</span>}
+                                      <span style={{ fontSize: 12, fontWeight: 700, color: themeColors.teal2, textTransform: 'uppercase', letterSpacing: '.5px' }}>
                                         {item.label}
                                       </span>
                                     </div>
@@ -854,20 +884,20 @@ export default function DietPlan() {
                                         return (
                                           <label key={oi} style={{
                                             display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px',
-                                            borderRadius: 10, cursor: 'pointer', border: `1.5px solid ${isSelected ? C.teal : C.border}`,
-                                            background: isSelected ? C.teal4 : '#fafafa', transition: 'all .15s',
+                                            borderRadius: 10, cursor: 'pointer', border: `1.5px solid ${isSelected ? themeColors.teal : themeColors.border}`,
+                                            background: isSelected ? themeColors.teal4 : '#fafafa', transition: 'all .15s',
                                           }}>
                                             <input
                                               type="radio"
                                               name={`slot-${slot}`}
                                               checked={isSelected}
                                               onChange={() => selectCheck(optKey, true, slot)}
-                                              style={{ accentColor: C.teal, cursor: 'pointer', flexShrink: 0 }}
+                                              style={{ accentColor: themeColors.teal, cursor: 'pointer', flexShrink: 0 }}
                                             />
                                             <span style={{ fontSize: 18, flexShrink: 0 }}>{opt.emoji}</span>
                                             <div style={{ flex: 1 }}>
-                                              <div style={{ fontWeight: 600, fontSize: 13, color: isSelected ? C.teal2 : C.text }}>{opt.name}</div>
-                                              <div style={{ fontSize: 11, color: C.muted }}>📏 {opt.qty}{opt.note ? ` · ${opt.note}` : ''}</div>
+                                              <div style={{ fontWeight: 600, fontSize: 13, color: isSelected ? themeColors.teal2 : themeColors.text }}>{opt.name}</div>
+                                              <div style={{ fontSize: 11, color: themeColors.muted }}>📏 {opt.qty}{opt.note ? ` · ${opt.note}` : ''}</div>
                                             </div>
                                           </label>
                                         );
@@ -885,13 +915,13 @@ export default function DietPlan() {
                                     type="checkbox"
                                     checked={checked}
                                     onChange={() => selectCheck(slot, false, slot)}
-                                    style={{ width: 18, height: 18, accentColor: C.teal, cursor: 'pointer', flexShrink: 0 }}
+                                    style={{ width: 18, height: 18, accentColor: themeColors.teal, cursor: 'pointer', flexShrink: 0 }}
                                   />
                                   <span style={{ fontSize: 20, flexShrink: 0 }}>{item.emoji}</span>
                                   <div style={{ flex: 1 }}>
-                                    <div style={{ fontWeight: 600, fontSize: 14, color: checked ? C.muted : C.text, textDecoration: checked ? 'line-through' : 'none' }}>{item.name}</div>
-                                    <div style={{ fontSize: 12, color: C.teal, fontWeight: 500 }}>📏 {item.qty}</div>
-                                    {item.note && <div style={{ fontSize: 11, color: C.muted }}>💡 {item.note}</div>}
+                                    <div style={{ fontWeight: 600, fontSize: 14, color: checked ? themeColors.muted : themeColors.text, textDecoration: checked ? 'line-through' : 'none' }}>{item.name}</div>
+                                    <div style={{ fontSize: 12, color: themeColors.teal, fontWeight: 500 }}>📏 {item.qty}</div>
+                                    {item.note && <div style={{ fontSize: 11, color: themeColors.muted }}>💡 {item.note}</div>}
                                   </div>
                                   {checked && <span style={{ fontSize: 18 }}>✅</span>}
                                 </label>
@@ -905,8 +935,8 @@ export default function DietPlan() {
                 )}
 
                 {/* Notes */}
-                <div style={{ background: '#fff', border: `1.5px solid ${C.border}`, borderRadius: 14, padding: 20, marginTop: 20 }}>
-                  <label style={{ fontWeight: 600, fontSize: 14, color: C.text, display: 'block', marginBottom: 8 }}>📝 Notes for today</label>
+                <div style={{ background: '#fff', border: `1.5px solid ${themeColors.border}`, borderRadius: 14, padding: 20, marginTop: 20 }}>
+                  <label style={{ fontWeight: 600, fontSize: 14, color: themeColors.text, display: 'block', marginBottom: 8 }}>📝 Notes for today</label>
                   <textarea
                     rows={3}
                     placeholder="Any observations about meals today... (e.g. baby refused spinach)"
@@ -915,9 +945,9 @@ export default function DietPlan() {
                       setCheckNotes(e.target.value);
                       saveChecklist(checks, e.target.value);
                     }}
-                    style={{ width: '100%', padding: 12, border: `1.5px solid ${C.border}`, borderRadius: 10, fontSize: 13, resize: 'vertical', fontFamily: 'inherit', outline: 'none' }}
+                    style={{ width: '100%', padding: 12, border: `1.5px solid ${themeColors.border}`, borderRadius: 10, fontSize: 13, resize: 'vertical', fontFamily: 'inherit', outline: 'none' }}
                   />
-                  {checkSaving && <div style={{ fontSize: 11, color: C.muted, marginTop: 4 }}>Saving...</div>}
+                  {checkSaving && <div style={{ fontSize: 11, color: themeColors.muted, marginTop: 4 }}>Saving...</div>}
                 </div>
               </div>
             )}
@@ -929,19 +959,19 @@ export default function DietPlan() {
                     <div key={i} style={{ background: '#fff', border: '1.5px solid #c5e8ef', borderRadius: 16, padding: '16px 20px', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
                       <span style={{ fontSize: 28, flexShrink: 0 }}>{sf.emoji}</span>
                       <div>
-                        <div style={{ fontWeight: 700, fontSize: 14, color: C.text, marginBottom: 4 }}>{sf.name}</div>
-                        <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.5 }}>{sf.desc}</div>
+                        <div style={{ fontWeight: 700, fontSize: 14, color: themeColors.text, marginBottom: 4 }}>{sf.name}</div>
+                        <div style={{ fontSize: 12, color: themeColors.muted, lineHeight: 1.5 }}>{sf.desc}</div>
                       </div>
                     </div>
                   ))}
                 </div>
                 <div style={{ background: '#fff', border: '1.5px solid #c5e8ef', borderRadius: 16, padding: 20 }}>
-                  <h3 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 16, fontWeight: 700, color: C.teal2, marginBottom: 14 }}>
+                  <h3 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 16, fontWeight: 700, color: themeColors.teal2, marginBottom: 14 }}>
                     💡 Feeding Tips for {ageGroup.label}
                   </h3>
                   <ul style={{ margin: 0, paddingLeft: 20 }}>
                     {dietData.tips.map((tip, i) => (
-                      <li key={i} style={{ fontSize: 13, color: C.text, lineHeight: 1.7, marginBottom: 6 }}>{tip}</li>
+                      <li key={i} style={{ fontSize: 13, color: themeColors.text, lineHeight: 1.7, marginBottom: 6 }}>{tip}</li>
                     ))}
                   </ul>
                 </div>
@@ -951,8 +981,13 @@ export default function DietPlan() {
         )}
       </div>
 
-      <footer style={{ background: C.teal2, color: 'rgba(255,255,255,.5)', textAlign: 'center', padding: '16px 24px', fontSize: 12 }}>
-        Sishu Arogaya © 2024 · Government Integrated Child Health Monitoring System · DBUU Dehradun
+      <footer style={{ background: themeColors.teal2, color: 'rgba(255,255,255,.5)', textAlign: 'center', padding: '16px 24px', fontSize: 12 }}>
+        Shishu Aarogya &copy; 2024 &middot; {t('homeFooter_copyright_long') || 'National Child Health Portal · Government of India'}
+      </footer>
+    </div>
+  );
+}
+d Health Portal · Government of India'}
       </footer>
     </div>
   );

@@ -34,8 +34,10 @@ YOUR EXPERTISE:
 
 RESPONSE RULES:
 1. Always respond in the SAME LANGUAGE the user writes in (Hindi, Bengali, Tamil, Telugu, etc.)
-2. Keep responses concise but complete — use bullet points for lists
-3. Always include emergency numbers when relevant: 108 (ambulance), 1800-180-1104 (child helpline), 104 (health helpline)
+2. If the user writes in Hindi, respond fully in Hindi and do not switch to English.
+3. Keep responses concise but complete — use bullet points for lists
+4. Use short, easy-to-speak phrasing for voice-friendly guidance
+5. Always include emergency numbers when relevant: 108 (ambulance), 1800-180-1104 (child helpline), 104 (health helpline)
 4. For dangerous symptoms (seizures, unconscious, severe breathing difficulty, severe dehydration), always say "Go to hospital immediately — call 108"
 5. Give practical, actionable advice that ASHA workers and parents can follow
 6. Use Indian medical terminology and reference Indian schemes by name
@@ -81,6 +83,41 @@ const SYNONYMS = {
 const FOLLOWUP_AFFIRMATIVES = ['yes', 'ok', 'okay', 'sure', 'tell me more', 'explain', 'more', 'details', 'detail', 'haan', 'ha'];
 const FOLLOWUP_NEGATIVES = ['no', 'nope', 'nah', 'not now', 'later'];
 const CONTEXTUAL_TERMS = ['more', 'details', 'explain', 'what else', 'next', 'then', 'how', 'why', 'when'];
+
+const LANGUAGE_DETECT_PATTERNS = [
+  { label: 'हिंदी', regex: /[\u0900-\u097F]/ },
+  { label: 'বাংলা', regex: /[\u0980-\u09FF]/ },
+  { label: 'ਪੰਜਾਬੀ', regex: /[\u0A00-\u0A7F]/ },
+  { label: 'தமிழ்', regex: /[\u0B80-\u0BFF]/ },
+  { label: 'తెలుగు', regex: /[\u0C00-\u0C7F]/ },
+  { label: 'ಕನ್ನಡ', regex: /[\u0C80-\u0CFF]/ },
+  { label: 'മലയാളം', regex: /[\u0D00-\u0D7F]/ },
+  { label: 'ગુજરાતી', regex: /[\u0A80-\u0AFF]/ },
+  { label: 'ଓଡ଼ିଆ', regex: /[\u0B00-\u0B7F]/ },
+  { label: 'অসমীয়া', regex: /[\u0980-\u09FF]/ },
+  { label: 'اردو', regex: /[\u0600-\u06FF]/ },
+];
+
+function detectLanguageFromText(text) {
+  if (!text || typeof text !== 'string') return null;
+  const trimmed = text.trim();
+  if (!trimmed) return null;
+  for (const item of LANGUAGE_DETECT_PATTERNS) {
+    if (item.regex.test(trimmed)) return item.label;
+  }
+  if (/^[\u0000-\u007F\s.,!?"“”‘’\-_:;()]+$/.test(trimmed)) return 'English';
+  return 'English';
+}
+
+async function translateWithGemini(text, language, history = []) {
+  if (!geminiModel || language === 'English') return text;
+  return askGemini(
+    `Translate this answer into ${language} without changing the medical meaning.\n\n${text}`,
+    history,
+    language,
+    'Translate only this text into the user language and preserve vaccine names and action steps.'
+  );
+}
 
 function normalise(text) {
   return String(text || '').toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
@@ -241,7 +278,7 @@ function classify(message, contextHint = '') {
 }
 
 // ─── Gemini fallback ─────────────────────────────────────────────────────
-async function askGemini(message, history = [], language = 'English') {
+async function askGemini(message, history = [], language = 'English', systemInstruction = '') {
   if (!geminiModel) throw new Error('Gemini not configured');
 
   // Build conversation context from recent history (last 6 turns)
@@ -253,8 +290,7 @@ async function askGemini(message, history = [], language = 'English') {
   }
 
   const prompt = `${GEMINI_SYSTEM_PROMPT}${conversationContext}
-
-USER LANGUAGE: ${language}
+${systemInstruction ? `SYSTEM NOTE: ${systemInstruction}\n\n` : ''}USER LANGUAGE: ${language}
 USER QUESTION: ${message}
 
 Respond in ${language}. Be helpful, accurate, and concise.`;
@@ -274,7 +310,8 @@ const query = async (req, res) => {
     }
 
     const trimmed = message.trim();
-    const lang = language || 'English';
+    const detectedLang = detectLanguageFromText(trimmed);
+    const lang = (typeof language === 'string' && language) ? language : detectedLang || 'English';
     let contextHint = '';
 
     if (Array.isArray(history) && history.length > 0) {
@@ -284,11 +321,15 @@ const query = async (req, res) => {
 
     // Handle follow-up affirmatives using context
     if (FOLLOWUP_AFFIRMATIVES.includes(trimmed.toLowerCase()) && contextHint && intentMap[contextHint]) {
+      const answerText = intentMap[contextHint];
+      const answer = lang !== 'English' && geminiModel
+        ? await translateWithGemini(answerText, lang, history)
+        : answerText;
       return res.json({
-        answer: intentMap[contextHint],
+        answer,
         intent: contextHint,
         method: 'context',
-        source: 'local',
+        source: lang !== 'English' && geminiModel ? 'gemini-translation' : 'local',
         timestamp: new Date().toISOString(),
         language: lang,
       });
@@ -296,11 +337,15 @@ const query = async (req, res) => {
 
     // Handle follow-up negatives
     if (FOLLOWUP_NEGATIVES.includes(trimmed.toLowerCase())) {
+      const negativeText = 'Okay. You can ask me anytime about vaccines, nutrition, child growth, danger signs, or government schemes.';
+      const answer = lang !== 'English' && geminiModel
+        ? await translateWithGemini(negativeText, lang, history)
+        : negativeText;
       return res.json({
-        answer: 'Okay. You can ask me anytime about vaccines, nutrition, child growth, danger signs, or government schemes.',
+        answer,
         intent: 'greeting',
         method: 'followup-negative',
-        source: 'local',
+        source: lang !== 'English' && geminiModel ? 'gemini-translation' : 'local',
         timestamp: new Date().toISOString(),
         language: lang,
       });
@@ -311,11 +356,15 @@ const query = async (req, res) => {
 
     // Step 2: If local KB has a confident answer, return it directly
     if (nlpResult.intent !== 'unknown' && nlpResult.response) {
+      const localAnswer = nlpResult.response;
+      const answer = lang !== 'English' && geminiModel
+        ? await translateWithGemini(localAnswer, lang, history)
+        : localAnswer;
       return res.json({
-        answer: nlpResult.response,
+        answer,
         intent: nlpResult.intent,
         method: nlpResult.method,
-        source: 'local',
+        source: lang !== 'English' && geminiModel ? 'gemini-translation' : 'local',
         confidence: Number(nlpResult.score?.toFixed?.(3) || 0),
         timestamp: new Date().toISOString(),
         language: lang,
@@ -341,11 +390,25 @@ const query = async (req, res) => {
     }
 
     // Step 4: Both failed — friendly fallback
+    const fallbackText = `I'm not sure about that specific question. For the best guidance:
+
+• **Call 104** — free health helpline (24/7)
+• **Call 108** — emergency ambulance
+• **Visit your nearest ASHA worker or PHC**
+
+You can also ask me about:
+• Vaccination schedules
+• Child growth and nutrition
+• Government health schemes
+• Danger signs to watch for`;
+    const fallbackAnswer = lang !== 'English' && geminiModel
+      ? await translateWithGemini(fallbackText, lang, history)
+      : fallbackText;
     return res.json({
-      answer: `I'm not sure about that specific question. For the best guidance:\n\n• **Call 104** — free health helpline (24/7)\n• **Call 108** — emergency ambulance\n• **Visit your nearest ASHA worker or PHC**\n\nYou can also ask me about:\n• Vaccination schedules\n• Child growth and nutrition\n• Government health schemes\n• Danger signs to watch for`,
+      answer: fallbackAnswer,
       intent: 'unknown',
       method: 'hardcoded-fallback',
-      source: 'local',
+      source: lang !== 'English' && geminiModel ? 'gemini-translation' : 'local',
       timestamp: new Date().toISOString(),
       language: lang,
     });

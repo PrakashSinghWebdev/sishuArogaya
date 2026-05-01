@@ -18,41 +18,80 @@ const canAccessChildReport = async (child, user) => {
 // GET /api/reports/child/:childId — child health report (PDF)
 const childReportPDF = async (req, res) => {
   try {
+    const { type = 'comprehensive' } = req.query;
     const child = await Child.findById(req.params.childId).populate('parentId', 'name phone');
     if (!child) return res.status(404).json({ message: 'Child not found' });
 
     const allowed = await canAccessChildReport(child, req.user);
     if (!allowed) return res.status(403).json({ message: 'Not authorized to access this report' });
 
-    const growthRecords = await GrowthRecord.find({ childId: child._id }).sort('recordedDate');
-    const vaccinations = await Vaccination.find({ childId: child._id }).sort('dueDate');
-
-    const doc = new PDFDocument({ margin: 50 });
+    const doc = new PDFDocument({ margin: 50, size: 'A4' });
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=health-report-${child._id}.pdf`);
+    res.setHeader('Content-Disposition', `attachment; filename=${type}-report-${child.name.replace(/\s+/g, '-')}.pdf`);
     doc.pipe(res);
 
-    doc.fontSize(20).fillColor('#1a6b3c').text('Sishu Arogaya — Child Health Report', { align: 'center' });
-    doc.moveDown();
-    doc.fontSize(14).fillColor('#000').text(`Child: ${child.name}`);
-    doc.text(`DOB: ${child.dob.toDateString()}`);
-    doc.text(`Gender: ${child.gender}`);
-    doc.text(`Parent: ${child.parentId?.name || 'N/A'}`);
-    doc.text(`Nutrition Status: ${child.nutritionStatus.toUpperCase()}`);
+    // Header Decoration
+    doc.rect(0, 0, 612, 100).fill('#0891b2'); 
+    doc.fontSize(24).fillColor('#ffffff').text('SISHU AROGAYA', 50, 40, { characterSpacing: 1 });
+    doc.fontSize(10).text('National Integrated Child Health Monitoring System', 51, 68);
+    doc.moveDown(4);
+
+    // Title
+    const titleMap = {
+      comprehensive: 'Comprehensive Health Report',
+      vaccination: 'Vaccination Status Report',
+      growth: 'Growth Monitoring Report'
+    };
+    doc.fontSize(18).fillColor('#0e7490').text(titleMap[type] || titleMap.comprehensive, { underline: true });
     doc.moveDown();
 
-    doc.fontSize(16).fillColor('#1a6b3c').text('Growth Records');
-    doc.fontSize(12).fillColor('#000');
-    growthRecords.forEach((r) => {
-      doc.text(`${r.recordedDate.toDateString()} — Weight: ${r.weight}kg, Height: ${r.height}cm, Status: ${r.prediction}`);
-    });
+    // Child Info Section
+    doc.fontSize(12).fillColor('#333333').text(`Child Name: `, { continued: true }).fillColor('#000000').text(child.name);
+    doc.fillColor('#333333').text(`Date of Birth: `, { continued: true }).fillColor('#000000').text(child.dob.toDateString());
+    doc.fillColor('#333333').text(`Gender: `, { continued: true }).fillColor('#000000').text(child.gender);
+    doc.fillColor('#333333').text(`Parent/Guardian: `, { continued: true }).fillColor('#000000').text(child.parentId?.name || 'N/A');
+    doc.fillColor('#333333').text(`Nutrition Status: `, { continued: true }).fillColor('#000000').text(child.nutritionStatus.toUpperCase());
+    doc.moveDown();
+    doc.path('M 50 240 L 550 240').lineWidth(1).strokeColor('#cffafe').stroke();
     doc.moveDown();
 
-    doc.fontSize(16).fillColor('#1a6b3c').text('Vaccination Schedule');
-    doc.fontSize(12).fillColor('#000');
-    vaccinations.forEach((v) => {
-      doc.text(`${v.vaccineName} — Due: ${v.dueDate.toDateString()} — Status: ${v.status}`);
-    });
+    // Conditional Sections
+    if (type === 'comprehensive' || type === 'growth') {
+      const growthRecords = await GrowthRecord.find({ childId: child._id }).sort('recordedDate');
+      doc.fontSize(16).fillColor('#0e7490').text('Growth Records History');
+      doc.moveDown(0.5);
+      
+      if (growthRecords.length === 0) {
+        doc.fontSize(11).fillColor('#666').text('No growth records found.');
+      } else {
+        growthRecords.forEach((r, i) => {
+          doc.fontSize(11).fillColor('#333').text(`${i + 1}. ${r.recordedDate.toDateString()}`, { continued: true });
+          doc.fillColor('#444').text(` — Weight: ${r.weight}kg, Height: ${r.height}cm, Status: `, { continued: true });
+          doc.fillColor((r.prediction === 'healthy' || r.prediction === 'normal') ? '#059669' : '#b91c1c').text(r.prediction.toUpperCase());
+        });
+      }
+      doc.moveDown();
+    }
+
+    if (type === 'comprehensive' || type === 'vaccination') {
+      const vaccinations = await Vaccination.find({ childId: child._id }).sort('dueDate');
+      doc.fontSize(16).fillColor('#0e7490').text('Vaccination Schedule');
+      doc.moveDown(0.5);
+
+      if (vaccinations.length === 0) {
+        doc.fontSize(11).fillColor('#666').text('No vaccination records found.');
+      } else {
+        vaccinations.forEach((v, i) => {
+          doc.fontSize(11).fillColor('#333').text(`${i + 1}. ${v.vaccineName}`, { continued: true });
+          doc.fillColor('#444').text(` — Due: ${v.dueDate.toDateString()} — Status: `, { continued: true });
+          doc.fillColor((v.status === 'done' || v.status === 'completed') ? '#059669' : '#b45309').text(v.status.toUpperCase());
+        });
+      }
+    }
+
+    // Footer
+    doc.fontSize(10).fillColor('#999').text(`Generated on ${new Date().toLocaleString()}`, 50, 750, { align: 'center' });
+    doc.text('This is a computer-generated report and does not require a signature.', { align: 'center' });
 
     doc.end();
   } catch (err) {

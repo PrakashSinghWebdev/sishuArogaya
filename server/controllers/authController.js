@@ -91,6 +91,7 @@ const login = async (req, res) => {
   try {
     const identifier = req.body.email?.trim() || req.body.identifier?.trim() || '';
     const password = req.body.password || '';
+    const expectedRole = req.body.role?.trim().toLowerCase() || ''; // role selected on login UI
     const normalizedEmail = identifier.toLowerCase();
 
     const query = identifier.includes('@')
@@ -102,6 +103,14 @@ const login = async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
     if (!user.isActive) return res.status(403).json({ message: 'Account deactivated' });
+
+    // Role-based login enforcement: if the client specified a role, it must match
+    if (expectedRole && expectedRole !== user.role) {
+      const roleLabels = { parent: 'Parent', asha: 'ASHA Worker', admin: 'Admin' };
+      return res.status(403).json({
+        message: `This account is registered as ${roleLabels[user.role] || user.role}. Please select the correct login portal.`,
+      });
+    }
 
     user.otp = undefined;
     user.otpExpiry = undefined;
@@ -116,7 +125,7 @@ const login = async (req, res) => {
       entityType: 'Auth',
       entityId: user._id,
       targetUserId: user._id,
-      details: `${user.name} logged in successfully`,
+      details: `${user.name} logged in successfully as ${user.role}`,
     });
 
     res.json({

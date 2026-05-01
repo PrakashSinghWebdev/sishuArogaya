@@ -55,6 +55,15 @@ const addGrowthRecord = async (req, res) => {
       return res.status(400).json({ message: 'Weight and height are required to save a growth record' });
     }
 
+    // Weight limit validation based on child gender (0-24 month range)
+    const MAX_WEIGHT = { male: 14, female: 13 };
+    const maxAllowed = MAX_WEIGHT[child.gender] || 14;
+    if (Number(weight) > maxAllowed) {
+      return res.status(400).json({
+        message: `Invalid weight: ${weight} kg exceeds the maximum allowed weight of ${maxAllowed} kg for ${child.gender === 'female' ? 'girls' : 'boys'} (0-24 months).`,
+      });
+    }
+
     const normalizedRecordedDate = recordedDate || date || new Date();
     const normalizedAgeMonths =
       ageMonths != null && ageMonths !== ''

@@ -1,4 +1,20 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
+
+const MOJIBAKE_RE = /(?:Ã.|Â.|â.|ðŸ|à.|ï¸|â€)/;
+
+export function normalizeText(value) {
+  if (typeof value !== 'string' || !MOJIBAKE_RE.test(value)) {
+    return value;
+  }
+
+  try {
+    const bytes = Uint8Array.from(value, (char) => char.charCodeAt(0) & 0xff);
+    const decoded = new TextDecoder('utf-8').decode(bytes);
+    return decoded.includes('\uFFFD') ? value : decoded;
+  } catch {
+    return value;
+  }
+}
 
 // ── Supported languages ────────────────────────────────────────────────────
 export const LANGUAGES = [
@@ -25,7 +41,12 @@ export const LANGUAGES = [
   { code: 'बड़ो',        label: 'बड़ो',           flag: '🌿', locale: ['brx'] },
   { code: 'ᱥᱟᱱᱛᱟᱲᱤ',  label: 'ᱥᱟᱱᱛᱟᱲᱤ',    flag: '🌾', locale: ['sat'] },
   { code: 'कश्मीरी',    label: 'कश्मीरी',      flag: '❄️', locale: ['ks'] },
-];
+].map((lang) => ({
+  ...lang,
+  code: normalizeText(lang.code),
+  label: normalizeText(lang.label),
+  flag: normalizeText(lang.flag),
+}));
 
 // ── Translation tables ─────────────────────────────────────────────────────
 const T = {
@@ -119,6 +140,124 @@ const T = {
     role: 'Role', lastLogin: 'Last Login', createdAt: 'Created At', actions: 'Actions',
     name: 'Name', email2: 'Email', phone2: 'Phone', district: 'District', block: 'Block',
     village: 'Village', state: 'State', country: 'Country',
+    // About page
+    aboutTitle: 'About Shishu Aarogya',
+    aboutMission: 'Our Mission',
+    aboutVision: 'Our Vision',
+    aboutImpact: 'Our Impact',
+    aboutTeam: 'Our Technology',
+    aboutTagline: 'Empowering Communities, Nurturing Futures',
+    aboutDesc: 'A pioneering government digital initiative connecting ASHA workers, parents, and health authorities to ensure every child aged 0–5 receives timely vaccinations and nutrition support.',
+    aboutStat1Label: 'Children Monitored',
+    aboutStat2Label: 'ASHA Workers',
+    aboutStat3Label: 'Districts Covered',
+    aboutStat4Label: 'Languages Supported',
+    aboutFeature1: 'WHO-standard growth tracking with AI malnutrition detection',
+    aboutFeature2: 'India National Immunization Schedule — 36 vaccines automated',
+    aboutFeature3: 'Real-time GPS location tracking for field ASHA workers',
+    aboutFeature4: 'Multilingual support in 22 Indian languages',
+    aboutFeature5: 'Offline-capable for low-connectivity rural areas',
+    aboutFeature6: 'PDF/Excel reports for district health authorities',
+    // Location
+    liveLocation: 'Live Location',
+    locationAccuracy: 'Accuracy',
+    locationLoading: 'Detecting location…',
+    locationDenied: 'Location access denied',
+    locationUnavailable: 'Location unavailable',
+    locationMeters: 'm accuracy',
+    // Admin dashboard extra
+    blockCritical: 'Critical', blockWatchlist: 'Watchlist', blockStable: 'Stable',
+    priorityBlocks: 'Priority Blocks Overview',
+    nutritionDist: 'Nutrition Distribution',
+    blockMalnutrition: 'Block-wise Malnutrition',
+    quickAccess: 'Quick Access',
+    liveUpdates: 'Live Updates',
+    systemHealth: 'System Health',
+    coverageRate: 'Coverage Rate',
+    alertsToday: 'Alerts Today',
+    newRegistrations: 'New Registrations',
+    missedVaccinations: 'Missed Vaccinations',
+    // Home page nav
+    homeNav_features: 'Features',
+    homeNav_about: 'About',
+    homeNav_mission: 'Mission',
+    homeNav_contact: 'Contact',
+    // Home hero slides
+    homeHero1_badge: 'Government Integrated System',
+    homeHero1_headline: "Caring for India's Children",
+    homeHero1_desc: 'A unified digital platform for tracking vaccination, growth, and nutrition of children aged 0–2 years, connecting parents, ASHA workers, and health authorities.',
+    homeHero2_badge: 'WHO Standard Assessments',
+    homeHero2_headline: 'Track Growth Intelligently',
+    homeHero2_desc: 'Stay ahead with comprehensive monitoring tools and AI-driven insights for early malnourishment detection.',
+    homeHero3_badge: 'Local Healthcare Connect',
+    homeHero3_headline: 'Supported By Communities',
+    homeHero3_desc: 'Empowering dedicated ASHA workers with digital tools to log visits and guide parents step by step.',
+    // Core services section
+    homeServices_title: 'Our Core Services',
+    homeServices_subtitle: "Explore comprehensive tools tailored for your child's well-being",
+    homeFeature1_title: 'Growth & Diet Monitoring',
+    homeFeature1_text: 'Log weight and height to automatically assess nutritional status based on WHO standards.',
+    homeFeature2_title: 'Vaccination Scheduler',
+    homeFeature2_text: 'Receive timely alerts and keep track of essential immunizations through interactive schedules.',
+    homeFeature3_title: 'AI Predictive Model',
+    homeFeature3_text: 'Leverage advanced analytics to detect early signs of malnourishment or delayed milestones.',
+    homeFeature4_title: 'ASHA Integration',
+    homeFeature4_text: 'Bridge the gap between healthcare workers and families with streamlined reporting and logs.',
+    // About section
+    homeLiveBadge: 'Live monitoring active',
+    homeAbout_badge: 'About Shishu Aarogya',
+    homeAbout_headline: 'Empowering Communities, Nurturing Futures',
+    homeAbout_desc: "Shishu Aarogya is a government-backed digital health platform seamlessly connecting ASHA workers, parents, and district health authorities. We deliver real-time monitoring of childhood vaccinations and nutritional growth across India's 680+ districts — ensuring no child aged 0–5 falls behind on life-saving care.",
+    homeAbout_feat1_title: 'Data-Driven Early Interventions',
+    homeAbout_feat1_desc: 'WHO LMS z-scores catch moderate and severe malnutrition weeks before clinical symptoms appear.',
+    homeAbout_feat2_title: 'Complete Immunization Tracking',
+    homeAbout_feat2_desc: "All 36 vaccines from India's NIS schedule auto-generated per child, with overdue alerts to parents and ASHAs.",
+    homeAbout_feat3_title: 'Real-time Field GPS',
+    homeAbout_feat3_desc: 'ASHA workers tracked live in the field — location displayed in their portal header with ±5 m accuracy.',
+    homeAbout_feat4_title: '22 Indian Languages',
+    homeAbout_feat4_desc: 'Full UI translation across all scheduled Indian languages, auto-detected from device locale.',
+    homeAbout_cta1: 'Explore Our Mission',
+    homeAbout_cta2: 'Join the Platform',
+    // Platform capabilities
+    homePlatform_title: 'Platform Capabilities',
+    homePlatform_subtitle: 'Everything needed for end-to-end child health monitoring',
+    // Partners
+    homePartners_label: 'Backed & Aligned With',
+    // CTA section
+    homeCTA_title: "Ready to Secure Your Child's Future?",
+    homeCTA_desc: 'Join Shishu Aarogya today and be a part of our wholesome community dedicated to every child\'s health.',
+    homeCTA_btn: 'Get Started Now',
+    // Footer
+    homeFooter_desc: 'A unified digital platform for tracking vaccination, growth, and nutrition of children aged 0–2 years, connecting parents, ASHA workers, and health authorities safely and securely.',
+    homeFooter_links: 'Quick Links',
+    homeFooter_linkFeatures: 'Core Features',
+    homeFooter_linkAbout: 'About the Portal',
+    homeFooter_linkSignIn: 'Sign In',
+    homeFooter_linkRegister: 'Create Account',
+    homeFooter_contact: 'Contact Us',
+    homeFooter_copyright: 'Shishu Aarogya Portal. All Rights Reserved.',
+    // About Page Detailed
+    aboutPilotTitle: 'National Rollout Phase',
+    aboutPilotDesc: 'Initiating nationwide coverage across all states and union territories.',
+    aboutStat1Value: '2.4M+',
+    aboutStat2Value: '89K+',
+    aboutStat3Value: '680+',
+    aboutStat4Value: '22+',
+    // Hospital Map
+    hospital_searching: 'Searching hospitals within 15 km…',
+    hospital_calc_route: 'Calculating route…',
+    hospital_emergency_banner: '🚨 EMERGENCY — Routing to nearest hospital',
+    hospital_your_location: '📍 Your live location',
+    hospital_show_route: '🗺️ Show Route',
+    hospital_call_now: '📞 Call Now',
+    hospital_open_gmaps: '🧭 Open in Google Maps',
+    hospital_search_placeholder: 'Search hospital name, city, district…',
+    hospital_db_source: '🗄️ Database',
+    hospital_osm_source: '🌐 OpenStreetMap',
+    hospital_cached_source: '📋 Cached',
+    hospital_gps_denied: '🔒 Location permission denied. Click the lock icon in your browser → set Location to "Allow" → tap 📍 GPS.',
+    hospital_gps_unavailable: '📡 Location unavailable. Enable GPS/Location on your device then tap 📍 GPS.',
+    hospital_gps_timeout: '⏱️ Location timed out. Check your GPS signal and tap 📍 GPS.',
   },
   हिंदी: {
     dashboard: '🏠 डैशबोर्ड',     myChild: '👶 मेरा बच्चा',
@@ -205,6 +344,58 @@ const T = {
     role: 'भूमिका', lastLogin: 'अंतिम लॉगिन', createdAt: 'बनाई गई', actions: 'कार्रवाइयाँ',
     name: 'नाम', email2: 'ईमेल', phone2: 'फ़ोन', district: 'जिला', block: 'ब्लॉक',
     village: 'गाँव', state: 'राज्य', country: 'देश',
+    // Home page
+    homeNav_features: 'विशेषताएं',
+    homeNav_about: 'परिचय',
+    homeNav_mission: 'मिशन',
+    homeNav_contact: 'संपर्क',
+    homeHero1_badge: 'सरकारी एकीकृत प्रणाली',
+    homeHero1_headline: 'भारत के बच्चों की देखभाल',
+    homeHero1_desc: 'टीकाकरण, विकास और पोषण की निगरानी के लिए एक एकीकृत डिजिटल प्लेटफॉर्म, जो माता-पिता, आशा कार्यकर्ताओं और स्वास्थ्य अधिकारियों को जोड़ता है।',
+    homeHero2_badge: 'WHO मानक आकलन',
+    homeHero2_headline: 'विकास को स्मार्ट तरीके से ट्रैक करें',
+    homeHero2_desc: 'व्यापक निगरानी उपकरणों और AI-आधारित अंतर्दृष्टि के साथ कुपोषण का जल्द पता लगाएं।',
+    homeHero3_badge: 'स्थानीय स्वास्थ्य सेवा',
+    homeHero3_headline: 'समुदाय द्वारा समर्थित',
+    homeHero3_desc: 'समर्पित आशा कार्यकर्ताओं को डिजिटल उपकरणों से सशक्त बनाकर माता-पिता का मार्गदर्शन करें।',
+    homeServices_title: 'हमारी मुख्य सेवाएं',
+    homeServices_subtitle: 'आपके बच्चे की भलाई के लिए व्यापक उपकरण',
+    homeFeature1_title: 'विकास और आहार निगरानी',
+    homeFeature1_text: 'WHO मानकों के आधार पर पोषण स्थिति का स्वचालित आकलन करने के लिए वजन और ऊंचाई दर्ज करें।',
+    homeFeature2_title: 'टीकाकरण अनुसूची',
+    homeFeature2_text: 'समय पर अलर्ट प्राप्त करें और इंटरेक्टिव शेड्यूल के माध्यम से आवश्यक टीकाकरण को ट्रैक करें।',
+    homeFeature3_title: 'AI भविष्यवाणी मॉडल',
+    homeFeature3_text: 'कुपोषण या विलंबित मील के पत्थर के शुरुआती संकेतों का पता लगाने के लिए उन्नत विश्लेषण का उपयोग करें।',
+    homeFeature4_title: 'आशा एकीकरण',
+    homeFeature4_text: 'स्वास्थ्य कार्यकर्ताओं और परिवारों के बीच की खाई को सुव्यवस्थित रिपोर्टिंग से पाटें।',
+    homeLiveBadge: 'लाइव निगरानी सक्रिय',
+    homeAbout_badge: 'शिशु आरोग्य के बारे में',
+    homeAbout_headline: 'समुदायों को सशक्त बनाना, भविष्य को पोषण देना',
+    homeAbout_desc: 'शिशु आरोग्य एक सरकार समर्थित डिजिटल स्वास्थ्य प्लेटफॉर्म है जो आशा कार्यकर्ताओं, माता-पिता और जिला स्वास्थ्य अधिकारियों को जोड़ता है। हम भारत के 680+ जिलों में बच्चों के टीकाकरण और पोषण की वास्तविक समय निगरानी प्रदान करते हैं।',
+    homeAbout_feat1_title: 'डेटा-आधारित प्रारंभिक हस्तक्षेप',
+    homeAbout_feat1_desc: 'WHO LMS z-स्कोर लक्षण प्रकट होने से हफ्तों पहले कुपोषण का पता लगाते हैं।',
+    homeAbout_feat2_title: 'संपूर्ण टीकाकरण ट्रैकिंग',
+    homeAbout_feat2_desc: 'भारत के NIS शेड्यूल के सभी 36 टीके प्रत्येक बच्चे के लिए स्वचालित रूप से तैयार किए जाते हैं।',
+    homeAbout_feat3_title: 'वास्तविक समय फील्ड GPS',
+    homeAbout_feat3_desc: 'आशा कार्यकर्ताओं को फील्ड में लाइव ट्रैक किया जाता है — ±5 मीटर सटीकता के साथ।',
+    homeAbout_feat4_title: '22 भारतीय भाषाएं',
+    homeAbout_feat4_desc: 'सभी अनुसूचित भारतीय भाषाओं में पूर्ण UI अनुवाद।',
+    homeAbout_cta1: 'हमारा मिशन जानें',
+    homeAbout_cta2: 'प्लेटफॉर्म से जुड़ें',
+    homePlatform_title: 'प्लेटफॉर्म क्षमताएं',
+    homePlatform_subtitle: 'बच्चे की स्वास्थ्य निगरानी के लिए सब कुछ',
+    homePartners_label: 'समर्थन और संरेखण',
+    homeCTA_title: 'अपने बच्चे का भविष्य सुरक्षित करने के लिए तैयार हैं?',
+    homeCTA_desc: 'आज ही Sishu Arogya से जुड़ें और हर बच्चे के स्वास्थ्य के लिए समर्पित समुदाय का हिस्सा बनें।',
+    homeCTA_btn: 'अभी शुरू करें',
+    homeFooter_desc: 'टीकाकरण, विकास और पोषण की निगरानी के लिए एक एकीकृत डिजिटल प्लेटफॉर्म।',
+    homeFooter_links: 'त्वरित लिंक',
+    homeFooter_linkFeatures: 'मुख्य विशेषताएं',
+    homeFooter_linkAbout: 'पोर्टल के बारे में',
+    homeFooter_linkSignIn: 'साइन इन करें',
+    homeFooter_linkRegister: 'खाता बनाएं',
+    homeFooter_contact: 'संपर्क करें',
+    homeFooter_copyright: 'शिशु आरोग्य पोर्टल। सभी अधिकार सुरक्षित।',
   },
   বাংলা: {
     dashboard: '🏠 ড্যাশবোর্ড',  myChild: '👶 আমার শিশু',
@@ -229,6 +420,33 @@ const T = {
     recordGrowth: '📏 বৃদ্ধি রেকর্ড করুন', weightKg: 'ওজন (কেজি)', heightCm: 'উচ্চতা (সেমি)',
     save: 'সংরক্ষণ', cancel: 'বাতিল', markDone: 'সম্পন্ন করুন',
     dietPlanFor: 'খাদ্য পরিকল্পনা', ageMonths: 'মাস বয়সী',
+    homeNav_features: 'বৈশিষ্ট্য', homeNav_about: 'পরিচয়', homeNav_mission: 'মিশন', homeNav_contact: 'যোগাযোগ',
+    homeHero1_badge: 'সরকারি সমন্বিত ব্যবস্থা', homeHero1_headline: 'ভারতের শিশুদের যত্ন',
+    homeHero1_desc: 'টিকাকরণ, বিকাশ এবং পুষ্টি ট্র্যাকিংয়ের জন্য একটি ঐক্যবদ্ধ ডিজিটাল প্ল্যাটফর্ম।',
+    homeHero2_badge: 'WHO মান মূল্যায়ন', homeHero2_headline: 'বুদ্ধিমানভাবে বিকাশ ট্র্যাক করুন',
+    homeHero2_desc: 'ব্যাপক পর্যবেক্ষণ সরঞ্জাম ও AI অন্তর্দৃষ্টি দিয়ে অপুষ্টি আগেই ধরুন।',
+    homeHero3_badge: 'স্থানীয় স্বাস্থ্যসেবা সংযোগ', homeHero3_headline: 'সম্প্রদায় দ্বারা সমর্থিত',
+    homeHero3_desc: 'নিবেদিত আশা কর্মীদের ডিজিটাল সরঞ্জাম দিয়ে সশক্ত করুন।',
+    homeServices_title: 'আমাদের মূল সেবা', homeServices_subtitle: 'আপনার শিশুর সুস্থতার জন্য ব্যাপক সরঞ্জাম',
+    homeFeature1_title: 'বিকাশ ও খাদ্য পর্যবেক্ষণ', homeFeature1_text: 'WHO মানদণ্ড অনুযায়ী পুষ্টি অবস্থার স্বয়ংক্রিয় মূল্যায়নের জন্য ওজন ও উচ্চতা লগ করুন।',
+    homeFeature2_title: 'টিকাকরণ সময়সূচি', homeFeature2_text: 'সময়মতো সতর্কতা পান এবং ইন্টারেক্টিভ সময়সূচির মাধ্যমে টিকাকরণ ট্র্যাক করুন।',
+    homeFeature3_title: 'AI ভবিষ্যদ্বাণী মডেল', homeFeature3_text: 'অপুষ্টির প্রাথমিক লক্ষণ সনাক্ত করতে উন্নত বিশ্লেষণ ব্যবহার করুন।',
+    homeFeature4_title: 'আশা একীভূতকরণ', homeFeature4_text: 'স্বাস্থ্যকর্মী ও পরিবারের মধ্যে সুবিন্যস্ত প্রতিবেদনের মাধ্যমে যোগাযোগ সহজ করুন।',
+    homeLiveBadge: 'লাইভ পর্যবেক্ষণ সক্রিয়',
+    homeAbout_badge: 'শিশু আরোগ্য সম্পর্কে', homeAbout_headline: 'সম্প্রদায়কে সশক্ত করা, ভবিষ্যৎ লালন করা',
+    homeAbout_desc: 'শিশু আরোগ্য একটি সরকার-সমর্থিত ডিজিটাল স্বাস্থ্য প্ল্যাটফর্ম যা আশা কর্মী, অভিভাবক এবং জেলা স্বাস্থ্য কর্তৃপক্ষকে সংযুক্ত করে।',
+    homeAbout_feat1_title: 'ডেটা-চালিত প্রাথমিক হস্তক্ষেপ', homeAbout_feat1_desc: 'WHO LMS z-স্কোর লক্ষণ প্রকাশের সপ্তাহ আগে অপুষ্টি ধরে।',
+    homeAbout_feat2_title: 'সম্পূর্ণ টিকাকরণ ট্র্যাকিং', homeAbout_feat2_desc: 'ভারতের NIS সময়সূচির সব ৩৬টি টিকা প্রতিটি শিশুর জন্য স্বয়ংক্রিয়।',
+    homeAbout_feat3_title: 'রিয়েল-টাইম ফিল্ড GPS', homeAbout_feat3_desc: 'আশা কর্মীরা মাঠে লাইভ ট্র্যাক হন — ±৫ মিটার নির্ভুলতা।',
+    homeAbout_feat4_title: '২২টি ভারতীয় ভাষা', homeAbout_feat4_desc: 'সমস্ত তপশিলি ভারতীয় ভাষায় সম্পূর্ণ UI অনুবাদ।',
+    homeAbout_cta1: 'আমাদের মিশন জানুন', homeAbout_cta2: 'প্ল্যাটফর্মে যোগ দিন',
+    homePlatform_title: 'প্ল্যাটফর্ম সক্ষমতা', homePlatform_subtitle: 'শিশু স্বাস্থ্য পর্যবেক্ষণের জন্য সব কিছু',
+    homePartners_label: 'সমর্থিত ও সংযুক্ত',
+    homeCTA_title: 'আপনার শিশুর ভবিষ্যৎ সুরক্ষিত করতে প্রস্তুত?', homeCTA_desc: 'আজই Sishu Arogya-তে যোগ দিন।', homeCTA_btn: 'এখনই শুরু করুন',
+    homeFooter_desc: 'টিকাকরণ, বিকাশ এবং পুষ্টির নিরাপদ ডিজিটাল পর্যবেক্ষণ।', homeFooter_links: 'দ্রুত লিঙ্ক',
+    homeFooter_linkFeatures: 'মূল বৈশিষ্ট্য', homeFooter_linkAbout: 'পোর্টাল সম্পর্কে', homeFooter_linkSignIn: 'সাইন ইন',
+    homeFooter_linkRegister: 'অ্যাকাউন্ট তৈরি', homeFooter_contact: 'যোগাযোগ করুন',
+    homeFooter_copyright: 'শিশু আরোগ্য পোর্টাল। সকল অধিকার সংরক্ষিত।',
   },
   ਪੰਜਾਬੀ: {
     dashboard: '🏠 ਡੈਸ਼ਬੋਰਡ',     myChild: '👶 ਮੇਰਾ ਬੱਚਾ',
@@ -253,6 +471,33 @@ const T = {
     recordGrowth: '📏 ਵਿਕਾਸ ਦਰਜ ਕਰੋ', weightKg: 'ਭਾਰ (ਕਿਲੋ)', heightCm: 'ਕੱਦ (ਸੈ.ਮੀ.)',
     save: 'ਸੇਵ ਕਰੋ', cancel: 'ਰੱਦ ਕਰੋ', markDone: 'ਪੂਰਾ ਕਰੋ',
     dietPlanFor: 'ਖੁਰਾਕ ਯੋਜਨਾ', ageMonths: 'ਮਹੀਨੇ ਦੀ ਉਮਰ',
+    homeNav_features: 'ਵਿਸ਼ੇਸ਼ਤਾਵਾਂ', homeNav_about: 'ਜਾਣ-ਪਛਾਣ', homeNav_mission: 'ਮਿਸ਼ਨ', homeNav_contact: 'ਸੰਪਰਕ',
+    homeHero1_badge: 'ਸਰਕਾਰੀ ਏਕੀਕ੍ਰਿਤ ਪ੍ਰਣਾਲੀ', homeHero1_headline: 'ਭਾਰਤ ਦੇ ਬੱਚਿਆਂ ਦੀ ਦੇਖਭਾਲ',
+    homeHero1_desc: 'ਟੀਕਾਕਰਣ, ਵਿਕਾਸ ਅਤੇ ਪੋਸ਼ਣ ਟਰੈਕਿੰਗ ਲਈ ਇੱਕ ਏਕੀਕ੍ਰਿਤ ਡਿਜੀਟਲ ਪਲੇਟਫਾਰਮ।',
+    homeHero2_badge: 'WHO ਮਿਆਰੀ ਮੁਲਾਂਕਣ', homeHero2_headline: 'ਵਿਕਾਸ ਨੂੰ ਸਮਝਦਾਰੀ ਨਾਲ ਟਰੈਕ ਕਰੋ',
+    homeHero2_desc: 'ਵਿਆਪਕ ਨਿਗਰਾਨੀ ਸਾਧਨਾਂ ਅਤੇ AI ਸੂਝ ਨਾਲ ਕੁਪੋਸ਼ਣ ਦਾ ਜਲਦੀ ਪਤਾ ਲਗਾਓ।',
+    homeHero3_badge: 'ਸਥਾਨਕ ਸਿਹਤ ਸੇਵਾ', homeHero3_headline: 'ਭਾਈਚਾਰਿਆਂ ਦੁਆਰਾ ਸਮਰਥਿਤ',
+    homeHero3_desc: 'ਸਮਰਪਿਤ ਆਸ਼ਾ ਵਰਕਰਾਂ ਨੂੰ ਡਿਜੀਟਲ ਸਾਧਨਾਂ ਨਾਲ ਸਸ਼ਕਤ ਕਰੋ।',
+    homeServices_title: 'ਸਾਡੀਆਂ ਮੁੱਖ ਸੇਵਾਵਾਂ', homeServices_subtitle: 'ਤੁਹਾਡੇ ਬੱਚੇ ਦੀ ਭਲਾਈ ਲਈ ਵਿਆਪਕ ਸਾਧਨ',
+    homeFeature1_title: 'ਵਿਕਾਸ ਅਤੇ ਖੁਰਾਕ ਨਿਗਰਾਨੀ', homeFeature1_text: 'WHO ਮਾਪਦੰਡਾਂ ਦੇ ਅਧਾਰ ਤੇ ਪੋਸ਼ਣ ਸਥਿਤੀ ਦਾ ਮੁਲਾਂਕਣ।',
+    homeFeature2_title: 'ਟੀਕਾਕਰਣ ਅਨੁਸੂਚੀ', homeFeature2_text: 'ਸਮੇਂ ਸਿਰ ਚੇਤਾਵਨੀਆਂ ਪ੍ਰਾਪਤ ਕਰੋ ਅਤੇ ਟੀਕਾਕਰਣ ਨੂੰ ਟਰੈਕ ਕਰੋ।',
+    homeFeature3_title: 'AI ਭਵਿੱਖਬਾਣੀ ਮਾਡਲ', homeFeature3_text: 'ਕੁਪੋਸ਼ਣ ਦੇ ਸ਼ੁਰੂਆਤੀ ਸੰਕੇਤਾਂ ਦਾ ਪਤਾ ਲਗਾਓ।',
+    homeFeature4_title: 'ਆਸ਼ਾ ਏਕੀਕਰਣ', homeFeature4_text: 'ਸਿਹਤ ਕਰਮਚਾਰੀਆਂ ਅਤੇ ਪਰਿਵਾਰਾਂ ਵਿਚਕਾਰ ਸੰਚਾਰ ਆਸਾਨ ਕਰੋ।',
+    homeLiveBadge: 'ਲਾਈਵ ਨਿਗਰਾਨੀ ਸਰਗਰਮ',
+    homeAbout_badge: 'ਸ਼ਿਸ਼ੂ ਆਰੋਗਯ ਬਾਰੇ', homeAbout_headline: 'ਭਾਈਚਾਰਿਆਂ ਨੂੰ ਸਸ਼ਕਤ ਕਰਨਾ, ਭਵਿੱਖ ਨੂੰ ਪਾਲਣਾ',
+    homeAbout_desc: 'ਸ਼ਿਸ਼ੂ ਆਰੋਗਯ ਇੱਕ ਸਰਕਾਰ-ਸਮਰਥਿਤ ਡਿਜੀਟਲ ਸਿਹਤ ਪਲੇਟਫਾਰਮ ਹੈ ਜੋ ਆਸ਼ਾ ਵਰਕਰਾਂ, ਮਾਪਿਆਂ ਅਤੇ ਜ਼ਿਲ੍ਹਾ ਸਿਹਤ ਅਧਿਕਾਰੀਆਂ ਨੂੰ ਜੋੜਦਾ ਹੈ।',
+    homeAbout_feat1_title: 'ਡੇਟਾ-ਆਧਾਰਿਤ ਸ਼ੁਰੂਆਤੀ ਦਖਲ', homeAbout_feat1_desc: 'WHO LMS z-ਸਕੋਰ ਲੱਛਣ ਦਿੱਖਣ ਤੋਂ ਹਫ਼ਤੇ ਪਹਿਲਾਂ ਕੁਪੋਸ਼ਣ ਦਾ ਪਤਾ ਲਗਾਉਂਦੇ ਹਨ।',
+    homeAbout_feat2_title: 'ਪੂਰਾ ਟੀਕਾਕਰਣ ਟਰੈਕਿੰਗ', homeAbout_feat2_desc: 'ਭਾਰਤ ਦੇ NIS ਅਨੁਸੂਚੀ ਦੇ ਸਾਰੇ 36 ਟੀਕੇ ਹਰ ਬੱਚੇ ਲਈ ਆਟੋਮੈਟਿਕ।',
+    homeAbout_feat3_title: 'ਰੀਅਲ-ਟਾਈਮ ਫੀਲਡ GPS', homeAbout_feat3_desc: 'ਆਸ਼ਾ ਵਰਕਰ ਮੈਦਾਨ ਵਿੱਚ ਲਾਈਵ ਟਰੈਕ ਹੁੰਦੇ ਹਨ — ±5 ਮੀਟਰ ਸ਼ੁੱਧਤਾ।',
+    homeAbout_feat4_title: '22 ਭਾਰਤੀ ਭਾਸ਼ਾਵਾਂ', homeAbout_feat4_desc: 'ਸਾਰੀਆਂ ਅਨੁਸੂਚਿਤ ਭਾਰਤੀ ਭਾਸ਼ਾਵਾਂ ਵਿੱਚ ਪੂਰਾ UI ਅਨੁਵਾਦ।',
+    homeAbout_cta1: 'ਸਾਡਾ ਮਿਸ਼ਨ ਜਾਣੋ', homeAbout_cta2: 'ਪਲੇਟਫਾਰਮ ਨਾਲ ਜੁੜੋ',
+    homePlatform_title: 'ਪਲੇਟਫਾਰਮ ਸਮਰੱਥਾਵਾਂ', homePlatform_subtitle: 'ਬੱਚੇ ਦੀ ਸਿਹਤ ਨਿਗਰਾਨੀ ਲਈ ਸਭ ਕੁਝ',
+    homePartners_label: 'ਸਮਰਥਿਤ ਅਤੇ ਜੁੜੇ',
+    homeCTA_title: 'ਆਪਣੇ ਬੱਚੇ ਦਾ ਭਵਿੱਖ ਸੁਰੱਖਿਅਤ ਕਰਨ ਲਈ ਤਿਆਰ ਹੋ?', homeCTA_desc: 'ਅੱਜ ਹੀ Sishu Arogya ਨਾਲ ਜੁੜੋ।', homeCTA_btn: 'ਹੁਣੇ ਸ਼ੁਰੂ ਕਰੋ',
+    homeFooter_desc: 'ਟੀਕਾਕਰਣ, ਵਿਕਾਸ ਅਤੇ ਪੋਸ਼ਣ ਦੀ ਸੁਰੱਖਿਅਤ ਡਿਜੀਟਲ ਨਿਗਰਾਨੀ।', homeFooter_links: 'ਤੇਜ਼ ਲਿੰਕ',
+    homeFooter_linkFeatures: 'ਮੁੱਖ ਵਿਸ਼ੇਸ਼ਤਾਵਾਂ', homeFooter_linkAbout: 'ਪੋਰਟਲ ਬਾਰੇ', homeFooter_linkSignIn: 'ਸਾਈਨ ਇਨ',
+    homeFooter_linkRegister: 'ਖਾਤਾ ਬਣਾਓ', homeFooter_contact: 'ਸੰਪਰਕ ਕਰੋ',
+    homeFooter_copyright: 'ਸ਼ਿਸ਼ੂ ਆਰੋਗਯ ਪੋਰਟਲ। ਸਾਰੇ ਅਧਿਕਾਰ ਸੁਰੱਖਿਅਤ।',
   },
   தமிழ்: {
     dashboard: '🏠 டாஷ்போர்டு',  myChild: '👶 என் குழந்தை',
@@ -277,6 +522,33 @@ const T = {
     recordGrowth: '📏 வளர்ச்சி பதிவு', weightKg: 'எடை (கிகி)', heightCm: 'உயரம் (செமீ)',
     save: 'சேமிக்கவும்', cancel: 'ரத்து', markDone: 'முடிந்தது',
     dietPlanFor: 'உணவு திட்டம்', ageMonths: 'மாத வயது',
+    homeNav_features: 'அம்சங்கள்', homeNav_about: 'பற்றி', homeNav_mission: 'நோக்கம்', homeNav_contact: 'தொடர்பு',
+    homeHero1_badge: 'அரசு ஒருங்கிணைந்த அமைப்பு', homeHero1_headline: 'இந்தியக் குழந்தைகளின் பராமரிப்பு',
+    homeHero1_desc: 'தடுப்பூசி, வளர்ச்சி மற்றும் ஊட்டச்சத்து கண்காணிப்புக்கான ஒருங்கிணைந்த டிஜிட்டல் தளம்।',
+    homeHero2_badge: 'WHO தர மதிப்பீடு', homeHero2_headline: 'வளர்ச்சியை புத்திசாலித்தனமாக கண்காணிக்கவும்',
+    homeHero2_desc: 'விரிவான கண்காணிப்பு கருவிகள் மற்றும் AI உள்ளீடுகளுடன் ஊட்டச்சத்துக்குறைபாட்டை முன்கூட்டியே கண்டறியவும்।',
+    homeHero3_badge: 'உள்ளூர் சுகாதார இணைப்பு', homeHero3_headline: 'சமுதாயத்தால் ஆதரிக்கப்பட்டது',
+    homeHero3_desc: 'அர்ப்பணிப்பான ASHA பணியாளர்களை டிஜிட்டல் கருவிகளுடன் வலுப்படுத்துங்கள்।',
+    homeServices_title: 'எங்கள் முக்கிய சேவைகள்', homeServices_subtitle: 'உங்கள் குழந்தையின் நலனுக்கான விரிவான கருவிகள்',
+    homeFeature1_title: 'வளர்ச்சி மற்றும் உணவு கண்காணிப்பு', homeFeature1_text: 'WHO தரநிலைகளின் படி ஊட்டச்சத்து நிலையை தானாக மதிப்பிடவும்।',
+    homeFeature2_title: 'தடுப்பூசி அட்டவணை', homeFeature2_text: 'சரியான நேரத்தில் எச்சரிக்கைகளைப் பெற்று தடுப்பூசிகளை கண்காணிக்கவும்।',
+    homeFeature3_title: 'AI கணிப்பு மாதிரி', homeFeature3_text: 'ஊட்டச்சத்துக்குறைபாட்டின் ஆரம்பகால அறிகுறிகளை கண்டறியவும்।',
+    homeFeature4_title: 'ASHA ஒருங்கிணைப்பு', homeFeature4_text: 'சுகாதார பணியாளர்களுக்கும் குடும்பங்களுக்கும் இடையில் தொடர்பை எளிதாக்குங்கள்।',
+    homeLiveBadge: 'நேரடி கண்காணிப்பு செயலில்',
+    homeAbout_badge: 'சிசு ஆரோக்யா பற்றி', homeAbout_headline: 'சமுதாயங்களை வலுப்படுத்துவது, எதிர்காலத்தை வளர்ப்பது',
+    homeAbout_desc: 'சிசு ஆரோக்யா ஒரு அரசு ஆதரவு டிஜிட்டல் சுகாதார தளம் - ASHA பணியாளர்கள், பெற்றோர் மற்றும் மாவட்ட சுகாதார அதிகாரிகளை இணைக்கிறது।',
+    homeAbout_feat1_title: 'தரவு சார்ந்த ஆரம்பகால தலையீடு', homeAbout_feat1_desc: 'WHO LMS z-மதிப்பெண்கள் அறிகுறிகள் தெரிவதற்கு வாரங்கள் முன்பே ஊட்டச்சத்துக்குறைபாட்டை கண்டறியும்。',
+    homeAbout_feat2_title: 'முழுமையான தடுப்பூசி கண்காணிப்பு', homeAbout_feat2_desc: 'இந்திய NIS அட்டவணையின் 36 தடுப்பூசிகள் ஒவ்வொரு குழந்தைக்கும் தானாக உருவாக்கப்படும்。',
+    homeAbout_feat3_title: 'நேரடி புலம் GPS', homeAbout_feat3_desc: 'ASHA பணியாளர்கள் புலத்தில் நேரடியாக கண்காணிக்கப்படுகிறார்கள் — ±5 மீட்டர் துல்லியம்。',
+    homeAbout_feat4_title: '22 இந்திய மொழிகள்', homeAbout_feat4_desc: 'அனைத்து அட்டவணைப்படுத்தப்பட்ட இந்திய மொழிகளில் முழு UI மொழிபெயர்ப்பு。',
+    homeAbout_cta1: 'எங்கள் நோக்கத்தை ஆராயுங்கள்', homeAbout_cta2: 'தளத்தில் சேருங்கள்',
+    homePlatform_title: 'தள திறன்கள்', homePlatform_subtitle: 'குழந்தை சுகாதார கண்காணிப்புக்கு தேவையான அனைத்தும்',
+    homePartners_label: 'ஆதரிக்கப்பட்டது மற்றும் இணைக்கப்பட்டது',
+    homeCTA_title: 'உங்கள் குழந்தையின் எதிர்காலத்தை பாதுகாக்க தயாரா?', homeCTA_desc: 'இன்றே Sishu Arogya-வில் சேருங்கள்।', homeCTA_btn: 'இப்போதே தொடங்குங்கள்',
+    homeFooter_desc: 'தடுப்பூசி, வளர்ச்சி மற்றும் ஊட்டச்சத்தின் பாதுகாப்பான டிஜிட்டல் கண்காணிப்பு।', homeFooter_links: 'விரைவான இணைப்புகள்',
+    homeFooter_linkFeatures: 'முக்கிய அம்சங்கள்', homeFooter_linkAbout: 'போர்ட்டல் பற்றி', homeFooter_linkSignIn: 'உள்நுழைவு',
+    homeFooter_linkRegister: 'கணக்கு உருவாக்கு', homeFooter_contact: 'தொடர்பு கொள்ளுங்கள்',
+    homeFooter_copyright: 'சிசு ஆரோக்யா போர்ட்டல். அனைத்து உரிமைகளும் பாதுகாக்கப்பட்டவை।',
   },
   తెలుగు: {
     dashboard: '🏠 డాష్‌బోర్డ్',  myChild: '👶 నా పిల్లవాడు',
@@ -301,6 +573,33 @@ const T = {
     recordGrowth: '📏 పెరుగుదల నమోదు', weightKg: 'బరువు (కిలో)', heightCm: 'ఎత్తు (సెంమీ)',
     save: 'సేవ్', cancel: 'రద్దు', markDone: 'పూర్తయింది',
     dietPlanFor: 'ఆహార ప్రణాళిక', ageMonths: 'నెలల వయస్సు',
+    homeNav_features: 'లక్షణాలు', homeNav_about: 'గురించి', homeNav_mission: 'మిషన్', homeNav_contact: 'సంప్రదింపు',
+    homeHero1_badge: 'ప్రభుత్వ సమీకృత వ్యవస్థ', homeHero1_headline: 'భారత పిల్లల సంరక్షణ',
+    homeHero1_desc: 'టీకాలు, పెరుగుదల మరియు పోషణ ట్రాకింగ్ కోసం ఏకీకృత డిజిటల్ వేదిక।',
+    homeHero2_badge: 'WHO ప్రమాణ అంచనాలు', homeHero2_headline: 'పెరుగుదలను తెలివిగా ట్రాక్ చేయండి',
+    homeHero2_desc: 'విస్తృత పర్యవేక్షణ సాధనాలు మరియు AI అంతర్దృష్టులతో పోషణ లోపాన్ని ముందే గుర్తించండి।',
+    homeHero3_badge: 'స్థానిక ఆరోగ్య సేవ', homeHero3_headline: 'సమాజాల ద్వారా మద్దతు',
+    homeHero3_desc: 'అంకితమైన ఆశా కార్యకర్తలను డిజిటల్ సాధనాలతో సాధికారత కల్పించండి।',
+    homeServices_title: 'మా ముఖ్య సేవలు', homeServices_subtitle: 'మీ పిల్లల సంక్షేమానికి సమగ్ర సాధనాలు',
+    homeFeature1_title: 'పెరుగుదల & ఆహార పర్యవేక్షణ', homeFeature1_text: 'WHO ప్రమాణాల ఆధారంగా పోషణ స్థితిని స్వయంచాలకంగా అంచనా వేయడానికి బరువు & ఎత్తు నమోదు చేయండి।',
+    homeFeature2_title: 'టీకా షెడ్యూలర్', homeFeature2_text: 'సకాలంలో హెచ్చరికలు పొందండి మరియు టీకాలను ట్రాక్ చేయండి।',
+    homeFeature3_title: 'AI అంచనా నమూనా', homeFeature3_text: 'పోషణ లోపం ముందస్తు సంకేతాలను గుర్తించడానికి అధునాతన విశ్లేషణ ఉపయోగించండి।',
+    homeFeature4_title: 'ఆశా ఏకీకరణ', homeFeature4_text: 'ఆరోగ్య కార్యకర్తలు మరియు కుటుంబాల మధ్య సంబంధాన్ని సులభతరం చేయండి।',
+    homeLiveBadge: 'లైవ్ పర్యవేక్షణ సక్రియంగా ఉంది',
+    homeAbout_badge: 'శిశు ఆరోగ్య గురించి', homeAbout_headline: 'సమాజాలను సాధికారత కల్పించడం, భవిష్యత్తును పోషించడం',
+    homeAbout_desc: 'శిశు ఆరోగ్య ఒక ప్రభుత్వ-మద్దతు డిజిటల్ ఆరోగ్య వేదిక - ఆశా కార్యకర్తలు, తల్లిదండ్రులు మరియు జిల్లా ఆరోగ్య అధికారులను కలుపుతుంది।',
+    homeAbout_feat1_title: 'డేటా-ఆధారిత ముందస్తు జోక్యం', homeAbout_feat1_desc: 'WHO LMS z-స్కోర్లు లక్షణాలు కనిపించే వారాల ముందే పోషణ లోపాన్ని గుర్తిస్తాయి。',
+    homeAbout_feat2_title: 'పూర్తి టీకా ట్రాకింగ్', homeAbout_feat2_desc: 'భారత NIS షెడ్యూల్ నుండి 36 టీకాలు ప్రతి పిల్లకు స్వయంచాలకంగా తయారవుతాయి。',
+    homeAbout_feat3_title: 'రియల్-టైమ్ ఫీల్డ్ GPS', homeAbout_feat3_desc: 'ఆశా కార్యకర్తలు మైదానంలో లైవ్ ట్రాక్ అవుతారు — ±5 మీటర్ల ఖచ్చితత्व。',
+    homeAbout_feat4_title: '22 భారతీయ భాషలు', homeAbout_feat4_desc: 'అన్ని షెడ్యూల్డ్ భారతీయ భాషలలో పూర్తి UI అనువాదం।',
+    homeAbout_cta1: 'మా మిషన్ అన్వేషించండి', homeAbout_cta2: 'వేదికలో చేరండి',
+    homePlatform_title: 'వేదిక సామర్థ్యాలు', homePlatform_subtitle: 'శిశు ఆరోగ్య పర్యవేక్షణకు అవసరమైన అన్నీ',
+    homePartners_label: 'మద్దతు మరియు అనుసంధానం',
+    homeCTA_title: 'మీ పిల్లల భవిష్యత్తు భద్రపరచడానికి సిద్ధంగా ఉన్నారా?', homeCTA_desc: 'నేడే Sishu Arogya లో చేరండి।', homeCTA_btn: 'ఇప్పుడే ప్రారంభించండి',
+    homeFooter_desc: 'టీకాలు, పెరుగుదల మరియు పోషణ యొక్క సురక్షిత డిజిటల్ పర్యవేక్షణ।', homeFooter_links: 'త్వరిత లింకులు',
+    homeFooter_linkFeatures: 'ముఖ్య లక్షణాలు', homeFooter_linkAbout: 'పోర్టల్ గురించి', homeFooter_linkSignIn: 'సైన్ ఇన్',
+    homeFooter_linkRegister: 'ఖాతా సృష్టించండి', homeFooter_contact: 'సంప్రదించండి',
+    homeFooter_copyright: 'శిశు ఆరోగ్య పోర్టల్. అన్ని హక్కులు రిజర్వ్ చేయబడ్డాయి।',
   },
   मराठी: {
     dashboard: '🏠 डॅशबोर्ड',    myChild: '👶 माझे मूल',
@@ -325,6 +624,33 @@ const T = {
     recordGrowth: '📏 वाढ नोंदवा', weightKg: 'वजन (किलो)', heightCm: 'उंची (सेमी)',
     save: 'जतन करा', cancel: 'रद्द करा', markDone: 'पूर्ण करा',
     dietPlanFor: 'आहार योजना', ageMonths: 'महिने वयाचे',
+    homeNav_features: 'वैशिष्ट्ये', homeNav_about: 'परिचय', homeNav_mission: 'ध्येय', homeNav_contact: 'संपर्क',
+    homeHero1_badge: 'सरकारी एकात्मिक प्रणाली', homeHero1_headline: 'भारताच्या मुलांची काळजी',
+    homeHero1_desc: 'लसीकरण, वाढ आणि पोषण ट्रॅकिंगसाठी एकात्मिक डिजिटल व्यासपीठ।',
+    homeHero2_badge: 'WHO मानक मूल्यांकन', homeHero2_headline: 'वाढ हुशारीने ट्रॅक करा',
+    homeHero2_desc: 'व्यापक निगराणी साधने आणि AI अंतर्दृष्टीसह कुपोषण लवकर ओळखा।',
+    homeHero3_badge: 'स्थानिक आरोग्य सेवा', homeHero3_headline: 'समुदायांनी समर्थित',
+    homeHero3_desc: 'समर्पित आशा कार्यकर्त्यांना डिजिटल साधनांनी सक्षम करा।',
+    homeServices_title: 'आमच्या मुख्य सेवा', homeServices_subtitle: 'आपल्या मुलाच्या कल्याणासाठी सर्वसमावेशक साधने',
+    homeFeature1_title: 'वाढ आणि आहार निगराणी', homeFeature1_text: 'WHO मानकांनुसार पोषण स्थितीचे स्वयंचलित मूल्यांकन करण्यासाठी वजन आणि उंची नोंदवा।',
+    homeFeature2_title: 'लसीकरण वेळापत्रक', homeFeature2_text: 'वेळेवर सूचना मिळवा आणि लसीकरण ट्रॅक करा।',
+    homeFeature3_title: 'AI अंदाज मॉडेल', homeFeature3_text: 'कुपोषणाची सुरुवातीची चिन्हे ओळखण्यासाठी प्रगत विश्लेषण वापरा।',
+    homeFeature4_title: 'आशा एकीकरण', homeFeature4_text: 'आरोग्य कार्यकर्ते आणि कुटुंबांमधील दरी दूर करा।',
+    homeLiveBadge: 'थेट निगराणी सुरू',
+    homeAbout_badge: 'शिशू आरोग्य बद्दल', homeAbout_headline: 'समुदायांना सक्षम करणे, भविष्य घडवणे',
+    homeAbout_desc: 'शिशू आरोग्य हे सरकार-समर्थित डिजिटल आरोग्य व्यासपीठ आहे जे आशा कार्यकर्ते, पालक आणि जिल्हा आरोग्य अधिकाऱ्यांना जोडते।',
+    homeAbout_feat1_title: 'डेटा-आधारित प्रारंभिक हस्तक्षेप', homeAbout_feat1_desc: 'WHO LMS z-स्कोर लक्षणे दिसण्यापूर्वी कुपोषण ओळखतात।',
+    homeAbout_feat2_title: 'संपूर्ण लसीकरण ट्रॅकिंग', homeAbout_feat2_desc: 'भारताच्या NIS वेळापत्रकातील 36 लसी प्रत्येक मुलासाठी स्वयंचलित।',
+    homeAbout_feat3_title: 'रिअल-टाइम फील्ड GPS', homeAbout_feat3_desc: 'आशा कार्यकर्ते मैदानात थेट ट्रॅक होतात — ±5 मीटर अचूकता।',
+    homeAbout_feat4_title: '22 भारतीय भाषा', homeAbout_feat4_desc: 'सर्व अनुसूचित भारतीय भाषांमध्ये संपूर्ण UI भाषांतर।',
+    homeAbout_cta1: 'आमचे ध्येय जाणून घ्या', homeAbout_cta2: 'व्यासपीठात सामील व्हा',
+    homePlatform_title: 'व्यासपीठ क्षमता', homePlatform_subtitle: 'बाल आरोग्य निगराणीसाठी आवश्यक सर्वकाही',
+    homePartners_label: 'समर्थन आणि संरेखण',
+    homeCTA_title: 'आपल्या मुलाचे भविष्य सुरक्षित करायला तयार आहात?', homeCTA_desc: 'आज Sishu Arogya मध्ये सामील व्हा।', homeCTA_btn: 'आता सुरुवात करा',
+    homeFooter_desc: 'लसीकरण, वाढ आणि पोषणाची सुरक्षित डिजिटल निगराणी।', homeFooter_links: 'जलद दुवे',
+    homeFooter_linkFeatures: 'मुख्य वैशिष्ट्ये', homeFooter_linkAbout: 'पोर्टलबद्दल', homeFooter_linkSignIn: 'साइन इन',
+    homeFooter_linkRegister: 'खाते तयार करा', homeFooter_contact: 'संपर्क करा',
+    homeFooter_copyright: 'शिशू आरोग्य पोर्टल. सर्व हक्क राखीव।',
   },
   ગુજરાતી: {
     dashboard: '🏠 ડેશબોર્ડ', myChild: '👶 મારું બાળક', vaccines: '💉 રસીકરણ', growth: '📈 વૃद्धि',
@@ -353,6 +679,33 @@ const T = {
     healthy: 'Svasth', moderate: 'Madhyam', severe: 'Gambhir', normal: 'Samanya',
     overdue: 'Mudi viti', completed: 'Purn', pending: 'Baki', status: 'Sthiti',
     weight: 'Wajan', height: 'Unchhai', childName: 'Bachcha nu Nam', gender: 'Jati', male: 'Purush', female: 'Stri',
+    homeNav_features: 'વિશેષતાઓ', homeNav_about: 'પરિચય', homeNav_mission: 'મિશન', homeNav_contact: 'સંપર્ક',
+    homeHero1_badge: 'સરકારી સંકલિત પ્રણાલી', homeHero1_headline: 'ભારતના બાળકોની સંભાળ',
+    homeHero1_desc: 'રસીકરણ, વૃદ્ધિ અને પોષણ ટ્રેકિંગ માટે એકીકૃત ડિજિટલ પ્લેટફોર્મ।',
+    homeHero2_badge: 'WHO ધોરણ મૂલ્યાંકન', homeHero2_headline: 'વૃદ્ધિ સ્માર્ટ રીતે ટ્રેક કરો',
+    homeHero2_desc: 'વ્યાપક મોનિટરિંગ ટૂલ્સ અને AI સૂઝ સાથે કુપોષણ વહેલું શોધો।',
+    homeHero3_badge: 'સ્થાનિક આરોગ્ય સેવા', homeHero3_headline: 'સમુદાય દ્વારા સમર્થિત',
+    homeHero3_desc: 'સમર્પિત ASHA કાર્યકર્તાઓને ડિજિટલ ટૂલ્સ સાથે સક્ષમ બનાવો।',
+    homeServices_title: 'અમારી મુખ્ય સેવાઓ', homeServices_subtitle: 'આપના બાળકની ભલાઈ માટે વ્યાપક સાધનો',
+    homeFeature1_title: 'વૃદ્ધિ અને આહાર નિગરાણી', homeFeature1_text: 'WHO ધોરણો અનુસાર પોષણ સ્થિતિ સ્વતઃ આકારણી।',
+    homeFeature2_title: 'રસીકરણ સૂચિ', homeFeature2_text: 'સમયસર ચેતવણીઓ મેળવો અને રસીકરણ ટ્રેક કરો।',
+    homeFeature3_title: 'AI આગાહી મોડલ', homeFeature3_text: 'કુપોષણના પ્રારંભિક સંકેતો ઓળખવા ઉન્નત વિશ્લેષણ ઉપયોગ કરો।',
+    homeFeature4_title: 'ASHA એકીકરણ', homeFeature4_text: 'આરોગ્ય કર્મચારીઓ અને પરિવારો વચ્ચે સરળ સંચાર।',
+    homeLiveBadge: 'લાઇવ નિગરાણી સક્રિય',
+    homeAbout_badge: 'શિશુ આરોગ્ય વિશે', homeAbout_headline: 'સમુદાયોને સક્ષમ બનાવવું, ભવિષ્ય ઘડવું',
+    homeAbout_desc: 'શિશુ આરોગ્ય એક સરકાર-સમર્થિત ડિજિટલ સ્વાસ્થ્ય પ્લેટફોર્મ છે जे ASHA કાર્યકર્તાઓ, માતા-પિતા અને જિલ્લા આરોગ્ય અધિકારીઓ ને જોડે છે।',
+    homeAbout_feat1_title: 'ડેટા-આધારિત પ્રારંભિક હસ્તક્ષેપ', homeAbout_feat1_desc: 'WHO LMS z-સ્કોર લક્ષણો દેખાય એ અઠવાડિયા પહેલાં કુપોષણ ઓળખે।',
+    homeAbout_feat2_title: 'સંપૂર્ણ રસીકરણ ટ્રેકિંગ', homeAbout_feat2_desc: 'ભારતના NIS સૂચિ ના 36 રસી દરેક બાળક માટે સ્વતઃ।',
+    homeAbout_feat3_title: 'રિઅલ-ટાઇમ ફીલ્ડ GPS', homeAbout_feat3_desc: 'ASHA કાર્યકર્તાઓ મેદાનમાં લાઇવ ટ્રેક — ±5 મીટર ચોકસાઈ।',
+    homeAbout_feat4_title: '22 ભારતીય ભાષાઓ', homeAbout_feat4_desc: 'તમામ અનુસૂચિત ભારતીય ભાષાઓ માં સંપૂર્ણ UI અનુવાદ।',
+    homeAbout_cta1: 'અમારું મિશન જાણો', homeAbout_cta2: 'પ્લેટફોર્મ સાથે જોડાઓ',
+    homePlatform_title: 'પ્લેટફોર્મ ક્ષમતાઓ', homePlatform_subtitle: 'બાળ આરોગ્ય નિગરાણી માટે બધું',
+    homePartners_label: 'સમર્થિત અને સંકળાયેલ',
+    homeCTA_title: 'આપના બાળકનું ભવિષ્ય સુરક્ષિત કરવા તૈયાર?', homeCTA_desc: 'આજે Sishu Arogya સાથે જોડાઓ।', homeCTA_btn: 'અત્યારે શરૂ કરો',
+    homeFooter_desc: 'રસીકરણ, વૃદ્ધિ અને પોષણ ની સુરક્ષિત ડિજિટલ નિગરાણી।', homeFooter_links: 'ઝડપી લિંક',
+    homeFooter_linkFeatures: 'મુખ્ય વિશેષતાઓ', homeFooter_linkAbout: 'પોર્ટલ વિશે', homeFooter_linkSignIn: 'સાઇન ઇન',
+    homeFooter_linkRegister: 'ખાતું બનાવો', homeFooter_contact: 'સંપર્ક કરો',
+    homeFooter_copyright: 'શિશુ આરોગ્ય પોર્ટલ. તમામ અધિકાર સુરક્ષિત।',
   },
   ಕನ್ನಡ: {
     dashboard: '🏠 ಡ್ಯಾಶ್‌ಬೋರ್ಡ್', myChild: '👶 ನನ್ನ ಮಗು', vaccines: '💉 ಲಸಿಕೆ', growth: '📈 ಬೆಳವಣಿಗೆ',
@@ -379,6 +732,33 @@ const T = {
     healthy: 'ಆರೋಗ್ಯಕರ', moderate: 'ಮಧ್ಯಮ', severe: 'ತೀವ್ರ', normal: 'ಸಾಮಾನ್ಯ',
     overdue: 'ಗಡಿ ಮೀರಿದ', completed: 'ಪೂರ್ಣ', pending: 'ಬಾಕಿ', status: 'ಸ್ಥಿತಿ',
     weight: 'ತೂಕ', height: 'ಎತ್ತರ', childName: 'ಮಗುವಿನ ಹೆಸರು', gender: 'ಲಿಂಗ', male: 'ಪುರುಷ', female: 'ಮಹಿಳೆ',
+    homeNav_features: 'ವೈಶಿಷ್ಟ್ಯಗಳು', homeNav_about: 'ಪರಿಚಯ', homeNav_mission: 'ಧ್ಯೇಯ', homeNav_contact: 'ಸಂಪರ್ಕ',
+    homeHero1_badge: 'ಸರ್ಕಾರಿ ಏಕೀಕೃತ ವ್ಯವಸ್ಥೆ', homeHero1_headline: 'ಭಾರತದ ಮಕ್ಕಳ ಆರೈಕೆ',
+    homeHero1_desc: 'ಲಸಿಕೆ, ಬೆಳವಣಿಗೆ ಮತ್ತು ಪೋಷಣೆ ಟ್ರ್ಯಾಕಿಂಗ್‌ಗಾಗಿ ಏಕೀಕೃತ ಡಿಜಿಟಲ್ ವೇದಿಕೆ।',
+    homeHero2_badge: 'WHO ಮಾನದಂಡ ಮೌಲ್ಯಮಾಪನ', homeHero2_headline: 'ಬೆಳವಣಿಗೆಯನ್ನು ಬುದ್ಧಿವಂತಿಕೆಯಿಂದ ಟ್ರ್ಯಾಕ್ ಮಾಡಿ',
+    homeHero2_desc: 'ಸಮಗ್ರ ಮೇಲ್ವಿಚಾರಣಾ ಸಾಧನಗಳು ಮತ್ತು AI ಒಳನೋಟಗಳೊಂದಿಗೆ ಅಪೌಷ್ಟಿಕತೆಯನ್ನು ಮೊದಲೇ ಪತ್ತೆ ಹಚ್ಚಿ।',
+    homeHero3_badge: 'ಸ್ಥಳೀಯ ಆರೋಗ್ಯ ಸೇವೆ', homeHero3_headline: 'ಸಮುದಾಯಗಳಿಂದ ಬೆಂಬಲಿತ',
+    homeHero3_desc: 'ಸಮರ್ಪಿತ ಆಶಾ ಕಾರ್ಯಕರ್ತರನ್ನು ಡಿಜಿಟಲ್ ಸಾಧನಗಳೊಂದಿಗೆ ಸಬಲೀಕರಣಗೊಳಿಸಿ।',
+    homeServices_title: 'ನಮ್ಮ ಮುಖ್ಯ ಸೇವೆಗಳು', homeServices_subtitle: 'ನಿಮ್ಮ ಮಗುವಿನ ಯೋಗಕ್ಷೇಮಕ್ಕಾಗಿ ಸಮಗ್ರ ಸಾಧನಗಳು',
+    homeFeature1_title: 'ಬೆಳವಣಿಗೆ ಮತ್ತು ಆಹಾರ ಮೇಲ್ವಿಚಾರಣೆ', homeFeature1_text: 'WHO ಮಾನದಂಡಗಳ ಆಧಾರದ ಮೇಲೆ ಪೋಷಣಾ ಸ್ಥಿತಿ ಸ್ವಯಂ ಮೌಲ್ಯಮಾಪನ。',
+    homeFeature2_title: 'ಲಸಿಕೆ ವೇಳಾಪಟ್ಟಿ', homeFeature2_text: 'ಸಕಾಲಿಕ ಎಚ್ಚರಿಕೆಗಳನ್ನು ಪಡೆದು ಲಸಿಕೆ ಟ್ರ್ಯಾಕ್ ಮಾಡಿ।',
+    homeFeature3_title: 'AI ಭವಿಷ್ಯ ಮಾದರಿ', homeFeature3_text: 'ಅಪೌಷ್ಟಿಕತೆಯ ಆರಂಭಿಕ ಸೂಚನೆಗಳನ್ನು ಪತ್ತೆ ಹಚ್ಚಿ।',
+    homeFeature4_title: 'ಆಶಾ ಏಕೀಕರಣ', homeFeature4_text: 'ಆರೋಗ್ಯ ಕಾರ್ಯಕರ್ತರು ಮತ್ತು ಕುಟುಂಬಗಳ ನಡುವೆ ಸಂವಹನ ಸುಲಭಗೊಳಿಸಿ।',
+    homeLiveBadge: 'ನೇರ ಮೇಲ್ವಿಚಾರಣೆ ಸಕ್ರಿಯ',
+    homeAbout_badge: 'ಶಿಶು ಆರೋಗ್ಯ ಬಗ್ಗೆ', homeAbout_headline: 'ಸಮುದಾಯಗಳನ್ನು ಸಬಲೀಕರಿಸುವುದು, ಭವಿಷ್ಯ ಪೋಷಿಸುವುದು',
+    homeAbout_desc: 'ಶಿಶು ಆರೋಗ್ಯ ಒಂದು ಸರ್ಕಾರ-ಬೆಂಬಲಿತ ಡಿಜಿಟಲ್ ಆರೋಗ್ಯ ವೇದಿಕೆ - ಆಶಾ ಕಾರ್ಯಕರ್ತರು, ಪಾಲಕರು ಮತ್ತು ಜಿಲ್ಲಾ ಆರೋಗ್ಯ ಅಧಿಕಾರಿಗಳನ್ನು ಜೋಡಿಸುತ್ತದೆ।',
+    homeAbout_feat1_title: 'ಡೇಟಾ-ಆಧಾರಿತ ಆರಂಭಿಕ ಮಧ್ಯಸ್ಥಿಕೆ', homeAbout_feat1_desc: 'WHO LMS z-ಸ್ಕೋರ್‌ಗಳು ಲಕ್ಷಣಗಳು ಕಾಣಿಸಿಕೊಳ್ಳುವ ವಾರಗಳ ಮೊದಲು ಅಪೌಷ್ಟಿಕತೆ ಪತ್ತೆ ಮಾಡುತ್ತವೆ।',
+    homeAbout_feat2_title: 'ಸಂಪೂರ್ಣ ಲಸಿಕೆ ಟ್ರ್ಯಾಕಿಂಗ್', homeAbout_feat2_desc: 'ಭಾರತದ NIS ವೇಳಾಪಟ್ಟಿಯ 36 ಲಸಿಕೆಗಳು ಪ್ರತಿ ಮಗುವಿಗೆ ಸ್ವಯಂಚಾಲಿತ।',
+    homeAbout_feat3_title: 'ರಿಯಲ್-ಟೈಮ್ ಫೀಲ್ಡ್ GPS', homeAbout_feat3_desc: 'ಆಶಾ ಕಾರ್ಯಕರ್ತರು ಮೈದಾನದಲ್ಲಿ ನೇರ ಟ್ರ್ಯಾಕ್ — ±5 ಮೀ ನಿಖರತೆ।',
+    homeAbout_feat4_title: '22 ಭಾರತೀಯ ಭಾಷೆಗಳು', homeAbout_feat4_desc: 'ಎಲ್ಲಾ ಅನುಸೂಚಿತ ಭಾರತೀಯ ಭಾಷೆಗಳಲ್ಲಿ ಸಂಪೂರ್ಣ UI ಅನುವಾದ।',
+    homeAbout_cta1: 'ನಮ್ಮ ಧ್ಯೇಯ ಅನ್ವೇಷಿಸಿ', homeAbout_cta2: 'ವೇದಿಕೆಯಲ್ಲಿ ಸೇರಿ',
+    homePlatform_title: 'ವೇದಿಕೆ ಸಾಮರ್ಥ್ಯಗಳು', homePlatform_subtitle: 'ಶಿಶು ಆರೋಗ್ಯ ಮೇಲ್ವಿಚಾರಣೆಗೆ ಅಗತ್ಯ ಎಲ್ಲವೂ',
+    homePartners_label: 'ಬೆಂಬಲ ಮತ್ತು ಸಂಯೋಜನೆ',
+    homeCTA_title: 'ನಿಮ್ಮ ಮಗುವಿನ ಭವಿಷ್ಯ ಸುರಕ್ಷಿತಗೊಳಿಸಲು ಸಿದ್ಧರಾಗಿದ್ದೀರಾ?', homeCTA_desc: 'ಇಂದೇ Sishu Arogya ಸೇರಿ।', homeCTA_btn: 'ಈಗಲೇ ಪ್ರಾರಂಭಿಸಿ',
+    homeFooter_desc: 'ಲಸಿಕೆ, ಬೆಳವಣಿಗೆ ಮತ್ತು ಪೋಷಣೆ ಡಿಜಿಟಲ್ ಮೇಲ್ವಿಚಾರಣೆ।', homeFooter_links: 'ತ್ವರಿತ ಲಿಂಕ್‌ಗಳು',
+    homeFooter_linkFeatures: 'ಮುಖ್ಯ ವೈಶಿಷ್ಟ್ಯಗಳು', homeFooter_linkAbout: 'ಪೋರ್ಟಲ್ ಬಗ್ಗೆ', homeFooter_linkSignIn: 'ಸೈನ್ ಇನ್',
+    homeFooter_linkRegister: 'ಖಾತೆ ರಚಿಸಿ', homeFooter_contact: 'ಸಂಪರ್ಕಿಸಿ',
+    homeFooter_copyright: 'ಶಿಶು ಆರೋಗ್ಯ ಪೋರ್ಟಲ್. ಎಲ್ಲಾ ಹಕ್ಕುಗಳು ಕಾಯ್ದಿರಿಸಲಾಗಿದೆ।',
   },
   മലയാളം: {
     dashboard: '🏠 ഡാഷ്‌ബോർഡ്', myChild: '👶 എന്റെ കുഞ്ഞ്', vaccines: '💉 വാക്സിൻ', growth: '📈 വളർച്ച',
@@ -405,6 +785,33 @@ const T = {
     healthy: 'ആരോഗ്യകരം', moderate: 'മിതം', severe: 'ഗുരുതരം', normal: 'സാധാരണ',
     overdue: 'കാലഹരണ', completed: 'പൂർത്തി', pending: 'ബാക്കി', status: 'സ്ഥിതി',
     weight: 'ഭാരം', height: 'ഉയരം', childName: 'കുട്ടിയുടെ പേര്', gender: 'ലിംഗം', male: 'ആൺ', female: 'പെൺ',
+    homeNav_features: 'സവിശേഷതകൾ', homeNav_about: 'പരിചയം', homeNav_mission: 'ദൗത്യം', homeNav_contact: 'ബന്ധപ്പെടുക',
+    homeHero1_badge: 'സർക്കാർ ഏകീകൃത സംവിധാനം', homeHero1_headline: 'ഭാരതത്തിലെ കുട്ടികളുടെ പരിചരണം',
+    homeHero1_desc: 'വാക്സിനേഷൻ, വളർച്ച, പോഷണം ട്രാക്കിംഗിനുള്ള ഏകീകൃത ഡിജിറ്റൽ പ്ലാറ്റ്ഫോം।',
+    homeHero2_badge: 'WHO മാനദണ്ഡ വിലയിരുത്തൽ', homeHero2_headline: 'വളർച്ച ബുദ്ധിപൂർവം ട്രാക്ക് ചെയ്യൂ',
+    homeHero2_desc: 'സമഗ്ര നിരീക്ഷണ ഉപകരണങ്ങളും AI ഉൾക്കാഴ്ചകളും ഉപയോഗിച്ച് പോഷകാഹാരക്കുറവ് നേരത്തെ കണ്ടെത്തൂ।',
+    homeHero3_badge: 'പ്രാദേശിക ആരോഗ്യ ബന്ധം', homeHero3_headline: 'സമൂഹം പിന്തുണയ്ക്കുന്നു',
+    homeHero3_desc: 'സമർപ്പിത ആശ പ്രവർത്തകർക്ക് ഡിജിറ്റൽ ഉപകരണങ്ങളിലൂടെ ശക്തി നൽകൂ।',
+    homeServices_title: 'ഞങ്ങളുടെ പ്രധാന സേവനങ്ങൾ', homeServices_subtitle: 'നിങ്ങളുടെ കുട്ടിയുടെ ക്ഷേമത്തിനുള്ള സമഗ്ര ഉപകരണങ്ങൾ',
+    homeFeature1_title: 'വളർച്ചയും ഭക്ഷണ നിരീക്ഷണവും', homeFeature1_text: 'WHO മാനദണ്ഡങ്ങൾ അനുസരിച്ച് പോഷണ നില സ്വയം വിലയിരുത്തൂ।',
+    homeFeature2_title: 'വാക്സിനേഷൻ ഷെഡ്യൂൾ', homeFeature2_text: 'സമയബദ്ധമായ അലർട്ടുകൾ ലഭിക്കൂ, വാക്സിനേഷൻ ട്രാക്ക് ചെയ്യൂ।',
+    homeFeature3_title: 'AI പ്രവചന മോഡൽ', homeFeature3_text: 'പോഷകാഹാരക്കുറവിന്റെ ആദ്യ ലക്ഷണങ്ങൾ കണ്ടെത്തൂ।',
+    homeFeature4_title: 'ആശ സംയോജനം', homeFeature4_text: 'ആരോഗ്യ പ്രവർത്തകരും കുടുംബങ്ങളും തമ്മിലുള്ള ആശയവിനിമയം ലളിതമാക്കൂ।',
+    homeLiveBadge: 'തത്സമയ നിരീക്ഷണം സജീവം',
+    homeAbout_badge: 'ശിശു ആരോഗ്യയെ കുറിച്ച്', homeAbout_headline: 'സമൂഹങ്ങളെ ശക്തിപ്പെടുത്തൽ, ഭാവി പോഷിപ്പിക്കൽ',
+    homeAbout_desc: 'ശിശു ആരോഗ്യ ഒരു സർക്കാർ-പിന്തുണ ഡിജിറ്റൽ ആരോഗ്യ പ്ലാറ്റ്ഫോം - ആശ പ്രവർത്തകർ, രക്ഷകർത്താക്കൾ, ജില്ലാ ആരോഗ്യ അധികൃതർ എന്നിവരെ ബന്ധിപ്പിക്കുന്നു।',
+    homeAbout_feat1_title: 'ഡേറ്റ അടിസ്ഥാനത്തിലുള്ള ആദ്യ ഇടപെടൽ', homeAbout_feat1_desc: 'WHO LMS z-സ്കോറുകൾ ലക്ഷണങ്ങൾ പ്രത്യക്ഷപ്പെടുന്നതിന് ആഴ്ചകൾ മുൻപ് പോഷകക്കുറവ് കണ്ടെത്തുന്നു。',
+    homeAbout_feat2_title: 'സമ്പൂർണ വാക്സിനേഷൻ ട്രാക്കിംഗ്', homeAbout_feat2_desc: 'ഭാരത NIS ഷെഡ്യൂളിൽ നിന്ന് 36 വാക്സിനുകൾ ഓരോ കുട്ടിക്കും സ്വയം।',
+    homeAbout_feat3_title: 'തത്സമയ ഫീൽഡ് GPS', homeAbout_feat3_desc: 'ആശ പ്രവർത്തകർ ഫീൽഡിൽ തത്സമയം ട്രാക്ക് — ±5 മി. കൃത്യത।',
+    homeAbout_feat4_title: '22 ഭാരതീയ ഭാഷകൾ', homeAbout_feat4_desc: 'ഷെഡ്യൂൾഡ് ഭാരതീയ ഭാഷകളിലെല്ലാം സമ്പൂർണ UI വിവർത്തനം।',
+    homeAbout_cta1: 'ഞങ്ങളുടെ ദൗത്യം അന്വേഷിക്കൂ', homeAbout_cta2: 'പ്ലാറ്റ്ഫോമിൽ ചേരൂ',
+    homePlatform_title: 'പ്ലാറ്റ്ഫോം ശേഷികൾ', homePlatform_subtitle: 'ശിശു ആരോഗ്യ നിരീക്ഷണത്തിന് ആവശ്യമായതെല്ലാം',
+    homePartners_label: 'പിന്തുണ ഉള്ളതും ബന്ധമുള്ളതും',
+    homeCTA_title: 'കുട്ടിയുടെ ഭാവി സുരക്ഷിതമാക്കാൻ തയ്യാറോ?', homeCTA_desc: 'ഇന്നുതന്നെ Sishu Arogya-യിൽ ചേരൂ।', homeCTA_btn: 'ഇപ്പോൾ ആരംഭിക്കൂ',
+    homeFooter_desc: 'വാക്സിനേഷൻ, വളർച്ച, പോഷണം ഡിജിറ്റൽ നിരീക്ഷണം।', homeFooter_links: 'ദ്രുത ലിങ്കുകൾ',
+    homeFooter_linkFeatures: 'പ്രധാന സവിശേഷതകൾ', homeFooter_linkAbout: 'പോർട്ടലിനെ കുറിച്ച്', homeFooter_linkSignIn: 'സൈൻ ഇൻ',
+    homeFooter_linkRegister: 'അക്കൗണ്ട് ഉണ്ടാക്കൂ', homeFooter_contact: 'ബന്ധപ്പെടൂ',
+    homeFooter_copyright: 'ശിശു ആരോഗ്യ പോർട്ടൽ. എല്ലാ അവകാശങ്ങളും നിക്ഷിപ്തം।',
   },
   ଓଡ଼ିଆ: {
     dashboard: '🏠 ଡ୍ୟାସ୍‌ବୋର୍ଡ', myChild: '👶 ମୋ ଶିଶୁ', vaccines: '💉 ଟୀକା', growth: '📈 ବୃଦ୍ଧି',
@@ -428,6 +835,33 @@ const T = {
     healthy: 'ସୁସ୍ଥ', moderate: 'ମଧ୍ୟ', severe: 'ଗୁରୁ', normal: 'ସ୍ବାଭାବ',
     overdue: 'ସମ ପଚ', completed: 'ସମ୍ପ', pending: 'ବାକି', status: 'ସ୍ଥ',
     weight: 'ଓଜନ', height: 'ଉଚ୍ଚ', childName: 'ନାମ', gender: 'ଲିଙ୍ଗ', male: 'ପୁ', female: 'ସ୍ତ୍ରୀ',
+    homeNav_features: 'ବୈଶିଷ୍ଟ୍ୟ', homeNav_about: 'ପରିଚୟ', homeNav_mission: 'ଲକ୍ଷ୍ୟ', homeNav_contact: 'ଯୋଗାଯୋଗ',
+    homeHero1_badge: 'ସରକାରୀ ଏକୀଭୂତ ପ୍ରଣାଳୀ', homeHero1_headline: 'ଭାରତ ଶିଶୁଙ୍କ ସ୍ୱାସ୍ଥ୍ୟ',
+    homeHero1_desc: 'ଟୀକାକରଣ, ବୃଦ୍ଧି ଓ ପୋଷଣ ଟ୍ରାକ ପାଇଁ ଏକ ଏକୀଭୂତ ଡିଜିଟାଲ ମଞ୍ଚ।',
+    homeHero2_badge: 'WHO ମାନ ମୂଲ୍ୟାଙ୍କନ', homeHero2_headline: 'ବୁଦ୍ଧିମାନ ଭାବେ ବୃଦ୍ଧି ଟ୍ରାକ କରନ୍ତୁ',
+    homeHero2_desc: 'ବ୍ୟାପକ ନଜର ସାଧନ ଓ AI ଦ୍ୱାରା ଅପୋଷଣ ଶୀଘ୍ର ଚିହ୍ନଟ ହୁଏ।',
+    homeHero3_badge: 'ସ୍ଥାନୀୟ ସ୍ୱାସ୍ଥ୍ୟ ସେବା', homeHero3_headline: 'ସମୁଦାୟ ଦ୍ୱାରା ସମର୍ଥିତ',
+    homeHero3_desc: 'ASHA କର୍ମୀଙ୍କୁ ଡିଜିଟାଲ ଉପକରଣ ଦ୍ୱାରା ଶକ୍ତିଶାଳୀ କରନ୍ତୁ।',
+    homeServices_title: 'ଆମ ମୁଖ୍ୟ ସେବା', homeServices_subtitle: 'ଆପଣଙ୍କ ଶିଶୁ ଲାଗି ବ୍ୟାପକ ଉପକରଣ',
+    homeFeature1_title: 'ବୃଦ୍ଧି ଓ ଖାଦ୍ୟ ନଜର', homeFeature1_text: 'WHO ମାନ ଅନୁସାରେ ପୋଷଣ ସ୍ଥିତି ସ୍ୱୟଂ ମୂଲ୍ୟାଙ୍କନ।',
+    homeFeature2_title: 'ଟୀକାକରଣ ତାଲିକା', homeFeature2_text: 'ସମୟ ମୁତାବକ ସଚେତନ ହୁଅନ୍ତୁ ଓ ଟୀକା ଟ୍ରାକ ହୁଏ।',
+    homeFeature3_title: 'AI ଭବିଷ୍ୟ ମଡେଲ', homeFeature3_text: 'ଅପୋଷଣ ଆଗରୁ ଚିହ୍ନଟ ହୁଏ।',
+    homeFeature4_title: 'ASHA ଏକୀକରଣ', homeFeature4_text: 'ସ୍ୱାସ୍ଥ୍ୟ କର୍ମୀ ଓ ପରିବାର ମଧ୍ୟ ଯୋଗାଯୋଗ।',
+    homeLiveBadge: 'ଲାଇଭ ନଜର ସକ୍ରିୟ',
+    homeAbout_badge: 'ଶିଶୁ ଆରୋଗ୍ୟ ବିଷୟେ', homeAbout_headline: 'ସମୁଦାୟ ସଶକ୍ତ, ଭବିଷ୍ୟ ଉଜ୍ଜ୍ୱଳ',
+    homeAbout_desc: 'ଶିଶୁ ଆରୋଗ୍ୟ ଏକ ସରକାର ସମର୍ଥିତ ଡିଜିଟାଲ ସ୍ୱାସ୍ଥ୍ୟ ମଞ୍ଚ।',
+    homeAbout_feat1_title: 'ଡାଟା ଆଧାରିତ ହସ୍ତକ୍ଷେପ', homeAbout_feat1_desc: 'WHO LMS z-ସ୍କୋର ଲକ୍ଷଣ ଆଗରୁ ଅପୋଷଣ ଚିହ୍ନଟ।',
+    homeAbout_feat2_title: 'ସମ୍ପୂର୍ଣ ଟୀକାକରଣ ଟ୍ରାକ', homeAbout_feat2_desc: '36 ଟୀକା ପ୍ରତ୍ୟେକ ଶିଶୁ ଲାଗି ସ୍ୱୟଂ।',
+    homeAbout_feat3_title: 'ରିଅଲ-ଟାଇମ GPS', homeAbout_feat3_desc: 'ASHA ମଇଦାନରେ ଲାଇଭ ଟ୍ରାକ — ±5 ମି।',
+    homeAbout_feat4_title: '22 ଭାରତୀୟ ଭାଷା', homeAbout_feat4_desc: 'ସମସ୍ତ ଅନୁସୂଚିତ ଭାଷାରେ UI।',
+    homeAbout_cta1: 'ଆମ ଲକ୍ଷ୍ୟ ଜାଣନ୍ତୁ', homeAbout_cta2: 'ଯୋଗ ଦିଅନ୍ତୁ',
+    homePlatform_title: 'ମଞ୍ଚ ସକ୍ଷମତା', homePlatform_subtitle: 'ଶିଶୁ ସ୍ୱାସ୍ଥ୍ୟ ଲାଗି ସବୁ',
+    homePartners_label: 'ସମର୍ଥିତ ଓ ଯୁକ୍ତ',
+    homeCTA_title: 'ଶିଶୁ ଭବିଷ୍ୟ ସୁରକ୍ଷିତ?', homeCTA_desc: 'ଆଜି Sishu Arogya ସହ ଯୋଗ ଦିଅନ୍ତୁ।', homeCTA_btn: 'ଏବେ ଆରମ୍ଭ ହୁଅ',
+    homeFooter_desc: 'ଟୀକାକରଣ, ବୃଦ୍ଧି ଓ ପୋଷଣ ଡିଜିଟାଲ ନଜର।', homeFooter_links: 'ଲିଙ୍କ',
+    homeFooter_linkFeatures: 'ସୁବିଧା', homeFooter_linkAbout: 'ପୋର୍ଟାଲ', homeFooter_linkSignIn: 'ସାଇନ ଇନ',
+    homeFooter_linkRegister: 'ଖାତା', homeFooter_contact: 'ଯୋଗାଯୋଗ',
+    homeFooter_copyright: 'ଶିଶୁ ଆରୋଗ୍ୟ ପୋର୍ଟାଲ। ସ୍ୱତ୍ୱ ସୁରକ୍ଷିତ।',
   },
   অসমীয়া: {
     dashboard: '🏠 ডেশ্ববোর্ড', myChild: '👶 মোৰ শিশু', vaccines: '💉 ছিকা', growth: '📈 বিকাশ',
@@ -690,7 +1124,7 @@ const T = {
 
 // Fallback to English for any missing key
 function translate(lang, key) {
-  return T[lang]?.[key] ?? T.English[key] ?? key;
+  return normalizeText(T[lang]?.[key] ?? T.English[key] ?? key);
 }
 
 // ── Country → Language mapping ──────────────────────────────────────────
@@ -726,7 +1160,7 @@ async function detectLanguage() {
       `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
     );
     const geoData = await geoRes.json();
-    const suggested = COUNTRY_LANG[geoData.countryCode] || COUNTRY_LANG['IN'];
+    const suggested = normalizeText(COUNTRY_LANG[geoData.countryCode] || COUNTRY_LANG['IN']);
     if (suggested && LANGUAGES.some(l => l.code === suggested)) {
       return suggested;
     }
@@ -735,12 +1169,12 @@ async function detectLanguage() {
     try {
       const ipRes = await fetch('https://ipapi.co/json/');
       const ipData = await ipRes.json();
-      const suggested = COUNTRY_LANG[ipData.country_code] || 'English';
+      const suggested = normalizeText(COUNTRY_LANG[ipData.country_code] || 'English');
       if (LANGUAGES.some(l => l.code === suggested)) {
         return suggested;
       }
     } catch (ipErr) {
-      console.log('Location detection failed, using browser fallback');
+      // Fallback to browser locale
     }
   }
 
@@ -768,15 +1202,19 @@ export function LanguageProvider({ children }) {
 
   // Initialize language detection
   useEffect(() => {
-    const saved = localStorage.getItem('sa_language');
-
-    if (saved && LANGUAGES.some((lang) => lang.code === saved)) {
-      setLanguageState(saved);
-    } else {
-      setLanguageState('English');
-    }
-
-    setSuggestedLanguageState(null);
+    const initLang = async () => {
+      const saved = localStorage.getItem('sa_language');
+      if (saved && LANGUAGES.some((lang) => lang.code === saved)) {
+        setLanguageState(saved);
+      } else {
+        const detected = await detectLanguage();
+        if (detected && detected !== 'English') {
+          setSuggestedLanguageState(detected);
+        }
+        setLanguageState(saved || 'English');
+      }
+    };
+    initLang();
   }, []);
 
   const setLanguage = (lang) => {

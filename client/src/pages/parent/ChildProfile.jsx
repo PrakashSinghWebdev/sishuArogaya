@@ -1,10 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import MediaCarousel, { MEDIA_ARRAY } from '../../components/MediaCarousel';
 import { Link } from 'react-router-dom';
 import { childAPI, reportAPI } from '../../services/api';
 import { useLanguage } from '../../context/LanguageContext';
 import useSelectedChild from '../../hooks/useSelectedChild';
 
-const C = {
+const themeColors = {
   teal: '#0891b2', teal2: '#0e7490', teal3: '#cffafe', teal4: '#f0fdff',
   bg: '#f8fffe', text: '#0c2340', muted: '#4a7a8a', border: '#c5e8ef',
 };
@@ -20,11 +21,7 @@ const NAV = [
   ['🔔 Notifications', '/parent/notifications'],
 ];
 
-const SLIDES = [
-  'https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?w=1400&q=80&fit=crop',
-  'https://images.unsplash.com/photo-1559757175-0eb30cd8c063?w=1400&q=80&fit=crop',
-  'https://images.unsplash.com/photo-1476703993599-0035a21b17a9?w=1400&q=80&fit=crop',
-];
+
 
 function fmt(date) {
   const v = new Date(date);
@@ -44,11 +41,11 @@ function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
 function InfoRow({ icon, label, value }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: C.teal4, borderRadius: 10, marginBottom: 8 }}>
-      <div style={{ width: 34, height: 34, borderRadius: '50%', background: C.teal3, display: 'grid', placeItems: 'center', fontSize: 16, flexShrink: 0 }}>{icon}</div>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: themeColors.teal4, borderRadius: 10, marginBottom: 8 }}>
+      <div style={{ width: 34, height: 34, borderRadius: '50%', background: themeColors.teal3, display: 'grid', placeItems: 'center', fontSize: 16, flexShrink: 0 }}>{icon}</div>
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 11, color: C.muted, fontWeight: 600, marginBottom: 1 }}>{label}</div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{value || '—'}</div>
+        <div style={{ fontSize: 11, color: themeColors.muted, fontWeight: 600, marginBottom: 1 }}>{label}</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: themeColors.text }}>{value || '—'}</div>
       </div>
     </div>
   );
@@ -76,7 +73,7 @@ export default function ChildProfile() {
   });
 
   useEffect(() => {
-    const t = setInterval(() => setSlide((s) => (s + 1) % SLIDES.length), 4000);
+    const t = setInterval(() => setSlide((s) => (s + 1) % MEDIA_ARRAY.length), 4000);
     return () => clearInterval(t);
   }, []);
 
@@ -85,11 +82,13 @@ export default function ChildProfile() {
     setSubmitting(true);
     setError('');
     try {
-      await childAPI.add(form);
+      const { data } = await childAPI.add(form);
       const refreshed = await childAPI.list();
       setChildren(refreshed.data);
-      if (refreshed.data[refreshed.data.length - 1]?._id) {
-        setSelectedChild(refreshed.data[refreshed.data.length - 1]._id);
+      if (data?.child?._id) {
+        setSelectedChild(data.child);
+      } else if (refreshed.data[0]?._id) {
+        setSelectedChild(refreshed.data[0]._id);
       }
       setShowForm(false);
       setForm({ name: '', dob: '', gender: 'male', bloodGroup: 'Unknown', birthWeight: '', birthHeight: '' });
@@ -100,8 +99,19 @@ export default function ChildProfile() {
     }
   };
 
+  const getMaxWeight = () => {
+    if (!selectedChild) return 14;
+    return selectedChild.gender === 'female' ? 13 : 14;
+  };
+
+  const isEditWeightInvalid = editForm.currentWeight && parseFloat(editForm.currentWeight) > getMaxWeight();
+
   const handleUpdate = async (e) => {
     e.preventDefault();
+    if (isEditWeightInvalid) {
+      setError(`Invalid weight: ${editForm.currentWeight} kg exceeds the maximum of ${getMaxWeight()} kg for ${selectedChild.gender === 'female' ? 'girls' : 'boys'}.`);
+      return;
+    }
     setUpdating(true);
     setError('');
     try {
@@ -179,37 +189,40 @@ export default function ChildProfile() {
   const whzPct = whz !== null ? clamp(((whz + 3) / 6) * 100, 0, 100) : 50;
 
   return (
-    <div style={{ fontFamily: "'DM Sans', sans-serif", background: C.bg, minHeight: '100vh', color: C.text }}>
+    <div style={{ fontFamily: "'DM Sans', sans-serif", background: themeColors.bg, minHeight: '100vh', color: themeColors.text }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap');
         *{box-sizing:border-box}
         @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes slideIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:none}}
-        .cp-card{background:#fff;border:1.5px solid ${C.border};border-radius:16px;box-shadow:0 2px 12px rgba(8,145,178,.07);padding:24px;margin-bottom:20px}
+        .cp-card{background:#fff;border:1.5px solid ${themeColors.border};border-radius:16px;box-shadow:0 2px 12px rgba(8,145,178,.07);padding:24px;margin-bottom:20px}
         .cp-btn{padding:9px 18px;border-radius:10px;font-weight:600;font-size:13px;cursor:pointer;border:none;transition:all .2s}
-        .cp-btn-teal{background:${C.teal};color:#fff} .cp-btn-teal:hover{background:${C.teal2}}
-        .cp-btn-out{background:#fff;color:${C.teal};border:1.5px solid ${C.border}} .cp-btn-out:hover{background:${C.teal4}}
+        .cp-btn-teal{background:${themeColors.teal};color:#fff} .cp-btn-teal:hover{background:${themeColors.teal2}}
+        .cp-btn-out{background:#fff;color:${themeColors.teal};border:1.5px solid ${themeColors.border}} .cp-btn-out:hover{background:${themeColors.teal4}}
         .meal-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(8,145,178,.13)!important}
         @media(max-width:900px){.cp-grid2{grid-template-columns:1fr!important}.cp-grid4{grid-template-columns:repeat(2,1fr)!important}}
         @media(max-width:600px){.cp-grid4{grid-template-columns:1fr!important}.cp-nav-links{display:none!important}}
       `}</style>
 
       {/* Navbar */}
-      <nav style={{ position: 'sticky', top: 0, zIndex: 200, background: '#fff', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', padding: '0 24px', height: 62, boxShadow: '0 2px 12px rgba(8,145,178,.08)' }}>
+      <nav style={{ position: 'sticky', top: 0, zIndex: 200, background: '#fff', borderBottom: `1px solid ${themeColors.border}`, display: 'flex', alignItems: 'center', padding: '0 24px', height: 62, boxShadow: '0 2px 12px rgba(8,145,178,.08)' }}>
         <Link to="/parent/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', marginRight: 24, flexShrink: 0 }}>
-          <div style={{ width: 36, height: 36, background: `linear-gradient(135deg,${C.teal},${C.teal2})`, borderRadius: 9, display: 'grid', placeItems: 'center', fontSize: 18 }}>🌿</div>
-          <span style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 17, fontWeight: 700, color: C.teal2 }}>Sishu Arogaya</span>
+          <div style={{ width: 36, height: 36, background: `linear-gradient(135deg,${themeColors.teal},${themeColors.teal2})`, borderRadius: 9, display: 'grid', placeItems: 'center', fontSize: 18 }}>🏥</div>
+          <div>
+            <div style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 17, fontWeight: 700, color: themeColors.teal2, lineHeight: 1.1 }}>Shishu Aarogya</div>
+            <div style={{ fontSize: 9, color: '#4a7a8a', fontWeight: 500, lineHeight: 1 }}>National Child Health Portal</div>
+          </div>
         </Link>
         <div className="cp-nav-links" style={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, overflowX: 'auto' }}>
-          {(navLinks.length ? navLinks : NAV).map(([label, to]) => (
-            <Link key={to} to={to} style={{ padding: '6px 11px', borderRadius: 8, fontSize: 12.5, fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap', background: to === '/parent/child-profile' ? C.teal4 : 'transparent', color: to === '/parent/child-profile' ? C.teal : C.muted, borderBottom: to === '/parent/child-profile' ? `2px solid ${C.teal}` : '2px solid transparent' }}>
+          {(navLinks && navLinks.length ? navLinks : NAV).map(([label, to]) => (
+            <Link key={to} to={to} style={{ padding: '6px 11px', borderRadius: 8, fontSize: 12.5, fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap', background: to === '/parent/child-profile' ? themeColors.teal4 : 'transparent', color: to === '/parent/child-profile' ? themeColors.teal : themeColors.muted, borderBottom: to === '/parent/child-profile' ? `2px solid ${themeColors.teal}` : '2px solid transparent' }}>
               {label}
             </Link>
           ))}
         </div>
         {children.length > 1 && (
-          <select value={selectedChildId} onChange={(e) => setSelectedChild(e.target.value)} style={{ marginLeft: 12, padding: '6px 10px', borderRadius: 8, border: `1.5px solid ${C.border}`, fontSize: 13, color: C.text, background: '#fff', fontFamily: 'inherit' }}>
+          <select value={selectedChildId} onChange={(e) => setSelectedChild(e.target.value)} style={{ marginLeft: 12, padding: '6px 10px', borderRadius: 8, border: `1.5px solid ${themeColors.border}`, fontSize: 13, color: themeColors.text, background: '#fff', fontFamily: 'inherit' }}>
             {children.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
           </select>
         )}
@@ -217,26 +230,24 @@ export default function ChildProfile() {
 
       {/* Hero */}
       <div style={{ position: 'relative', height: 240, overflow: 'hidden' }}>
-        {SLIDES.map((src, i) => (
-          <img key={src} src={src} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: i === slide ? 1 : 0, transition: 'opacity 1s ease' }} />
-        ))}
-      <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg,${C.teal2}ee,${C.teal}bb)` }} />
+        <MediaCarousel currentSlideIndex={slide} />
+      <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg,${themeColors.teal2}ee,${themeColors.teal}bb)` }} />
       <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(255,255,255,.18)', border: '1px solid rgba(255,255,255,.35)', borderRadius: 100, padding: '5px 16px', fontSize: 11, fontWeight: 700, color: '#fff', letterSpacing: '.09em', textTransform: 'uppercase', marginBottom: 14 }}>🏥 {t('myChild')}</div>
           <h1 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 'clamp(22px,3vw,36px)', fontWeight: 700, color: '#fff', textAlign: 'center', lineHeight: 1.2 }}>
-            {t('childInfoTitle')} <span style={{ color: C.teal3 }}>{t('viewProfile')}</span>
+            {t('childInfoTitle')} <span style={{ color: themeColors.teal3 }}>{t('viewProfile')}</span>
           </h1>
           <p style={{ color: 'rgba(255,255,255,.75)', fontSize: 14, marginTop: 8, textAlign: 'center' }}>{t('growth')}, {t('vaccines')}, {t('nutrition')} &amp; ASHA support</p>
         </div>
         <div style={{ position: 'absolute', bottom: 14, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 6, zIndex: 3 }}>
-          {SLIDES.map((_, i) => <div key={i} onClick={() => setSlide(i)} style={{ width: i === slide ? 20 : 7, height: 7, borderRadius: 4, background: i === slide ? '#fff' : 'rgba(255,255,255,.45)', cursor: 'pointer', transition: 'all .3s' }} />)}
+          {MEDIA_ARRAY.map((_, i) => <div key={i} onClick={() => setSlide(i)} style={{ width: i === slide ? 20 : 7, height: 7, borderRadius: 4, background: i === slide ? '#fff' : 'rgba(255,255,255,.45)', cursor: 'pointer', transition: 'all .3s' }} />)}
         </div>
       </div>
 
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '28px 24px 60px' }}>
         {/* Page Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
-<h2 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 24, fontWeight: 700, color: C.text, margin: 0 }}>👶 {t('myChild')}</h2>
+<h2 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 24, fontWeight: 700, color: themeColors.text, margin: 0 }}>👶 {t('myChild')}</h2>
           <div style={{ display: 'flex', gap: 10 }}>
               <button className="cp-btn cp-btn-out" onClick={() => setShowForm(true)} style={{ background: '#fef3c7', color: '#92400e', borderColor: '#fed7aa' }}>
               ➕ {t('addChild')}
@@ -263,38 +274,43 @@ export default function ChildProfile() {
             {/* Edit Health Status Form */}
             {showEditForm && selectedChild && (
               <div className="cp-card" style={{ animation: 'fadeUp .4s ease', marginBottom: 24 }}>
-                <h5 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 17, fontWeight: 700, color: C.teal2, marginBottom: 16 }}>✏️ {t('update')} {selectedChild.name} {t('status')}</h5>
+                <h5 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 17, fontWeight: 700, color: themeColors.teal2, marginBottom: 16 }}>✏️ {t('update')} {selectedChild.name} {t('status')}</h5>
                 {error && <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '10px 14px', borderRadius: 8, marginBottom: 14, fontSize: 13 }}>{error}</div>}
                 <form onSubmit={handleUpdate}>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 14 }}>
                     <div>
-                      <label style={{ fontSize: 12, fontWeight: 600, color: C.muted, display: 'block', marginBottom: 5 }}>{t('weight')} ({t('weightKg')})</label>
+                      <label style={{ fontSize: 12, fontWeight: 600, color: themeColors.muted, display: 'block', marginBottom: 5 }}>{t('weight')} ({t('weightKg')})</label>
                       <input type="number" step="0.1" value={editForm.currentWeight} onChange={e => setEditForm({...editForm, currentWeight: e.target.value})}
-                        style={{ width: '100%', padding: '9px 12px', border: `1.5px solid ${C.border}`, borderRadius: 9, fontSize: 13 }} />
+                        style={{ width: '100%', padding: '9px 12px', border: isEditWeightInvalid ? '2px solid #ef4444' : `1.5px solid ${themeColors.border}`, borderRadius: 9, fontSize: 13, background: isEditWeightInvalid ? '#fef2f2' : '#fff' }} />
+                      {isEditWeightInvalid && (
+                        <div style={{ marginTop: 5, padding: '5px 10px', background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 6, fontSize: 11, fontWeight: 700, color: '#ef4444' }}>
+                          ❌ Invalid: Max weight for {selectedChild?.gender === 'female' ? 'girls' : 'boys'} is {getMaxWeight()} kg
+                        </div>
+                      )}
                     </div>
                     <div>
-                      <label style={{ fontSize: 12, fontWeight: 600, color: C.muted, display: 'block', marginBottom: 5 }}>{t('height')} ({t('heightCm')})</label>
+                      <label style={{ fontSize: 12, fontWeight: 600, color: themeColors.muted, display: 'block', marginBottom: 5 }}>{t('height')} ({t('heightCm')})</label>
                       <input type="number" step="0.1" value={editForm.currentHeight} onChange={e => setEditForm({...editForm, currentHeight: e.target.value})}
-                        style={{ width: '100%', padding: '9px 12px', border: `1.5px solid ${C.border}`, borderRadius: 9, fontSize: 13 }} />
+                        style={{ width: '100%', padding: '9px 12px', border: `1.5px solid ${themeColors.border}`, borderRadius: 9, fontSize: 13 }} />
                     </div>
                     <div>
-                      <label style={{ fontSize: 12, fontWeight: 600, color: C.muted, display: 'block', marginBottom: 5 }}>Head Circumference (cm)</label>
+                      <label style={{ fontSize: 12, fontWeight: 600, color: themeColors.muted, display: 'block', marginBottom: 5 }}>Head Circumference (cm)</label>
                       <input type="number" step="0.1" value={editForm.headCircumference} onChange={e => setEditForm({...editForm, headCircumference: e.target.value})}
-                        style={{ width: '100%', padding: '9px 12px', border: `1.5px solid ${C.border}`, borderRadius: 9, fontSize: 13 }} />
+                        style={{ width: '100%', padding: '9px 12px', border: `1.5px solid ${themeColors.border}`, borderRadius: 9, fontSize: 13 }} />
                     </div>
                     <div>
-                      <label style={{ fontSize: 12, fontWeight: 600, color: C.muted, display: 'block', marginBottom: 5 }}>Nutrition Status</label>
+                      <label style={{ fontSize: 12, fontWeight: 600, color: themeColors.muted, display: 'block', marginBottom: 5 }}>Nutrition Status</label>
                       <select value={editForm.nutritionStatus} onChange={e => setEditForm({...editForm, nutritionStatus: e.target.value})}
-                        style={{ width: '100%', padding: '9px 12px', border: `1.5px solid ${C.border}`, borderRadius: 9, fontSize: 13 }}>
+                        style={{ width: '100%', padding: '9px 12px', border: `1.5px solid ${themeColors.border}`, borderRadius: 9, fontSize: 13 }}>
                         <option value="healthy">Healthy</option>
                         <option value="moderate">Moderate Malnutrition</option>
                         <option value="severe">Severe Malnutrition</option>
                       </select>
                     </div>
                     <div style={{ gridColumn: '1 / -1' }}>
-                      <label style={{ fontSize: 12, fontWeight: 600, color: C.muted, display: 'block', marginBottom: 5 }}>Medical Notes</label>
+                      <label style={{ fontSize: 12, fontWeight: 600, color: themeColors.muted, display: 'block', marginBottom: 5 }}>Medical Notes</label>
                       <textarea rows="3" value={editForm.medicalNotes} onChange={e => setEditForm({...editForm, medicalNotes: e.target.value})}
-                        style={{ width: '100%', padding: '9px 12px', border: `1.5px solid ${C.border}`, borderRadius: 9, fontSize: 13, fontFamily: 'inherit' }} />
+                        style={{ width: '100%', padding: '9px 12px', border: `1.5px solid ${themeColors.border}`, borderRadius: 9, fontSize: 13, fontFamily: 'inherit' }} />
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 10, marginTop: 18, justifyContent: 'flex-end' }}>
@@ -310,7 +326,7 @@ export default function ChildProfile() {
             {/* Add Child Form */}
             {showForm && (
               <div className="cp-card" style={{ animation: 'fadeUp .4s ease', marginBottom: 24 }}>
-                <h5 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 17, fontWeight: 700, color: C.teal2, marginBottom: 16 }}>➕ Register New Child</h5>
+                <h5 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 17, fontWeight: 700, color: themeColors.teal2, marginBottom: 16 }}>➕ Register New Child</h5>
                 {error && <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '10px 14px', borderRadius: 8, marginBottom: 14, fontSize: 13 }}>{error}</div>}
                 <form onSubmit={handleSubmit}>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 14 }}>
@@ -321,24 +337,24 @@ export default function ChildProfile() {
                       { label: 'Birth Height (cm)', field: 'birthHeight', type: 'number', placeholder: '50', step: '0.1' },
                     ].map(({ label, field, type, placeholder, required, step }) => (
                       <div key={field}>
-                        <label style={{ fontSize: 12, fontWeight: 600, color: C.muted, display: 'block', marginBottom: 5 }}>{label}</label>
+                        <label style={{ fontSize: 12, fontWeight: 600, color: themeColors.muted, display: 'block', marginBottom: 5 }}>{label}</label>
                         <input type={type} placeholder={placeholder} required={required} step={step} value={form[field]}
                           onChange={(e) => setForm({ ...form, [field]: e.target.value })}
-                          style={{ width: '100%', padding: '9px 12px', border: `1.5px solid ${C.border}`, borderRadius: 9, fontSize: 13, fontFamily: 'inherit', outline: 'none', color: C.text }} />
+                          style={{ width: '100%', padding: '9px 12px', border: `1.5px solid ${themeColors.border}`, borderRadius: 9, fontSize: 13, fontFamily: 'inherit', outline: 'none', color: themeColors.text }} />
                       </div>
                     ))}
                     <div>
-                      <label style={{ fontSize: 12, fontWeight: 600, color: C.muted, display: 'block', marginBottom: 5 }}>Gender</label>
+                      <label style={{ fontSize: 12, fontWeight: 600, color: themeColors.muted, display: 'block', marginBottom: 5 }}>Gender</label>
                       <select value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })}
-                        style={{ width: '100%', padding: '9px 12px', border: `1.5px solid ${C.border}`, borderRadius: 9, fontSize: 13, fontFamily: 'inherit', outline: 'none', color: C.text, background: '#fff' }}>
+                        style={{ width: '100%', padding: '9px 12px', border: `1.5px solid ${themeColors.border}`, borderRadius: 9, fontSize: 13, fontFamily: 'inherit', outline: 'none', color: themeColors.text, background: '#fff' }}>
                         <option value="male">Male</option>
                         <option value="female">Female</option>
                       </select>
                     </div>
                     <div>
-                      <label style={{ fontSize: 12, fontWeight: 600, color: C.muted, display: 'block', marginBottom: 5 }}>{t('bloodGroup')}</label>
+                      <label style={{ fontSize: 12, fontWeight: 600, color: themeColors.muted, display: 'block', marginBottom: 5 }}>{t('bloodGroup')}</label>
                       <select value={form.bloodGroup} onChange={(e) => setForm({ ...form, bloodGroup: e.target.value })}
-                        style={{ width: '100%', padding: '9px 12px', border: `1.5px solid ${C.border}`, borderRadius: 9, fontSize: 13, fontFamily: 'inherit', outline: 'none', color: C.text, background: '#fff' }}>
+                        style={{ width: '100%', padding: '9px 12px', border: `1.5px solid ${themeColors.border}`, borderRadius: 9, fontSize: 13, fontFamily: 'inherit', outline: 'none', color: themeColors.text, background: '#fff' }}>
                         {['Unknown', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((g) => <option key={g}>{g}</option>)}
                       </select>
                     </div>
@@ -354,14 +370,14 @@ export default function ChildProfile() {
             {!selectedChild ? (
               <div className="cp-card" style={{ textAlign: 'center', padding: '60px 24px' }}>
                 <div style={{ fontSize: 56, marginBottom: 16 }}>👶</div>
-                <h4 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 20, color: C.text, marginBottom: 10 }}>{t('noRecords')}</h4>
-                <p style={{ color: C.muted, fontSize: 14 }}>{t('addChild')} {t('myChild').toLowerCase()} to start tracking {t('growth').toLowerCase()}, {t('vaccines').toLowerCase()}, and {t('reports').toLowerCase()}.</p>
+                <h4 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 20, color: themeColors.text, marginBottom: 10 }}>{t('noRecords')}</h4>
+                <p style={{ color: themeColors.muted, fontSize: 14 }}>{t('addChild')} {t('myChild').toLowerCase()} to start tracking {t('growth').toLowerCase()}, {t('vaccines').toLowerCase()}, and {t('reports').toLowerCase()}.</p>
                 <button className="cp-btn cp-btn-teal" style={{ marginTop: 14 }} onClick={() => setShowForm(true)}>+ {t('addChild')}</button>
               </div>
             ) : (
               <>
                 {/* Profile Hero Card */}
-                <div style={{ background: `linear-gradient(135deg,${C.teal2},${C.teal})`, borderRadius: 20, padding: '28px 32px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 28, flexWrap: 'wrap', boxShadow: `0 8px 32px rgba(8,145,178,.22)`, animation: 'fadeUp .5s ease' }}>
+                <div style={{ background: `linear-gradient(135deg,${themeColors.teal2},${themeColors.teal})`, borderRadius: 20, padding: '28px 32px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 28, flexWrap: 'wrap', boxShadow: `0 8px 32px rgba(8,145,178,.22)`, animation: 'fadeUp .5s ease' }}>
                   <div style={{ width: 88, height: 88, borderRadius: '50%', background: 'rgba(255,255,255,.2)', border: '3px solid rgba(255,255,255,.5)', display: 'grid', placeItems: 'center', fontSize: 44, flexShrink: 0 }}>👶</div>
                   <div style={{ flex: 1 }}>
                     <h2 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 26, fontWeight: 700, color: '#fff', margin: '0 0 8px' }}>{selectedChild.name}</h2>
@@ -390,22 +406,22 @@ export default function ChildProfile() {
 
                 {/* Current Vitals Label */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '24px 0 16px' }}>
-                  <span style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 14, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '.08em' }}>{t('status')}</span>
-                  <div style={{ flex: 1, height: 1, background: C.border }} />
+                  <span style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 14, fontWeight: 700, color: themeColors.muted, textTransform: 'uppercase', letterSpacing: '.08em' }}>{t('status')}</span>
+                  <div style={{ flex: 1, height: 1, background: themeColors.border }} />
                 </div>
 
                 {/* Stat Grid */}
                 <div className="cp-grid4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 24 }}>
                   {[
-                    { icon: '⚖️', label: t('weight'), value: selectedChild.currentWeight ? `${selectedChild.currentWeight} kg` : '—', color: C.teal, trend: '↑' },
+                    { icon: '⚖️', label: t('weight'), value: selectedChild.currentWeight ? `${selectedChild.currentWeight} kg` : '—', color: themeColors.teal, trend: '↑' },
                     { icon: '📏', label: t('height'), value: selectedChild.currentHeight ? `${selectedChild.currentHeight} cm` : '—', color: '#16a34a', trend: '↑' },
                     { icon: '🔵', label: 'Head Circ.', value: selectedChild.headCircumference ? `${selectedChild.headCircumference} cm` : '—', color: '#d97706', trend: '→' },
                     { icon: '📊', label: 'BMI', value: selectedChild.bmi ? selectedChild.bmi.toFixed(1) : '—', color: '#2563eb', trend: '↑' },
                   ].map(({ icon, label, value, color, trend }) => (
-                    <div key={label} style={{ background: '#fff', borderRadius: 14, border: `1.5px solid ${C.border}`, padding: '18px 16px', borderTop: `3px solid ${color}`, boxShadow: '0 2px 8px rgba(8,145,178,.06)', textAlign: 'center' }}>
+                    <div key={label} style={{ background: '#fff', borderRadius: 14, border: `1.5px solid ${themeColors.border}`, padding: '18px 16px', borderTop: `3px solid ${color}`, boxShadow: '0 2px 8px rgba(8,145,178,.06)', textAlign: 'center' }}>
                       <div style={{ fontSize: 26, marginBottom: 6 }}>{icon}</div>
                       <div style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 22, fontWeight: 700, color, lineHeight: 1 }}>{value}</div>
-                      <div style={{ fontSize: 11, color: C.muted, marginTop: 4 }}>{label}</div>
+                      <div style={{ fontSize: 11, color: themeColors.muted, marginTop: 4 }}>{label}</div>
                       <div style={{ fontSize: 11, color: '#16a34a', marginTop: 3 }}>{trend} Normal</div>
                     </div>
                   ))}
@@ -415,7 +431,7 @@ export default function ChildProfile() {
                 <div className="cp-grid2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, alignItems: 'start' }}>
                   {/* Left: Personal Information */}
                   <div className="cp-card">
-                    <h5 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 16, fontWeight: 700, color: C.teal2, marginBottom: 16 }}>📋 {t('childInfoTitle')}</h5>
+                    <h5 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 16, fontWeight: 700, color: themeColors.teal2, marginBottom: 16 }}>📋 {t('childInfoTitle')}</h5>
                     <InfoRow icon="🎂" label={t('dateOfBirth')} value={fmt(selectedChild.dob)} />
                     <InfoRow icon="⏳" label={t('age')} value={calcAge(selectedChild.dob)} />
                     <InfoRow icon="👤" label={t('gender')} value={selectedChild.gender} />
@@ -435,18 +451,18 @@ export default function ChildProfile() {
                   <div>
                     {/* WHO Z-Scores */}
                     <div className="cp-card" style={{ marginBottom: 0 }}>
-                      <h5 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 16, fontWeight: 700, color: C.teal2, marginBottom: 16 }}>📊 WHO Z-Scores</h5>
+                      <h5 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 16, fontWeight: 700, color: themeColors.teal2, marginBottom: 16 }}>📊 WHO Z-Scores</h5>
                       {[
-                        { label: 'WAZ (Weight-for-Age)', value: waz, pct: wazPct, color: C.teal },
+                        { label: 'WAZ (Weight-for-Age)', value: waz, pct: wazPct, color: themeColors.teal },
                         { label: 'HAZ (Height-for-Age)', value: haz, pct: hazPct, color: '#2563eb' },
                         { label: 'WHZ (Weight-for-Height)', value: whz, pct: whzPct, color: '#16a34a' },
                       ].map(({ label, value, pct, color }) => (
                         <div key={label} style={{ marginBottom: 14 }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                            <span style={{ fontSize: 12, fontWeight: 600, color: C.muted }}>{label}</span>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: themeColors.muted }}>{label}</span>
                             <span style={{ fontSize: 12, fontWeight: 700, color }}>{value !== null ? value.toFixed(2) : '--'}</span>
                           </div>
-                          <div style={{ height: 7, borderRadius: 4, background: C.teal3, overflow: 'hidden' }}>
+                          <div style={{ height: 7, borderRadius: 4, background: themeColors.teal3, overflow: 'hidden' }}>
                             <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: 4, transition: 'width .6s ease' }} />
                           </div>
                         </div>
@@ -456,15 +472,15 @@ export default function ChildProfile() {
 
                     {/* Allergies */}
                     <div className="cp-card" style={{ marginTop: 16 }}>
-                      <h5 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 16, fontWeight: 700, color: C.teal2, marginBottom: 12 }}>🚫 Allergies &amp; Medical Notes</h5>
+                      <h5 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 16, fontWeight: 700, color: themeColors.teal2, marginBottom: 12 }}>🚫 Allergies &amp; Medical Notes</h5>
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#dcfce7', color: '#15803d', padding: '5px 14px', borderRadius: 100, fontSize: 12, fontWeight: 700, marginBottom: 12 }}>✓ No known allergies</div>
-                      <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.65 }}>
+                      <div style={{ fontSize: 13, color: themeColors.muted, lineHeight: 1.65 }}>
                         {selectedChild.medicalNotes || 'No recent medical notes. Child is developing normally with regular check-ups.'}
                       </div>
                     </div>
 
                     {/* Next Visit */}
-                    <div style={{ background: `linear-gradient(135deg,${C.teal2},${C.teal})`, borderRadius: 14, padding: '18px 20px', marginTop: 16, boxShadow: `0 4px 16px rgba(8,145,178,.18)` }}>
+                    <div style={{ background: `linear-gradient(135deg,${themeColors.teal2},${themeColors.teal})`, borderRadius: 14, padding: '18px 20px', marginTop: 16, boxShadow: `0 4px 16px rgba(8,145,178,.18)` }}>
                       <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.65)', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 8 }}>Next Scheduled Visit</div>
                       <div style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 4 }}>
                         {selectedChild.nextVisitDate ? fmt(selectedChild.nextVisitDate) : 'Contact ASHA worker'}
@@ -478,18 +494,18 @@ export default function ChildProfile() {
 
                     {/* ASHA Worker */}
                     <div className="cp-card" style={{ marginTop: 16 }}>
-                      <h5 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 16, fontWeight: 700, color: C.teal2, marginBottom: 14 }}>👩‍⚕️ Assigned ASHA Worker</h5>
+                      <h5 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 16, fontWeight: 700, color: themeColors.teal2, marginBottom: 14 }}>👩‍⚕️ Assigned ASHA Worker</h5>
                       {selectedChild.ashaId ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', background: C.teal4, borderRadius: 12, border: `1px solid ${C.border}` }}>
-                          <div style={{ width: 48, height: 48, borderRadius: '50%', background: `linear-gradient(135deg,${C.teal3},${C.teal})`, display: 'grid', placeItems: 'center', fontSize: 22, flexShrink: 0 }}>👩‍⚕️</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', background: themeColors.teal4, borderRadius: 12, border: `1px solid ${themeColors.border}` }}>
+                          <div style={{ width: 48, height: 48, borderRadius: '50%', background: `linear-gradient(135deg,${themeColors.teal3},${themeColors.teal})`, display: 'grid', placeItems: 'center', fontSize: 22, flexShrink: 0 }}>👩‍⚕️</div>
                           <div style={{ flex: 1 }}>
-                            <div style={{ fontWeight: 700, fontSize: 15, color: C.text }}>{selectedChild.ashaId.userId?.name || 'ASHA Worker'}</div>
-                            <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>
+                            <div style={{ fontWeight: 700, fontSize: 15, color: themeColors.text }}>{selectedChild.ashaId.userId?.name || 'ASHA Worker'}</div>
+                            <div style={{ fontSize: 12, color: themeColors.muted, marginTop: 2 }}>
                               ID: {selectedChild.ashaId.ashaId} &nbsp;·&nbsp; {selectedChild.ashaId.block}{selectedChild.ashaId.village ? `, ${selectedChild.ashaId.village}` : ''}
                             </div>
                           </div>
                           {selectedChild.ashaId.userId?.phone && (
-                            <a href={`tel:${selectedChild.ashaId.userId.phone}`} style={{ padding: '7px 14px', borderRadius: 8, background: C.teal, color: '#fff', textDecoration: 'none', fontSize: 12, fontWeight: 600 }}>📞 Call</a>
+                            <a href={`tel:${selectedChild.ashaId.userId.phone}`} style={{ padding: '7px 14px', borderRadius: 8, background: themeColors.teal, color: '#fff', textDecoration: 'none', fontSize: 12, fontWeight: 600 }}>📞 Call</a>
                           )}
                         </div>
                       ) : (
@@ -497,7 +513,7 @@ export default function ChildProfile() {
                           <span style={{ fontSize: 24 }}>⚠️</span>
                           <div>
                             <div style={{ fontWeight: 700, color: '#c2410c', fontSize: 14 }}>No ASHA Worker Assigned</div>
-                            <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>An ASHA worker will be assigned by your health centre admin.</div>
+                            <div style={{ fontSize: 12, color: themeColors.muted, marginTop: 2 }}>An ASHA worker will be assigned by your health centre admin.</div>
                           </div>
                         </div>
                       )}
@@ -510,9 +526,9 @@ export default function ChildProfile() {
         )}
       </div>
 
-      <div style={{ background: '#0e7490', color: 'rgba(255,255,255,.45)', textAlign: 'center', padding: 14, fontSize: 12 }}>
-        Sishu Arogaya © 2024 · Government Integrated Child Health Monitoring System · DBUU Dehradun
-      </div>
+      <footer style={{ background: '#0e7490', color: 'rgba(255,255,255,.45)', textAlign: 'center', padding: 14, fontSize: 12 }}>
+        Shishu Aarogya &copy; 2024 &middot; {t('homeFooter_copyright_long') || 'National Child Health Portal · Government of India'}
+      </footer>
     </div>
   );
 }

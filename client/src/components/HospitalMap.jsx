@@ -12,6 +12,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { hospitalAPI } from '../services/api';
+import { useLanguage } from '../context/LanguageContext';
 
 /* ── global Leaflet handle (lazy-loaded) ─────────────── */
 let L = null;
@@ -46,21 +47,21 @@ const FILTER_TABS = [
 
 /* ── static fallback data ────────────────────────────── */
 const STATIC = [
-  { id:'s01', lat:28.6362, lng:77.2166, type:'hospital', name:'AIIMS New Delhi',            address:'Ansari Nagar, New Delhi',    phone:'011-26588500', isGovernment:true,  hasEmergency:true,  hasICU:true  },
-  { id:'s02', lat:28.6517, lng:77.2219, type:'hospital', name:'Safdarjung Hospital',         address:'Ring Road, New Delhi',       phone:'011-26730000', isGovernment:true,  hasEmergency:true,  hasICU:true  },
-  { id:'s03', lat:19.0176, lng:72.8561, type:'hospital', name:'KEM Hospital Mumbai',         address:'Parel, Mumbai',              phone:'022-24107000', isGovernment:true,  hasEmergency:true,  hasICU:true  },
-  { id:'s04', lat:13.0102, lng:80.2356, type:'hospital', name:'Govt General Hospital',       address:'Park Town, Chennai',         phone:'044-25305000', isGovernment:true,  hasEmergency:true,  hasICU:true  },
-  { id:'s05', lat:22.5726, lng:88.3639, type:'hospital', name:'SSKM Hospital Kolkata',       address:'AJC Bose Road, Kolkata',     phone:'033-22041739', isGovernment:true,  hasEmergency:true,  hasICU:true  },
-  { id:'s06', lat:17.3850, lng:78.4867, type:'hospital', name:'Osmania General Hyderabad',   address:'Afzalgunj, Hyderabad',       phone:'040-24600124', isGovernment:true,  hasEmergency:true,  hasICU:true  },
-  { id:'s07', lat:12.9716, lng:77.5946, type:'hospital', name:'Victoria Hospital Bengaluru', address:'Fort Road, Bengaluru',       phone:'080-26700000', isGovernment:true,  hasEmergency:true,  hasICU:true  },
-  { id:'s08', lat:26.8467, lng:80.9462, type:'hospital', name:'KGMU Lucknow',               address:'Shah Mina Road, Lucknow',    phone:'0522-2257450', isGovernment:true,  hasEmergency:true,  hasICU:true  },
-  { id:'s09', lat:23.0225, lng:72.5714, type:'hospital', name:'Civil Hospital Ahmedabad',    address:'Asarwa, Ahmedabad',          phone:'079-22680058', isGovernment:true,  hasEmergency:true,  hasICU:true  },
-  { id:'s10', lat:18.5204, lng:73.8567, type:'hospital', name:'Sassoon General Pune',        address:'Dhanraj Nana Chowk, Pune',  phone:'020-26128000', isGovernment:true,  hasEmergency:true,  hasICU:true  },
-  { id:'s11', lat:25.5941, lng:85.1376, type:'hospital', name:'PMCH Patna',                  address:'Ashok Rajpath, Patna',       phone:'0612-2300016', isGovernment:true,  hasEmergency:true,  hasICU:false },
-  { id:'s12', lat:26.9124, lng:75.8235, type:'hospital', name:'SMS Medical College Jaipur',  address:'JLN Marg, Jaipur',           phone:'0141-2518501', isGovernment:true,  hasEmergency:true,  hasICU:true  },
-  { id:'s13', lat:30.0869, lng:78.2650, type:'hospital', name:'AIIMS Rishikesh',             address:'Virbhadra Rd, Rishikesh',    phone:'0135-2462916', isGovernment:true,  hasEmergency:true,  hasICU:true  },
-  { id:'s14', lat:30.3165, lng:78.0338, type:'hospital', name:'Doon Govt Hospital',          address:'Sharanpur Rd, Dehradun',     phone:'0135-2714441', isGovernment:true,  hasEmergency:true,  hasICU:true  },
-  { id:'s15', lat:29.9457, lng:78.1642, type:'hospital', name:'District Hospital Haridwar',  address:'Ranipur More, Haridwar',     phone:'01334-226506', isGovernment:true,  hasEmergency:true,  hasICU:false },
+  { id:'s01', lat:28.6362, lng:77.2166, type:'hospital', name: 'AIIMS New Delhi',            address:'Ansari Nagar, New Delhi',    phone:'011-26588500', isGovernment:true,  hasEmergency:true,  hasICU:true  },
+  { id:'s02', lat:28.6517, lng:77.2219, type:'hospital', name: 'Safdarjung Hospital',         address:'Ring Road, New Delhi',       phone:'011-26730000', isGovernment:true,  hasEmergency:true,  hasICU:true  },
+  { id:'s03', lat:19.0176, lng:72.8561, type:'hospital', name: 'KEM Hospital Mumbai',         address:'Parel, Mumbai',              phone:'022-24107000', isGovernment:true,  hasEmergency:true,  hasICU:true  },
+  { id:'s04', lat:13.0102, lng:80.2356, type:'hospital', name: 'Govt General Hospital',       address:'Park Town, Chennai',         phone:'044-25305000', isGovernment:true,  hasEmergency:true,  hasICU:true  },
+  { id:'s05', lat:22.5726, lng:88.3639, type:'hospital', name: 'SSKM Hospital Kolkata',       address:'AJC Bose Road, Kolkata',     phone:'033-22041739', isGovernment:true,  hasEmergency:true,  hasICU:true  },
+  { id:'s06', lat:17.3850, lng:78.4867, type:'hospital', name: 'Osmania General Hyderabad',   address:'Afzalgunj, Hyderabad',       phone:'040-24600124', isGovernment:true,  hasEmergency:true,  hasICU:true  },
+  { id:'s07', lat:12.9716, lng:77.5946, type:'hospital', name: 'Victoria Hospital Bengaluru', address:'Fort Road, Bengaluru',       phone:'080-26700000', isGovernment:true,  hasEmergency:true,  hasICU:true  },
+  { id:'s08', lat:26.8467, lng:80.9462, type:'hospital', name: 'KGMU Lucknow',               address:'Shah Mina Road, Lucknow',    phone:'0522-2257450', isGovernment:true,  hasEmergency:true,  hasICU:true  },
+  { id:'s09', lat:23.0225, lng:72.5714, type:'hospital', name: 'Civil Hospital Ahmedabad',    address:'Asarwa, Ahmedabad',          phone:'079-22680058', isGovernment:true,  hasEmergency:true,  hasICU:true  },
+  { id:'s10', lat:18.5204, lng:73.8567, type:'hospital', name: 'Sassoon General Pune',        address:'Dhanraj Nana Chowk, Pune',  phone:'020-26128000', isGovernment:true,  hasEmergency:true,  hasICU:true  },
+  { id:'s11', lat:25.5941, lng:85.1376, type:'hospital', name: 'PMCH Patna',                  address:'Ashok Rajpath, Patna',       phone:'0612-2300016', isGovernment:true,  hasEmergency:true,  hasICU:false },
+  { id:'s12', lat:26.9124, lng:75.8235, type:'hospital', name: 'SMS Medical College Jaipur',  address:'JLN Marg, Jaipur',           phone:'0141-2518501', isGovernment:true,  hasEmergency:true,  hasICU:true  },
+  { id:'s13', lat:30.0869, lng:78.2650, type:'hospital', name: 'AIIMS Rishikesh',             address:'Virbhadra Rd, Rishikesh',    phone:'0135-2462916', isGovernment:true,  hasEmergency:true,  hasICU:true  },
+  { id:'s14', lat:30.3165, lng:78.0338, type:'hospital', name: 'Doon Govt Hospital',          address:'Sharanpur Rd, Dehradun',     phone:'0135-2714441', isGovernment:true,  hasEmergency:true,  hasICU:true  },
+  { id:'s15', lat:29.9457, lng:78.1642, type:'hospital', name: 'District Hospital Haridwar',  address:'Ranipur More, Haridwar',     phone:'01334-226506', isGovernment:true,  hasEmergency:true,  hasICU:false },
 ];
 
 /* ── helpers ─────────────────────────────────────────── */
@@ -111,6 +112,7 @@ function userIcon() {
    COMPONENT
 ═══════════════════════════════════════════════════════ */
 export default function HospitalMap({ height = '100%', showSearchBar = true }) {
+  const { language, t } = useLanguage();
 
   /* ── map refs (never cause re-renders) ── */
   const mapDivRef      = useRef(null);   // DOM container
@@ -125,8 +127,8 @@ export default function HospitalMap({ height = '100%', showSearchBar = true }) {
   const userPosRef     = useRef(null);   // latest {lat,lng} (sync, no re-render)
   const destRef        = useRef(null);   // active route destination
   const followRef      = useRef(true);   // auto-follow user position
-  const fetchedOnceRef = useRef(false);  // prevent duplicate initial fetches
   const drawRouteRef   = useRef(null);   // ← stable ref to drawRoute fn
+  const lastFetchPosRef = useRef(null);  // track last fetch location for dynamic updates
 
   /* ── ui state ── */
   const [status,        setStatus]        = useState('idle');  // idle|loading|done|fallback|zoom|error
@@ -229,8 +231,8 @@ export default function HospitalMap({ height = '100%', showSearchBar = true }) {
     })).sort((a,b) => a.dist - b.dist);
     setHospitals(list);
     setStatus('fallback');
-    setDataSource('📋 Cached');
-    setGpsError('Live hospital data unavailable. Showing nearest known facilities.');
+    setDataSource(t('hospital_cached_source'));
+    setGpsError(t('hospital_data_fallback_msg') || 'Live hospital data unavailable. Showing nearest known facilities.');
   }, []);
 
   /* ══════════════════════════════════════
@@ -239,7 +241,7 @@ export default function HospitalMap({ height = '100%', showSearchBar = true }) {
   const drawRoute = useCallback(async (destLat, destLng, name, opts = {}) => {
     const origin = opts.origin || userPosRef.current;
     if (!origin || !mapRef.current || !L) {
-      setGpsError('Allow location access first to get directions.');
+      setGpsError(t('hospital_gps_directions_needed') || 'Allow location access first to get directions.');
       return;
     }
     destRef.current = { lat:destLat, lng:destLng, name };
@@ -274,7 +276,7 @@ export default function HospitalMap({ height = '100%', showSearchBar = true }) {
 
     if (!userMarkerRef.current) {
       userMarkerRef.current = L.marker([lat,lng], { icon:userIcon(), zIndexOffset:2000 })
-        .bindPopup('<b>📍 Your live location</b>')
+        .bindPopup(`<b>${t('hospital_your_location')}</b>`)
         .addTo(mapRef.current);
     } else {
       userMarkerRef.current.setLatLng([lat,lng]);
@@ -297,7 +299,15 @@ export default function HospitalMap({ height = '100%', showSearchBar = true }) {
       const { lat:dLat, lng:dLng, name } = destRef.current;
       drawRouteRef.current(dLat, dLng, name, { origin:pos, fitBounds:false });
     }
-  }, []);
+
+    /* Dynamically refetch hospitals if user moved > 1km from last fetch */
+    const lastPos = lastFetchPosRef.current;
+    const movedEnough = !lastPos || distKm(lastPos.lat, lastPos.lng, lat, lng) > 1;
+    if (movedEnough && followRef.current) {
+      lastFetchPosRef.current = pos;
+      fetchHospitals(pos);
+    }
+  }, [fetchHospitals, t]);
 
   /* ══════════════════════════════════════
      LIVE LOCATION TRACKING  (single watchPosition)
@@ -317,16 +327,9 @@ export default function HospitalMap({ height = '100%', showSearchBar = true }) {
 
     const onSuccess = ({ coords }) => {
       const pos = { lat: coords.latitude, lng: coords.longitude };
-      const isFirst = !userPosRef.current;
       updateUserPos(pos.lat, pos.lng, followRef.current);
       setIsTracking(true);
       setIsFollowing(followRef.current);
-      if (isFirst || followRef.current) {
-        if (!fetchedOnceRef.current || followRef.current) {
-          fetchedOnceRef.current = true;
-          fetchHospitals(pos);
-        }
-      }
     };
 
     const onError = (err) => {
@@ -334,29 +337,35 @@ export default function HospitalMap({ height = '100%', showSearchBar = true }) {
       setIsFollowing(false);
       if (!userPosRef.current) {
         if (err.code === 1) {
-          setGpsError('🔒 Location permission denied. Click the lock icon in your browser → set Location to "Allow" → tap 📍 GPS.');
+          setGpsError(t('hospital_gps_denied'));
         } else if (err.code === 2) {
-          setGpsError('📡 Location unavailable. Enable GPS/Location on your device then tap 📍 GPS.');
+          setGpsError(t('hospital_gps_unavailable'));
         } else {
-          setGpsError('⏱️ Location timed out. Check your GPS signal and tap 📍 GPS.');
+          setGpsError(t('hospital_gps_timeout'));
         }
       }
     };
 
-    /* Step 1: fast one-shot fix with maximumAge:0 to get real current position
-       (not a stale cached one from a previous city) */
-    navigator.geolocation.getCurrentPosition(onSuccess, onError, {
+    /* Step 1: fast one-shot fix — allow up to 60s cached position so it returns
+       immediately on devices without hardware GPS, then watchPosition refines it */
+    navigator.geolocation.getCurrentPosition(onSuccess, (err) => {
+      /* if high-accuracy fails, retry with low-accuracy (IP-based fallback) */
+      navigator.geolocation.getCurrentPosition(onSuccess, onError, {
+        enableHighAccuracy: false,
+        timeout: 20000,
+        maximumAge: 120000,
+      });
+    }, {
       enableHighAccuracy: true,
-      timeout: 15000,
-      maximumAge: 0,   // ← NEVER use cached position; always get fresh coords
+      timeout: 10000,
+      maximumAge: 60000,
     });
 
-    /* Step 2: continuous watch — maximumAge:0 so every update is fresh GPS,
-       not the cached Uttarakhand/old coordinates */
+    /* Step 2: continuous watch for real GPS updates */
     watchRef.current = navigator.geolocation.watchPosition(
       onSuccess,
       onError,
-      { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 30000, maximumAge: 30000 }
     );
   }, [fetchHospitals, updateUserPos]);
 
@@ -563,10 +572,10 @@ export default function HospitalMap({ height = '100%', showSearchBar = true }) {
           ${(h.district||h.state) ? `<div style="font-size:11px;color:#64748b;margin-bottom:5px">🗺️ ${[h.district,h.state].filter(Boolean).join(', ')}</div>` : ''}
           ${h.phone    ? `<div style="font-size:12px;margin-bottom:8px">📞 <a href="tel:${h.phone}" style="color:#059669;font-weight:700">${h.phone}</a></div>` : ''}
           <div style="display:flex;flex-direction:column;gap:6px">
-            <button id="dr-${h.id}" style="background:#2563eb;color:#fff;border:none;border-radius:8px;padding:8px;font-size:12px;cursor:pointer;font-weight:700;width:100%">🗺️ Show Route</button>
-            ${h.phone   ? `<a href="tel:${h.phone}" style="background:#059669;color:#fff;border-radius:8px;padding:8px;font-size:12px;font-weight:700;text-align:center;text-decoration:none;display:block">📞 Call Now</a>` : ''}
+            <button id="dr-${h.id}" style="background:#2563eb;color:#fff;border:none;border-radius:8px;padding:8px;font-size:12px;cursor:pointer;font-weight:700;width:100%">${t('hospital_show_route')}</button>
+            ${h.phone   ? `<a href="tel:${h.phone}" style="background:#059669;color:#fff;border-radius:8px;padding:8px;font-size:12px;font-weight:700;text-align:center;text-decoration:none;display:block">${t('hospital_call_now')}</a>` : ''}
             <a href="https://www.google.com/maps/dir/?api=1&destination=${h.lat},${h.lng}" target="_blank" rel="noreferrer"
-              style="background:#0f766e;color:#fff;border-radius:8px;padding:8px;font-size:12px;font-weight:700;text-align:center;text-decoration:none;display:block">🧭 Open in Google Maps</a>
+              style="background:#0f766e;color:#fff;border-radius:8px;padding:8px;font-size:12px;font-weight:700;text-align:center;text-decoration:none;display:block">${t('hospital_open_gmaps')}</a>
           </div>
         </div>
       `, { maxWidth: 310 });
@@ -612,9 +621,9 @@ export default function HospitalMap({ height = '100%', showSearchBar = true }) {
       {/* ── Emergency Banner ── */}
       {emergencyMode && (
         <div style={{ background:'#dc2626', color:'#fff', padding:'8px 16px', display:'flex', justifyContent:'space-between', alignItems:'center', fontSize:13, fontWeight:700, flexShrink:0, animation:'emergencyPulse 1.5s ease-in-out infinite' }}>
-          <span>🚨 EMERGENCY — Routing to nearest hospital</span>
+          <span>{t('hospital_emergency_banner')}</span>
           <button onClick={clearRoute} style={{ background:'rgba(255,255,255,.25)', border:'none', borderRadius:6, color:'#fff', padding:'3px 12px', cursor:'pointer', fontSize:12 }}>
-            ✕ Cancel
+            ✕ {t('cancel')}
           </button>
         </div>
       )}
@@ -626,7 +635,7 @@ export default function HospitalMap({ height = '100%', showSearchBar = true }) {
             <input
               value={searchText}
               onChange={e => setSearchText(e.target.value)}
-              placeholder="Search hospital name, city, district…"
+              placeholder={t('hospital_search_placeholder')}
               style={{ flex:1, padding:'7px 12px', borderRadius:8, border:'1.5px solid rgba(255,255,255,.22)', background:'rgba(255,255,255,.1)', color:'#fff', fontSize:12, outline:'none' }}
             />
             <button type="submit" disabled={searching}
@@ -684,7 +693,7 @@ export default function HospitalMap({ height = '100%', showSearchBar = true }) {
           <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,.3)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1200, pointerEvents:'none' }}>
             <div style={{ background:'rgba(12,35,64,.92)', borderRadius:14, padding:'18px 28px', display:'flex', flexDirection:'column', alignItems:'center', gap:10 }}>
               <div style={{ width:28, height:28, border:'3px solid #cffafe', borderTopColor:'transparent', borderRadius:'50%', animation:'spin .7s linear infinite' }} />
-              <span style={{ color:'#cffafe', fontSize:13, fontWeight:600 }}>Searching hospitals within 15 km…</span>
+              <span style={{ color:'#cffafe', fontSize:13, fontWeight:600 }}>{t('hospital_searching')}</span>
             </div>
           </div>
         )}
@@ -693,7 +702,7 @@ export default function HospitalMap({ height = '100%', showSearchBar = true }) {
         {routeLoading && (
           <div style={{ position:'absolute', top:10, left:'50%', transform:'translateX(-50%)', background:'rgba(12,35,64,.9)', color:'#cffafe', borderRadius:20, padding:'6px 16px', fontSize:12, zIndex:1300, display:'flex', alignItems:'center', gap:8 }}>
             <div style={{ width:12, height:12, border:'2px solid #cffafe', borderTopColor:'transparent', borderRadius:'50%', animation:'spin .7s linear infinite' }} />
-            Calculating route…
+            {t('hospital_calc_route')}
           </div>
         )}
 
@@ -726,11 +735,11 @@ export default function HospitalMap({ height = '100%', showSearchBar = true }) {
 
         {/* ── Status Bar ── */}
         <div style={{ position:'absolute', bottom: showPanel ? 300 : 8, left:'50%', transform:'translateX(-50%)', background:'rgba(12,35,64,.88)', color:'#cffafe', backdropFilter:'blur(4px)', borderRadius:20, padding:'5px 16px', fontSize:11, fontWeight:600, pointerEvents:'none', zIndex:1000, whiteSpace:'nowrap', display:'flex', alignItems:'center', gap:6 }}>
-          {status==='loading'  && <><span style={{ width:10, height:10, border:'2px solid #cffafe', borderTopColor:'transparent', borderRadius:'50%', display:'inline-block', animation:'spin .7s linear infinite' }} />Searching…</>}
-          {status==='done'     && `${filtered.length} facilities within 15 km${isTracking ? ' · 🟢 Live GPS' : ''}`}
-          {status==='fallback' && `${filtered.length} cached facilities${isTracking ? ' · 🟢 GPS active' : ' · Tap 📍 to use your location'}`}
-          {status==='error'    && '⚠️ Could not load map'}
-          {status==='idle'     && 'Tap 📍 GPS to find hospitals near you'}
+          {status==='loading'  && <><span style={{ width:10, height:10, border:'2px solid #cffafe', borderTopColor:'transparent', borderRadius:'50%', display:'inline-block', animation:'spin .7s linear infinite' }} />{t('loading')}</>}
+          {status==='done'     && `${filtered.length} ${t('facilities')} · 🟢 GPS`}
+          {status==='fallback' && `${filtered.length} ${t('cached')} · 🟢 GPS`}
+          {status==='error'    && `⚠️ ${t('error')}`}
+          {status==='idle'     && t('hospital_idle_msg') || 'Tap 📍 GPS to find hospitals near you'}
         </div>
       </div>
 

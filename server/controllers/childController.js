@@ -107,7 +107,11 @@ const addChild = async (req, res) => {
       metadata: { district: child.district, block: child.block },
     });
 
-    res.status(201).json({ message: 'Child registered successfully', child });
+    const populatedChild = await Child.findById(child._id)
+      .populate('parentId', 'name phone email')
+      .populate({ path: 'ashaId', select: 'ashaId district block village', populate: { path: 'userId', select: 'name phone' } });
+
+    res.status(201).json({ message: 'Child registered successfully', child: populatedChild });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -118,7 +122,7 @@ const getChild = async (req, res) => {
   try {
     const child = await Child.findById(req.params.id)
       .populate('parentId', 'name phone email')
-      .populate('ashaId', 'ashaId district block');
+      .populate({ path: 'ashaId', select: 'ashaId district block village', populate: { path: 'userId', select: 'name phone' } });
     if (!child) return res.status(404).json({ message: 'Child not found' });
 
     if (req.user.role === 'parent' && String(child.parentId?._id || child.parentId) !== String(req.user._id)) {
@@ -180,7 +184,9 @@ const updateChild = async (req, res) => {
       }
     }
 
-    const child = await Child.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    const child = await Child.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true })
+      .populate('parentId', 'name phone email')
+      .populate({ path: 'ashaId', select: 'ashaId district block village', populate: { path: 'userId', select: 'name phone' } });
     await createAuditLog({
       req,
       action: 'CHILD_UPDATED',
@@ -195,4 +201,53 @@ const updateChild = async (req, res) => {
   }
 };
 
-module.exports = { addChild, getChild, listChildren, updateChild };
+// GET /api/child/search/parent — parent searches own children
+const searchChildren = async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q || q.trim().length === 0) {
+      return res.json({ results: [] });
+    }
+
+    const searchRegex = new RegExp(q.trim(), 'i');
+    const filter = { parentId: req.user._id };
+
+    const results = await Child.find({
+      ...filter,
+      $or: [
+        { name: searchRegex },
+        { childId: searchRegex },
+      ],
+    })
+      .select('_id childId name dob nutritionStatus createdAt')
+      .limit(10);
+
+    res.json({ results });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// GET /api/child/search/asha — asha searches child by childId
+const searchByChildId = async (req, res) => {
+  try {
+    const { childId } = req.query;
+    if (!childId || childId.trim().length === 0) {
+      return res.json({ result: null });
+    }
+
+    const child = await Child.findOne({ childId: childId.toUpperCase() })
+      .populate('parentId', 'name phone email')
+      .populate({ path: 'ashaId', select: 'ashaId district block village', populate: { path: 'userId', select: 'name phone' } });
+
+    if (!child) {
+      return res.status(404).json({ message: 'Invalid Child ID. Please check and try again.' });
+    }
+
+    res.json({ result: child });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+module.exports = { addChild, getChild, listChildren, updateChild, searchChildren, searchByChildId };

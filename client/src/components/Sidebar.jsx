@@ -1,12 +1,18 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 
 const Sidebar = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const role = user?.role || 'parent';
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   const NAV_LINKS = {
     parent: [
@@ -88,6 +94,36 @@ const Sidebar = () => {
           ))}
         </ul>
       </nav>
+
+      {/* Logout Button */}
+      <div className="px-3 py-2">
+        <button
+          onClick={handleLogout}
+          className="btn w-100 d-flex align-items-center justify-content-center gap-2"
+          style={{
+            background: 'rgba(239, 68, 68, 0.12)',
+            color: '#ef4444',
+            border: '1px solid rgba(239, 68, 68, 0.25)',
+            borderRadius: '10px',
+            padding: '10px 16px',
+            fontSize: '0.875rem',
+            fontWeight: 600,
+            transition: 'all 0.2s',
+            cursor: 'pointer',
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.background = '#ef4444';
+            e.currentTarget.style.color = '#fff';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.background = 'rgba(239, 68, 68, 0.12)';
+            e.currentTarget.style.color = '#ef4444';
+          }}
+        >
+          <i className="bi bi-box-arrow-right"></i>
+          {t('logout') || 'Logout'}
+        </button>
+      </div>
 
       {/* Footer */}
       <div className="p-3 border-top border-light border-opacity-25" style={{ fontSize: '0.7rem', opacity: 0.6 }}>

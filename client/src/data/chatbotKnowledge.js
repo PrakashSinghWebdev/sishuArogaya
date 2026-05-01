@@ -9,7 +9,7 @@ const KNOWLEDGE_BASE = [
   {
     intent: 'greeting',
     patterns: ['hello', 'hi', 'namaste', 'hey', 'good morning', 'good evening', 'hii', 'helo', 'namaskar', 'hy', 'hiya'],
-    response: `Hello! 👋 I am Sishu Arogaya's health assistant.
+    response: `Hello! 👋 I am Shishu Aarogya's health assistant.
 
 I can help you with:
 • Vaccines and immunization schedule
@@ -798,9 +798,9 @@ Vitamin D helps absorb calcium and is essential for strong bones. Deficiency cau
       'about', 'what is this app', 'sishu arogaya', 'about the system', 'what is sishu',
       'app features', 'इस ऐप के बारे में', 'about app', 'what can you do',
     ],
-    response: `**About Sishu Arogaya**
+    response: `**About Shishu Aarogya**
 
-Sishu Arogaya is a Government Integrated Child Health Monitoring System developed at Dev Bhoomi Uttarakhand University (DBUU), Dehradun.
+Shishu Aarogya is a National Integrated Child Health Monitoring System for the Government of India, supporting all states and 22+ languages nationwide.
 
 **Features:**
 📊 Track child growth using WHO z-score standards

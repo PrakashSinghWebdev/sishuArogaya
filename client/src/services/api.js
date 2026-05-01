@@ -94,7 +94,7 @@ export const notificationAPI = {
 };
 
 export const reportAPI = {
-  childPDF: (childId) => api.get(`/reports/child/${childId}`, { responseType: 'blob' }),
+  childPDF: (childId, type = 'comprehensive') => api.get(`/reports/child/${childId}`, { params: { type }, responseType: 'blob' }),
   districtExcel: (districtId) => api.get(`/reports/district/${districtId}`, { responseType: 'blob' }),
 };
 
@@ -119,6 +119,12 @@ export const hospitalAPI = {
   search: (q, lat, lng) =>
     api.get('/hospitals/search', { params: { q, lat, lng } }),
   list: (params) => api.get('/hospitals', { params }),
+};
+
+export const searchAPI = {
+  parentSearchChildren: (q) => api.get('/child/search/parent', { params: { q } }),
+  ashaSearchChild: (childId) => api.get('/child/search/asha', { params: { childId } }),
+  adminSearchAsha: (q) => api.get('/admin/search/asha', { params: { q } }),
 };
 
 export default api;

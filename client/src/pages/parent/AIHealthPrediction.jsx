@@ -1,11 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useLanguage } from '../../context/LanguageContext';
+import MediaCarousel, { MEDIA_ARRAY } from '../../components/MediaCarousel';
 import { childAPI, growthAPI, reportAPI } from '../../services/api';
 
-const SLIDES = [
-  'https://images.unsplash.com/photo-1559757175-0eb30cd8c063?w=1400&q=80&fit=crop',
-  'https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?w=1400&q=80&fit=crop',
-  'https://images.unsplash.com/photo-1476703993599-0eb30cd8c063?w=1400&q=80&fit=crop',
-];
+
 
 const NAV = [
   ['🏠 Dashboard', '/parent/dashboard'],
@@ -48,6 +47,7 @@ function predictionMeta(p) {
 }
 
 export default function AIHealthPrediction() {
+  const { navLinks, t } = useLanguage();
   const [slide, setSlide] = useState(0);
   const slideRef = useRef(0);
   const [children, setChildren] = useState([]);
@@ -59,7 +59,7 @@ export default function AIHealthPrediction() {
   // Carousel
   useEffect(() => {
     const id = setInterval(() => {
-      slideRef.current = (slideRef.current + 1) % SLIDES.length;
+      slideRef.current = (slideRef.current + 1) % MEDIA_ARRAY.length;
       setSlide(slideRef.current);
     }, 4500);
     return () => clearInterval(id);
@@ -107,7 +107,7 @@ export default function AIHealthPrediction() {
   };
 
   const handleShare = async () => {
-    const text = `Sishu Arogaya Health Report — ${selected?.name || 'Child'}: ${prediction?.prediction || 'healthy'} nutritional status.`;
+    const text = `Shishu Aarogya Health Report — ${selected?.name || 'Child'}: ${prediction?.prediction || 'healthy'} nutritional status.`;
     if (navigator.share) {
       try { await navigator.share({ title: 'Child Health Report', text }); return; } catch {}
     }
@@ -227,23 +227,23 @@ export default function AIHealthPrediction() {
 
       {/* Navbar */}
       <nav className="topnav">
-        <a className="nav-brand" href="/parent/dashboard">🌿 Sishu Arogaya</a>
+        <Link className="nav-brand" to="/parent/dashboard">
+          <div style={{ width: 32, height: 32, background: 'linear-gradient(135deg,#0891b2,#0e7490)', borderRadius: 8, display: 'grid', placeItems: 'center', fontSize: 16 }}>🏥</div>
+          <div style={{ marginLeft: 8 }}>
+            <div style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 15, fontWeight: 700, color: '#0e7490', lineHeight: 1.1 }}>Shishu Aarogya</div>
+            <div style={{ fontSize: 8, color: '#4a7a8a', lineHeight: 1 }}>National Child Health Portal</div>
+          </div>
+        </Link>
         <div className="navlinks">
-          {NAV.map(([label, href]) => (
-            <a key={href} href={href}>{label}</a>
+          {(navLinks && navLinks.length ? navLinks : NAV).map(([label, to]) => (
+            <Link key={to} to={to} className={to === '/parent/ai-prediction' ? 'active' : ''}>{label}</Link>
           ))}
         </div>
       </nav>
 
       {/* Hero */}
       <section className="hero">
-        {SLIDES.map((src, i) => (
-          <div
-            key={i}
-            className="hero-slide"
-            style={{ backgroundImage: `url(${src})`, opacity: slide === i ? 1 : 0 }}
-          />
-        ))}
+        <MediaCarousel currentSlideIndex={slide} />
         <div className="hero-overlay" />
         <div className="hero-content fade-up">
           <span className="hero-badge">🏥 AI Health Prediction</span>
@@ -402,8 +402,8 @@ export default function AIHealthPrediction() {
         )}
       </main>
 
-      <footer className="footbar">
-        Sishu Arogaya © 2024 · Government Integrated Child Health Monitoring System · DBUU Dehradun
+      <footer className="footbar" style={{ textAlign: 'center', padding: '20px', color: '#4a7a8a', fontSize: '13px', borderTop: '1px solid #c5e8ef' }}>
+        Shishu Aarogya &copy; 2024 &middot; {t('homeFooter_copyright_long') || 'National Child Health Portal · Government of India'}
       </footer>
     </>
   );

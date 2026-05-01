@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import MediaCarousel, { MEDIA_ARRAY } from '../../components/MediaCarousel';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -12,18 +13,12 @@ const CAPTIONS = [
   { e: 'HC', t: 'Healthy children, strong nation', d: 'Connecting families with government welfare schemes' },
 ];
 
-const SLIDES = [
-  'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=1400&q=80&fit=crop',
-  'https://images.unsplash.com/photo-1527482797697-8795b05a13fe?w=1400&q=80&fit=crop',
-  'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=1400&q=80&fit=crop',
-  'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=1400&q=80&fit=crop',
-  'https://images.unsplash.com/photo-1471286174890-9c112ffca5b4?w=1400&q=80&fit=crop',
-];
+
 
 const ROLES = [
-  { icon: 'PA', label: 'Parent', ph: 'parent@email.com' },
-  { icon: 'AS', label: 'ASHA Worker', ph: 'asha.worker@nhm.gov.in' },
-  { icon: 'AD', label: 'Admin', ph: 'admin@sishuarogaya.gov.in' },
+  { icon: 'PA', label: 'Parent', ph: 'parent@sishu.gov.in', value: 'parent' },
+  { icon: 'AS', label: 'ASHA Worker', ph: 'asha@sishu.gov.in', value: 'asha' },
+  { icon: 'AD', label: 'Admin', ph: 'admin@sishu.gov.in', value: 'admin' },
 ];
 
 const ROTATE_MS = 4500;
@@ -31,7 +26,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^\d{10}$/;
 
 export default function SishuLogin() {
-  const { login, getDashboardPath } = useAuth();
+  const { login, getDashboardPath, token, user } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
 
@@ -56,7 +51,7 @@ export default function SishuLogin() {
   const startCarousel = () => {
     clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
-      setCur((prev) => (prev + 1) % SLIDES.length);
+      setCur((prev) => (prev + 1) % MEDIA_ARRAY.length);
     }, ROTATE_MS);
   };
 
@@ -67,8 +62,29 @@ export default function SishuLogin() {
 
   useEffect(() => {
     startCarousel();
+    // Reset ALL form state on mount
+    setError('');
+    setInfo('');
+    setEmail('');
+    setPassword('');
+    setRedirected(false);
+    setEmailErr(false);
+    setPassErr(false);
+    setLoading(false);
+    setShowPw(false);
+    setStep('login');
+    // Clear any stored error from localStorage
+    localStorage.removeItem('login_error');
+    localStorage.removeItem('login_info');
     return () => clearInterval(timerRef.current);
   }, []);
+
+  // Redirect already-logged-in users to their dashboard
+  useEffect(() => {
+    if (token && user && !redirected) {
+      navigate(getDashboardPath(user.role));
+    }
+  }, [token, user, redirected, navigate, getDashboardPath]);
 
   const isLoginStep = step === 'login';
   const isForgotRequestStep = step === 'forgot-request';
@@ -111,12 +127,14 @@ export default function SishuLogin() {
 
     setLoading(true);
     try {
-      const userData = await login(email, password);
+      const selectedRole = ROLES[role].value;
+      const userData = await login(email, password, selectedRole);
       setRedirected(true);
       setInfo('Login successful. Redirecting...');
       setTimeout(() => navigate(getDashboardPath(userData.role)), 500);
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Check credentials.');
+      const msg = err.response?.data?.message || 'Login failed. Please try again.';
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -207,13 +225,7 @@ export default function SishuLogin() {
     <>
       <div className="login-shell">
         <div className="login-shell__left">
-          {SLIDES.map((src, i) => (
-            <div
-              key={src}
-              className="login-shell__slide"
-              style={{ backgroundImage: `url(${src})`, opacity: i === cur ? 1 : 0 }}
-            />
-          ))}
+          <MediaCarousel currentSlideIndex={cur} />
 
           <div className="login-shell__overlay" />
           <div className="login-shell__blob" />
@@ -270,7 +282,7 @@ export default function SishuLogin() {
 
             <div className="login-shell__footer">
               <div className="login-shell__dots">
-                {SLIDES.map((_, i) => (
+                {MEDIA_ARRAY.map((_, i) => (
                   <button
                     key={i}
                     type="button"
@@ -320,6 +332,10 @@ export default function SishuLogin() {
                 <form onSubmit={handleLogin} noValidate>
                   {error ? <div className="login-card__alert login-card__alert--error">{error}</div> : null}
                   {info ? <div className="login-card__alert login-card__alert--info">{info}</div> : null}
+                  <div className="login-card__alert login-card__alert--info">
+                    Demo login:
+                    {role === 0 ? ' parent@sishu.gov.in / Parent@123' : role === 1 ? ' asha@sishu.gov.in / Asha@123' : ' admin@sishu.gov.in / Admin@123'}
+                  </div>
 
                   <div className="login-card__field">
                     <label className="login-card__label">{t('email')}</label>

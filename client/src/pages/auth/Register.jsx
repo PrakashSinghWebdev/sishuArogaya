@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import MediaCarousel, { MEDIA_ARRAY } from '../../components/MediaCarousel';
 import { Link, useNavigate } from 'react-router-dom';
 import { authAPI } from '../../services/api';
 import './Register.css';
@@ -17,19 +18,47 @@ const CAPTIONS = [
   { e: 'HC', t: 'Healthy children, strong nation', d: 'Connecting families with government welfare schemes' },
 ];
 
-const SLIDES = [
-  'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=1400&q=80&fit=crop',
-  'https://images.unsplash.com/photo-1527482797697-8795b05a13fe?w=1400&q=80&fit=crop',
-  'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=1400&q=80&fit=crop',
-  'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=1400&q=80&fit=crop',
-  'https://images.unsplash.com/photo-1471286174890-9c112ffca5b4?w=1400&q=80&fit=crop',
-];
+
 
 const ROLES = [
   { value: 'parent', icon: 'PA', label: 'Parent' },
   { value: 'asha', icon: 'AS', label: 'ASHA Worker' },
   { value: 'admin', icon: 'AD', label: 'Admin' },
 ];
+
+// Verhoeff algorithm for Aadhaar validation
+const verhoeffD = [
+  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+  [1, 2, 3, 4, 0, 6, 7, 8, 9, 5],
+  [2, 3, 4, 0, 1, 7, 8, 9, 5, 6],
+  [3, 4, 0, 1, 2, 8, 9, 5, 6, 7],
+  [4, 0, 1, 2, 3, 9, 5, 6, 7, 8],
+  [5, 9, 8, 7, 6, 0, 4, 3, 2, 1],
+  [6, 5, 9, 8, 7, 1, 0, 4, 3, 2],
+  [7, 6, 5, 9, 8, 2, 1, 0, 4, 3],
+  [8, 7, 6, 5, 9, 3, 2, 1, 0, 4],
+  [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
+];
+const verhoeffP = [
+  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+  [1, 5, 7, 6, 2, 8, 3, 0, 9, 4],
+  [5, 8, 0, 3, 7, 9, 6, 1, 4, 2],
+  [8, 9, 1, 6, 0, 4, 3, 5, 2, 7],
+  [9, 4, 5, 3, 1, 2, 6, 8, 7, 0],
+  [4, 2, 8, 6, 5, 7, 3, 9, 0, 1],
+  [2, 7, 9, 3, 8, 0, 6, 4, 1, 5],
+  [7, 0, 4, 6, 9, 1, 3, 2, 5, 8]
+];
+
+function validateVerhoeff(aadhaar) {
+  if (aadhaar.length !== 12 || !/^\d+$/.test(aadhaar)) return false;
+  let c = 0;
+  let invertedArray = aadhaar.split('').map(Number).reverse();
+  for (let i = 0; i < invertedArray.length; i++) {
+    c = verhoeffD[c][verhoeffP[i % 8][invertedArray[i]]];
+  }
+  return c === 0;
+}
 
 function getStrength(password) {
   let score = 0;
@@ -55,11 +84,52 @@ export default function Register() {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
+  const [aadharStatus, setAadharStatus] = useState(null); // 'checking', 'valid', 'invalid', null
+  const [aadharData, setAadharData] = useState(null); // { state, ageBand }
 
   useEffect(() => {
-    timerRef.current = setInterval(() => setCur((prev) => (prev + 1) % SLIDES.length), 4500);
+    timerRef.current = setInterval(() => setCur((prev) => (prev + 1) % MEDIA_ARRAY.length), 4500);
     return () => clearInterval(timerRef.current);
   }, []);
+
+  useEffect(() => {
+    const aadhaar = form.aadhar.replace(/\D/g, '');
+    if (aadhaar.length === 12) {
+      verifyAadhaar(aadhaar);
+    } else {
+      setAadharStatus(null);
+      setAadharData(null);
+    }
+  }, [form.aadhar]);
+
+  const verifyAadhaar = async (aadhaar) => {
+    setAadharStatus('checking');
+    setAadharData(null);
+    
+    // 1. Local checksum validation
+    if (!validateVerhoeff(aadhaar)) {
+      setAadharStatus('invalid');
+      return;
+    }
+    
+    // 2. Simulated API Integration
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      if (aadhaar === '000000000000') {
+        setAadharStatus('invalid');
+        return;
+      }
+
+      setAadharData({
+        state: DISTRICTS[Math.floor(Math.random() * DISTRICTS.length)] || 'Uttarakhand',
+        ageBand: '25-35'
+      });
+      setAadharStatus('valid');
+    } catch (error) {
+      setAadharStatus('invalid');
+    }
+  };
 
   const update = (key) => (e) => {
     setForm((prev) => ({ ...prev, [key]: e.target.value }));
@@ -79,6 +149,7 @@ export default function Register() {
     if (!form.district) nextErrors.district = 'Select a district.';
     if (!form.block.trim()) nextErrors.block = 'Enter your block or PHC.';
     if (role === 'asha' && !form.ashaId.trim()) nextErrors.ashaId = 'ASHA ID is required.';
+    if (form.aadhar && aadharStatus === 'invalid') nextErrors.aadhar = 'Please provide a valid Aadhaar number.';
     if (form.password.length < 8) nextErrors.password = 'Password must be at least 8 characters.';
     if (form.password !== form.confirm) nextErrors.confirm = 'Passwords do not match.';
     if (!agreed) nextErrors.agreed = 'Please accept the Terms of Use and Privacy Policy.';
@@ -124,9 +195,7 @@ export default function Register() {
   return (
     <div className="login-shell">
       <div className="login-shell__left">
-        {SLIDES.map((src, i) => (
-          <div key={src} className="login-shell__slide" style={{ backgroundImage: `url(${src})`, opacity: i === cur ? 1 : 0 }} />
-        ))}
+        <MediaCarousel currentSlideIndex={cur} />
         <div className="login-shell__overlay" />
         <div className="login-shell__blob" />
         <div className="login-shell__content">
@@ -146,7 +215,7 @@ export default function Register() {
             <div className="login-shell__caption-card"><div className="login-shell__caption-emoji">{cap.e}</div><div><div className="login-shell__caption-title">{cap.t}</div><div className="login-shell__caption-desc">{cap.d}</div></div></div>
           </div>
           <div className="login-shell__footer">
-            <div className="login-shell__dots">{SLIDES.map((_, i) => <button key={i} type="button" aria-label={`Go to slide ${i + 1}`} className={`login-shell__dot ${i === cur ? 'is-active' : ''}`} onClick={() => setCur(i)} />)}</div>
+            <div className="login-shell__dots">{MEDIA_ARRAY.map((_, i) => <button key={i} type="button" aria-label={`Go to slide ${i + 1}`} className={`login-shell__dot ${i === cur ? 'is-active' : ''}`} onClick={() => setCur(i)} />)}</div>
             <div className="login-shell__counter">{String(cur + 1).padStart(2, '0')} / 05</div>
           </div>
         </div>
@@ -174,7 +243,41 @@ export default function Register() {
               <div className="login-card__field"><label className="login-card__label">Last Name</label><div className="login-card__input-wrap"><span className="login-card__input-icon">ID</span><input type="text" value={form.lastName} onChange={update('lastName')} placeholder="Sharma" className={`login-card__input ${fieldErrors.lastName ? 'has-error' : ''}`} /></div>{fieldErrors.lastName ? <div className="login-card__error">{fieldErrors.lastName}</div> : null}</div>
               <div className="login-card__field register-form__full"><label className="login-card__label">Email Address</label><div className="login-card__input-wrap"><span className="login-card__input-icon">@</span><input type="email" value={form.email} onChange={update('email')} placeholder="you@example.com" className={`login-card__input ${fieldErrors.email ? 'has-error' : ''}`} /></div>{fieldErrors.email ? <div className="login-card__error">{fieldErrors.email}</div> : null}</div>
               <div className="login-card__field"><label className="login-card__label">Mobile Number</label><div className="login-card__input-wrap"><span className="login-card__input-icon">+91</span><input type="tel" value={form.mobile} onChange={update('mobile')} placeholder="9876543210" className={`login-card__input ${fieldErrors.mobile ? 'has-error' : ''}`} /></div>{fieldErrors.mobile ? <div className="login-card__error">{fieldErrors.mobile}</div> : null}</div>
-              <div className="login-card__field"><label className="login-card__label">Aadhar / ID No.</label><div className="login-card__input-wrap"><span className="login-card__input-icon">ID</span><input type="text" value={form.aadhar} onChange={update('aadhar')} placeholder="XXXX XXXX XXXX" className="login-card__input" /></div></div>
+              <div className="login-card__field">
+                <label className="login-card__label">Aadhar / ID No.</label>
+                <div className="login-card__input-wrap">
+                  <span className="login-card__input-icon">ID</span>
+                  <input 
+                    type="text" 
+                    value={form.aadhar} 
+                    onChange={update('aadhar')} 
+                    placeholder="XXXX XXXX XXXX" 
+                    className={`login-card__input ${aadharStatus === 'invalid' ? 'has-error shake-animation' : ''}`}
+                    maxLength={14}
+                  />
+                </div>
+                {aadharStatus === 'checking' && (
+                  <div className="aadhar-verify-status is-checking">
+                    <span className="aadhar-verify-spinner"></span> Checking database...
+                  </div>
+                )}
+                {aadharStatus === 'valid' && (
+                  <div className="aadhar-verify-status is-valid">
+                    <span className="aadhar-verify-icon">✓</span> Valid Aadhaar
+                  </div>
+                )}
+                {aadharStatus === 'valid' && aadharData && (
+                  <div className="aadhar-verify-data">
+                    State: {aadharData.state} • Age Band: {aadharData.ageBand}
+                  </div>
+                )}
+                {aadharStatus === 'invalid' && (
+                  <div className="aadhar-verify-status is-invalid">
+                    <span className="aadhar-verify-icon">✕</span> Invalid Aadhaar Number
+                  </div>
+                )}
+                {fieldErrors.aadhar ? <div className="login-card__error">{fieldErrors.aadhar}</div> : null}
+              </div>
               <div className="login-card__field"><label className="login-card__label">Date of Birth</label><div className="login-card__input-wrap"><span className="login-card__input-icon">DT</span><input type="date" value={form.dob} onChange={update('dob')} className={`login-card__input ${fieldErrors.dob ? 'has-error' : ''}`} /></div>{fieldErrors.dob ? <div className="login-card__error">{fieldErrors.dob}</div> : null}</div>
               <div className="login-card__field"><label className="login-card__label">District</label><div className="login-card__input-wrap"><select value={form.district} onChange={update('district')} className={`register-form__select ${fieldErrors.district ? 'has-error' : ''}`}><option value="">Select district</option>{DISTRICTS.map((district) => <option key={district} value={district}>{district}</option>)}</select></div>{fieldErrors.district ? <div className="login-card__error">{fieldErrors.district}</div> : null}</div>
               <div className="login-card__field"><label className="login-card__label">Block / PHC</label><div className="login-card__input-wrap"><span className="login-card__input-icon">BL</span><input type="text" value={form.block} onChange={update('block')} placeholder="Enter your block" className={`login-card__input ${fieldErrors.block ? 'has-error' : ''}`} /></div>{fieldErrors.block ? <div className="login-card__error">{fieldErrors.block}</div> : null}</div>

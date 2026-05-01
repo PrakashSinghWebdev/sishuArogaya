@@ -223,7 +223,10 @@ const GROWTH_SERIES = {
     { ageMonths: 4,  weight: 6.9,  height: 63.6, headCircumference: 41.8 },
     { ageMonths: 5,  weight: 7.5,  height: 65.8, headCircumference: 42.6 },
     { ageMonths: 6,  weight: 7.9,  height: 67.3, headCircumference: 43.2 },
+    { ageMonths: 7,  weight: 8.1,  height: 68.2, headCircumference: 43.6 },
     { ageMonths: 8,  weight: 8.2,  height: 69.0, headCircumference: 43.9 },
+    { ageMonths: 9,  weight: 8.5,  height: 70.8, headCircumference: 44.5 },
+    { ageMonths: 10, weight: 8.7,  height: 72.1, headCircumference: 45.0 },
   ],
   'Priya Kumari': [
     { ageMonths: 2,  weight: 4.8,  height: 56.7, headCircumference: 38.6 },
@@ -231,7 +234,10 @@ const GROWTH_SERIES = {
     { ageMonths: 6,  weight: 6.8,  height: 65.5, headCircumference: 42.0 },
     { ageMonths: 9,  weight: 7.9,  height: 70.5, headCircumference: 43.5 },
     { ageMonths: 12, weight: 8.6,  height: 73.8, headCircumference: 44.5 },
+    { ageMonths: 13, weight: 8.8,  height: 75.1, headCircumference: 44.9 },
     { ageMonths: 14, weight: 9.2,  height: 76.0, headCircumference: 45.2 },
+    { ageMonths: 15, weight: 9.4,  height: 77.2, headCircumference: 45.5 },
+    { ageMonths: 16, weight: 9.7,  height: 78.5, headCircumference: 46.0 },
   ],
 };
 

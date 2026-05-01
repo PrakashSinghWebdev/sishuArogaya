@@ -117,4 +117,44 @@ const getAuditLogs = async (req, res) => {
   }
 };
 
-module.exports = { getDashboardStats, getHeatmapData, listUsers, toggleUser, getMalnutritionCases, getAuditLogs };
+// GET /api/admin/search/asha — search ASHA workers by ashaId, name, or region
+const searchAshaWorkers = async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q || q.trim().length === 0) {
+      return res.json({ results: [] });
+    }
+
+    const searchRegex = new RegExp(q.trim(), 'i');
+
+    const results = await AshaWorker.find({
+      $or: [
+        { ashaId: searchRegex },
+        { district: searchRegex },
+        { block: searchRegex },
+        { village: searchRegex },
+      ],
+    })
+      .populate('userId', 'name phone email')
+      .select('_id ashaId district block village totalVisits assignedChildren createdAt')
+      .limit(10);
+
+    // Enrich results with user info
+    const enrichedResults = results.map((asha) => ({
+      _id: asha._id,
+      ashaId: asha.ashaId,
+      name: asha.userId?.name || 'N/A',
+      phone: asha.userId?.phone || 'N/A',
+      region: `${asha.district}, ${asha.block}${asha.village ? ', ' + asha.village : ''}`,
+      totalChildren: asha.assignedChildren?.length || 0,
+      totalVisits: asha.totalVisits || 0,
+      createdAt: asha.createdAt,
+    }));
+
+    res.json({ results: enrichedResults });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+module.exports = { getDashboardStats, getHeatmapData, listUsers, toggleUser, getMalnutritionCases, getAuditLogs, searchAshaWorkers };

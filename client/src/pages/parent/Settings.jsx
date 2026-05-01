@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import MediaCarousel, { MEDIA_ARRAY } from '../../components/MediaCarousel';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage, LANGUAGES } from '../../context/LanguageContext';
@@ -16,12 +17,7 @@ const NAV = [
   ['🔔 Notifications', '/parent/notifications'],
 ];
 
-const SLIDES = [
-  'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=1400&q=80&fit=crop',
-  'https://images.unsplash.com/photo-1527482797697-8795b05a13fe?w=1400&q=80&fit=crop',
-  'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=1400&q=80&fit=crop',
-  'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=1400&q=80&fit=crop',
-];
+
 
 // LANGUAGES imported from LanguageContext (all 23 languages)
 
@@ -58,7 +54,7 @@ export default function Settings() {
   const location = useLocation();
   const navigate = useNavigate();
   const { selectedChild } = useSelectedChild();
-  const { language, setLanguage, t } = useLanguage();
+  const { language, setLanguage, t, navLinks } = useLanguage();
   const [cur, setCur] = useState(0);
   const timerRef = useRef(null);
 
@@ -80,7 +76,7 @@ export default function Settings() {
   });
 
   useEffect(() => {
-    timerRef.current = setInterval(() => setCur(p => (p + 1) % SLIDES.length), 4500);
+    timerRef.current = setInterval(() => setCur(p => (p + 1) % MEDIA_ARRAY.length), 4500);
     return () => clearInterval(timerRef.current);
   }, []);
 
@@ -152,10 +148,10 @@ export default function Settings() {
       <nav style={{ position: 'sticky', top: 0, zIndex: 100, background: '#fff', height: 64, display: 'flex', alignItems: 'center', gap: 14, padding: '0 28px', borderBottom: '2px solid #cffafe', boxShadow: '0 2px 16px rgba(8,145,178,.1)' }}>
         <Link to="/parent/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', flexShrink: 0 }}>
           <div style={{ width: 38, height: 38, background: 'linear-gradient(135deg,#0891b2,#0e7490)', borderRadius: 10, display: 'grid', placeItems: 'center', fontSize: 20 }}>🏥</div>
-          <div style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 18, fontWeight: 700, color: '#0891b2' }}>Sishu Arogaya</div>
+          <div style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 18, fontWeight: 700, color: '#0891b2' }}>Shishu Aarogya</div>
         </Link>
         <div className="navlinks" style={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, marginLeft: 8 }}>
-          {NAV.map(([label, to]) => {
+          {(navLinks && navLinks.length ? navLinks : NAV).map(([label, to]) => {
             const active = location.pathname === to;
             return (
               <Link key={to} to={to} style={{ padding: '7px 13px', borderRadius: 8, fontSize: 13, fontWeight: 500, textDecoration: 'none', whiteSpace: 'nowrap', background: active ? '#f0fdff' : 'transparent', color: active ? '#0e7490' : '#4a7a8a' }}>
@@ -168,9 +164,7 @@ export default function Settings() {
 
       {/* Hero */}
       <div style={{ height: 240, position: 'relative', overflow: 'hidden', background: '#0e7490' }}>
-        {SLIDES.map((src, i) => (
-          <div key={i} style={{ position: 'absolute', inset: 0, backgroundImage: `url(${src})`, backgroundSize: 'cover', backgroundPosition: 'center', opacity: cur === i ? 1 : 0, transition: 'opacity .9s ease' }} />
-        ))}
+        <MediaCarousel currentSlideIndex={cur} />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg,rgba(14,116,144,.88) 0%,rgba(8,145,178,.72) 100%)' }} />
         <div style={{ position: 'relative', zIndex: 1, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 48px' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(207,250,254,.18)', border: '1px solid rgba(207,250,254,.4)', borderRadius: 100, padding: '5px 16px', fontSize: 11, fontWeight: 700, color: '#cffafe', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 14, width: 'fit-content' }}>🏥 Settings</div>
@@ -180,7 +174,7 @@ export default function Settings() {
           <p style={{ fontSize: 14, color: 'rgba(255,255,255,.75)', marginTop: 10, maxWidth: 420 }}>Manage your profile, security settings, and notification preferences.</p>
         </div>
         <div style={{ position: 'absolute', bottom: 14, right: 24, display: 'flex', gap: 6, zIndex: 2 }}>
-          {SLIDES.map((_, i) => <div key={i} onClick={() => setCur(i)} style={{ width: cur === i ? 22 : 8, height: 8, borderRadius: 4, background: cur === i ? '#fff' : 'rgba(255,255,255,.4)', cursor: 'pointer', transition: 'all .3s' }} />)}
+          {MEDIA_ARRAY.map((_, i) => <div key={i} onClick={() => setCur(i)} style={{ width: cur === i ? 22 : 8, height: 8, borderRadius: 4, background: cur === i ? '#fff' : 'rgba(255,255,255,.4)', cursor: 'pointer', transition: 'all .3s' }} />)}
         </div>
       </div>
 
@@ -438,7 +432,7 @@ export default function Settings() {
 
         {/* Footer */}
         <div style={{ textAlign: 'center', marginTop: 48, paddingTop: 24, borderTop: '1px solid #c5e8ef', fontSize: 12, color: '#4a7a8a' }}>
-          Sishu Arogaya &copy; 2024 · Government Integrated Child Health Monitoring System · DBUU Dehradun
+          Shishu Aarogya &copy; 2024 · {t('homeFooter_copyright_long') || 'National Child Health Portal · Government of India'}
         </div>
       </div>
     </div>

@@ -55,6 +55,17 @@ const logVisit = async (req, res) => {
     const normalizedOutcome = normalizeVisitOutcome(outcome);
     const normalizedVaccines = Array.isArray(vaccinesGiven) ? vaccinesGiven.filter(Boolean) : [];
 
+    // Weight limit validation based on child gender (0-24 month range)
+    if (weight != null && weight !== '') {
+      const MAX_WEIGHT = { male: 14, female: 13 };
+      const maxAllowed = MAX_WEIGHT[child.gender] || 14;
+      if (Number(weight) > maxAllowed) {
+        return res.status(400).json({
+          message: `Invalid weight: ${weight} kg exceeds the maximum allowed weight of ${maxAllowed} kg for ${child.gender === 'female' ? 'girls' : 'boys'} (0-24 months).`,
+        });
+      }
+    }
+
     asha.visits.push({
       childId,
       visitType,

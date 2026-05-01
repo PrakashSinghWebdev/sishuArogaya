@@ -85,3 +85,19 @@
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (max-width: 1024px) { .login-shell { grid-template-columns: 1fr; } .login-shell__left { min-height: 420px; } .login-shell__right { min-height: auto; padding: 28px 20px 40px; } }
 @media (max-width: 768px) { .login-shell__left { display: none; } .login-shell__right { padding: 18px; } .login-card { max-width: 100%; max-height: none; padding: 32px 22px; border-radius: 18px; } .login-card__roles { gap: 4px; } .login-card__role { font-size: 11px; } .register-form__grid { grid-template-columns: 1fr; } .register-form__full { grid-column: auto; } }
+
+/* Aadhaar Verification UI */
+.aadhar-verify-status { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 12px; border-radius: 8px; padding: 8px 10px; }
+.aadhar-verify-status.is-checking { color: #0e7490; background: #cffafe; border: 1px solid #a5f3fc; }
+.aadhar-verify-status.is-valid { color: #166534; background: #dcfce7; border: 1px solid #bbf7d0; }
+.aadhar-verify-status.is-invalid { color: #991b1b; background: #fee2e2; border: 1px solid #fecaca; }
+.aadhar-verify-spinner { width: 14px; height: 14px; border: 2px solid rgba(14, 116, 144, 0.3); border-top-color: #0e7490; border-radius: 50%; animation: spin 0.7s linear infinite; }
+.aadhar-verify-icon { font-weight: bold; font-size: 14px; }
+.aadhar-verify-data { margin-top: 4px; font-size: 11px; color: #166534; font-weight: 500; }
+.shake-animation { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+@keyframes shake {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+  40%, 60% { transform: translate3d(4px, 0, 0); }
+}

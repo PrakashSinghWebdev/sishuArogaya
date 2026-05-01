@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import MediaCarousel, { MEDIA_ARRAY } from '../../components/MediaCarousel';
 import { Link, useNavigate } from 'react-router-dom';
 import { childAPI, vaccinationAPI } from '../../services/api';
 import { useLanguage } from '../../context/LanguageContext';
@@ -18,14 +19,14 @@ function printVaccineCard(child, vaccines) {
       tr:nth-child(even)td{background:#f0fdff}
       .footer{margin-top:20px;font-size:11px;color:#4a7a8a;text-align:center;border-top:1px solid #c5e8ef;padding-top:12px}
     </style></head><body>
-    <h1>🏥 Sishu Arogaya</h1>
-    <h2>Government Integrated Child Health Monitoring System — DBUU Dehradun</h2>
+    <h1>🏥 Shishu Aarogya</h1>
+    <h2>National Child Health Portal — Government of India</h2>
     <p><strong>Child Name:</strong> ${child?.name || '—'} &nbsp;|&nbsp; <strong>DOB:</strong> ${child?.dob ? new Date(child.dob).toLocaleDateString('en-IN') : '—'} &nbsp;|&nbsp; <strong>Gender:</strong> ${child?.gender || '—'}</p>
     <table>
       <thead><tr><th>#</th><th>Vaccine</th><th>Age (months)</th><th>Date Given</th><th>Status</th></tr></thead>
       <tbody>${done.map((v, i) => `<tr><td>${i + 1}</td><td>${v.vaccineName}</td><td>${v.ageMonths ?? '—'}</td><td>${v.givenDate ? new Date(v.givenDate).toLocaleDateString('en-IN') : v.dueDate ? new Date(v.dueDate).toLocaleDateString('en-IN') : '—'}</td><td>✓ Done</td></tr>`).join('')}</tbody>
     </table>
-    <div class="footer">Printed on ${new Date().toLocaleDateString('en-IN')} &nbsp;·&nbsp; Sishu Arogaya © 2024</div>
+    <div class="footer">Printed on ${new Date().toLocaleDateString('en-IN')} &nbsp;·&nbsp; Shishu Aarogya © 2024</div>
     </body></html>
   `);
   win.document.close();
@@ -33,7 +34,7 @@ function printVaccineCard(child, vaccines) {
   setTimeout(() => win.print(), 500);
 }
 
-const C = {
+const themeColors = {
   teal: '#0891b2', teal2: '#0e7490', teal3: '#cffafe', teal4: '#f0fdff',
   bg: '#f8fffe', text: '#0c2340', muted: '#4a7a8a', border: '#c5e8ef',
 };
@@ -49,16 +50,12 @@ const NAV = [
   ['🔔 Notifications', '/parent/notifications'],
 ];
 
-const SLIDES = [
-  'https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?w=1400&q=80&fit=crop',
-  'https://images.unsplash.com/photo-1559757175-0eb30cd8c063?w=1400&q=80&fit=crop',
-  'https://images.unsplash.com/photo-1476703993599-0035a21b17a9?w=1400&q=80&fit=crop',
-];
+
 
 const STATUS_CFG = {
   done:     { label: 'Done',     bg: '#dcfce7', color: '#15803d', border: '#86efac', icon: '✓', pillBg: '#dcfce7', pillColor: '#15803d' },
   due:      { label: 'Due Soon', bg: '#fef3c7', color: '#92400e', border: '#fcd34d', icon: '!', pillBg: '#fef3c7', pillColor: '#b45309' },
-  upcoming: { label: 'Upcoming', bg: C.teal4,   color: C.teal2,   border: C.border,  icon: '→', pillBg: C.teal4,   pillColor: C.teal },
+  upcoming: { label: 'Upcoming', bg: themeColors.teal4,   color: themeColors.teal2,   border: themeColors.border,  icon: '→', pillBg: themeColors.teal4,   pillColor: themeColors.teal },
   missed:   { label: 'Missed',   bg: '#fee2e2', color: '#b91c1c', border: '#fca5a5', icon: '×', pillBg: '#fee2e2', pillColor: '#b91c1c' },
 };
 
@@ -76,7 +73,7 @@ function VaccineRow({ v, idx, updatingId, setUpdatingId, setVaccines }) {
       display: 'flex', alignItems: 'center', gap: 14,
       padding: '14px 16px',
       background: isDue ? '#fffbeb' : '#fff',
-      border: `1.5px solid ${isDue ? '#fcd34d' : C.border}`,
+      border: `1.5px solid ${isDue ? '#fcd34d' : themeColors.border}`,
       borderRadius: 12,
       marginBottom: 10,
       boxShadow: isDue ? '0 2px 12px rgba(245,158,11,.12)' : '0 1px 4px rgba(8,145,178,.05)',
@@ -92,15 +89,15 @@ function VaccineRow({ v, idx, updatingId, setUpdatingId, setVaccines }) {
 
       {/* Info */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 2 }}>{v.vaccineName}</div>
-        <div style={{ fontSize: 11, color: C.muted }}>
+        <div style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 14, fontWeight: 700, color: themeColors.text, marginBottom: 2 }}>{v.vaccineName}</div>
+        <div style={{ fontSize: 11, color: themeColors.muted }}>
           {v.givenDate ? `Given: ${fmt(v.givenDate)}` : `Due: ${fmt(v.dueDate)}`}
           {v.centre ? ` · ${v.centre}` : ''}
         </div>
       </div>
 
       {/* Age label */}
-      <div style={{ fontSize: 11, color: C.muted, flexShrink: 0, marginRight: 6 }}>
+      <div style={{ fontSize: 11, color: themeColors.muted, flexShrink: 0, marginRight: 6 }}>
         {v.ageMonths != null ? `${v.ageMonths} mo` : ''}
       </div>
 
@@ -148,7 +145,7 @@ function VaccineRow({ v, idx, updatingId, setUpdatingId, setVaccines }) {
 
 export default function VaccinationSchedule() {
   const navigate = useNavigate();
-  const { navLinks } = useLanguage();
+  const { navLinks, t } = useLanguage();
   const [children, setChildren] = useState([]);
   const [updatingId, setUpdatingId] = useState(null);
   const [selectedChild, setSelectedChild] = useState(null);
@@ -200,7 +197,7 @@ export default function VaccinationSchedule() {
   }, [selectedChild]);
 
   useEffect(() => {
-    const t = setInterval(() => setSlide((s) => (s + 1) % SLIDES.length), 4000);
+    const t = setInterval(() => setSlide((s) => (s + 1) % MEDIA_ARRAY.length), 4000);
     return () => clearInterval(t);
   }, []);
 
@@ -214,37 +211,40 @@ export default function VaccinationSchedule() {
   const filtered = filter === 'all' ? vaccines : vaccines.filter((v) => v.status === filter);
 
   return (
-    <div style={{ fontFamily: "'DM Sans', sans-serif", background: C.bg, minHeight: '100vh', color: C.text }}>
+    <div style={{ fontFamily: "'DM Sans', sans-serif", background: themeColors.bg, minHeight: '100vh', color: themeColors.text }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap');
         *{box-sizing:border-box}
         @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
         @keyframes spin{to{transform:rotate(360deg)}}
-        .vs-card{background:#fff;border:1.5px solid ${C.border};border-radius:16px;box-shadow:0 2px 12px rgba(8,145,178,.07);padding:20px}
+        .vs-card{background:#fff;border:1.5px solid ${themeColors.border};border-radius:16px;box-shadow:0 2px 12px rgba(8,145,178,.07);padding:20px}
         .vs-btn{padding:9px 18px;border-radius:10px;font-weight:600;font-size:13px;cursor:pointer;border:none;transition:all .2s;font-family:inherit}
-        .vs-btn-teal{background:${C.teal};color:#fff} .vs-btn-teal:hover{background:${C.teal2}}
-        .vs-btn-out{background:#fff;color:${C.teal};border:1.5px solid ${C.border}} .vs-btn-out:hover{background:${C.teal4}}
+        .vs-btn-teal{background:${themeColors.teal};color:#fff} .vs-btn-teal:hover{background:${themeColors.teal2}}
+        .vs-btn-out{background:#fff;color:${themeColors.teal};border:1.5px solid ${themeColors.border}} .vs-btn-out:hover{background:${themeColors.teal4}}
         @media(max-width:960px){.vs-main{grid-template-columns:1fr!important}}
         @media(max-width:700px){.vs-stats{grid-template-columns:repeat(2,1fr)!important}.vs-nav-links{display:none!important}}
         @media(max-width:420px){.vs-stats{grid-template-columns:1fr!important}}
       `}</style>
 
       {/* Navbar */}
-      <nav style={{ position: 'sticky', top: 0, zIndex: 200, background: '#fff', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', padding: '0 24px', height: 62, boxShadow: '0 2px 12px rgba(8,145,178,.08)' }}>
+      <nav style={{ position: 'sticky', top: 0, zIndex: 200, background: '#fff', borderBottom: `1px solid ${themeColors.border}`, display: 'flex', alignItems: 'center', padding: '0 24px', height: 62, boxShadow: '0 2px 12px rgba(8,145,178,.08)' }}>
         <Link to="/parent/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', marginRight: 20, flexShrink: 0 }}>
-          <div style={{ width: 36, height: 36, background: `linear-gradient(135deg,${C.teal},${C.teal2})`, borderRadius: 9, display: 'grid', placeItems: 'center', fontSize: 18 }}>🌿</div>
-          <span style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 17, fontWeight: 700, color: C.teal2 }}>Sishu Arogaya</span>
+          <div style={{ width: 36, height: 36, background: `linear-gradient(135deg,${themeColors.teal},${themeColors.teal2})`, borderRadius: 9, display: 'grid', placeItems: 'center', fontSize: 18 }}>🏥</div>
+          <div>
+            <div style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 17, fontWeight: 700, color: themeColors.teal2, lineHeight: 1.1 }}>Shishu Aarogya</div>
+            <div style={{ fontSize: 9, color: '#4a7a8a', fontWeight: 500, lineHeight: 1 }}>National Child Health Portal</div>
+          </div>
         </Link>
         <div className="vs-nav-links" style={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, overflowX: 'auto' }}>
-          {(navLinks.length ? navLinks : NAV).map(([label, to]) => (
-            <Link key={to} to={to} style={{ padding: '6px 11px', borderRadius: 8, fontSize: 12.5, fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap', background: to === '/parent/vaccination' ? C.teal4 : 'transparent', color: to === '/parent/vaccination' ? C.teal : C.muted, borderBottom: to === '/parent/vaccination' ? `2px solid ${C.teal}` : '2px solid transparent' }}>
+          {(navLinks && navLinks.length ? navLinks : NAV).map(([label, to]) => (
+            <Link key={to} to={to} style={{ padding: '6px 11px', borderRadius: 8, fontSize: 12.5, fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap', background: to === '/parent/vaccination' ? themeColors.teal4 : 'transparent', color: to === '/parent/vaccination' ? themeColors.teal : themeColors.muted, borderBottom: to === '/parent/vaccination' ? `2px solid ${themeColors.teal}` : '2px solid transparent' }}>
               {label}
             </Link>
           ))}
         </div>
         {children.length > 1 && (
           <select value={selectedChild?._id || ''} onChange={(e) => setSelectedChild(children.find((c) => c._id === e.target.value))}
-            style={{ marginLeft: 12, padding: '6px 10px', borderRadius: 8, border: `1.5px solid ${C.border}`, fontSize: 13, color: C.text, background: '#fff', fontFamily: 'inherit' }}>
+            style={{ marginLeft: 12, padding: '6px 10px', borderRadius: 8, border: `1.5px solid ${themeColors.border}`, fontSize: 13, color: themeColors.text, background: '#fff', fontFamily: 'inherit' }}>
             {children.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
           </select>
         )}
@@ -252,19 +252,17 @@ export default function VaccinationSchedule() {
 
       {/* Hero */}
       <div style={{ position: 'relative', height: 240, overflow: 'hidden' }}>
-        {SLIDES.map((src, i) => (
-          <img key={src} src={src} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: i === slide ? 1 : 0, transition: 'opacity 1s ease' }} />
-        ))}
-        <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg,${C.teal2}ee,${C.teal}bb)` }} />
+        <MediaCarousel currentSlideIndex={slide} />
+        <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg,${themeColors.teal2}ee,${themeColors.teal}bb)` }} />
         <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(255,255,255,.18)', border: '1px solid rgba(255,255,255,.35)', borderRadius: 100, padding: '5px 16px', fontSize: 11, fontWeight: 700, color: '#fff', letterSpacing: '.09em', textTransform: 'uppercase', marginBottom: 14 }}>🏥 Vaccination Tracker</div>
           <h1 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 'clamp(22px,3vw,36px)', fontWeight: 700, color: '#fff', textAlign: 'center', lineHeight: 1.2 }}>
-            Immunization <span style={{ color: C.teal3 }}>Schedule</span>
+            Immunization <span style={{ color: themeColors.teal3 }}>Schedule</span>
           </h1>
           <p style={{ color: 'rgba(255,255,255,.75)', fontSize: 14, marginTop: 8 }}>Track every dose, stay ahead of due vaccines</p>
         </div>
         <div style={{ position: 'absolute', bottom: 14, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 6, zIndex: 3 }}>
-          {SLIDES.map((_, i) => <div key={i} onClick={() => setSlide(i)} style={{ width: i === slide ? 20 : 7, height: 7, borderRadius: 4, background: i === slide ? '#fff' : 'rgba(255,255,255,.45)', cursor: 'pointer', transition: 'all .3s' }} />)}
+          {MEDIA_ARRAY.map((_, i) => <div key={i} onClick={() => setSlide(i)} style={{ width: i === slide ? 20 : 7, height: 7, borderRadius: 4, background: i === slide ? '#fff' : 'rgba(255,255,255,.45)', cursor: 'pointer', transition: 'all .3s' }} />)}
         </div>
       </div>
 
@@ -272,8 +270,8 @@ export default function VaccinationSchedule() {
         {/* Page Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <h2 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 24, fontWeight: 700, color: C.text, margin: 0 }}>💉 Vaccination Schedule</h2>
-            {selectedChild && <div style={{ fontSize: 13, color: C.muted, marginTop: 4 }}>{selectedChild.name}</div>}
+            <h2 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 24, fontWeight: 700, color: themeColors.text, margin: 0 }}>💉 Vaccination Schedule</h2>
+            {selectedChild && <div style={{ fontSize: 13, color: themeColors.muted, marginTop: 4 }}>{selectedChild.name}</div>}
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             <button className="vs-btn vs-btn-teal" onClick={handleBookAppointment}>📅 Book Appointment</button>
@@ -284,16 +282,16 @@ export default function VaccinationSchedule() {
         {/* Stat Cards */}
         <div className="vs-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 20 }}>
           {[
-            { icon: '✅', val: done,          label: 'Completed',    color: C.teal,    top: C.teal },
+            { icon: '✅', val: done,          label: 'Completed',    color: themeColors.teal,    top: themeColors.teal },
             { icon: '⏰', val: dueCount,      label: 'Due Soon',     color: '#d97706', top: '#f59e0b' },
             { icon: '📅', val: upcomingCount, label: 'Upcoming',     color: '#16a34a', top: '#16a34a' },
             { icon: '💉', val: `${pct}%`,     label: 'Coverage Rate',color: '#2563eb', top: '#2563eb' },
           ].map(({ icon, val, label, color, top }) => (
-            <div key={label} style={{ background: '#fff', borderRadius: 14, border: `1.5px solid ${C.border}`, padding: '18px 16px', borderTop: `3px solid ${top}`, boxShadow: '0 2px 8px rgba(8,145,178,.06)', display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: C.teal4, display: 'grid', placeItems: 'center', fontSize: 22, flexShrink: 0 }}>{icon}</div>
+            <div key={label} style={{ background: '#fff', borderRadius: 14, border: `1.5px solid ${themeColors.border}`, padding: '18px 16px', borderTop: `3px solid ${top}`, boxShadow: '0 2px 8px rgba(8,145,178,.06)', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: themeColors.teal4, display: 'grid', placeItems: 'center', fontSize: 22, flexShrink: 0 }}>{icon}</div>
               <div>
                 <div style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 24, fontWeight: 700, color, lineHeight: 1 }}>{val}</div>
-                <div style={{ fontSize: 11, color: C.muted, marginTop: 3 }}>{label}</div>
+                <div style={{ fontSize: 11, color: themeColors.muted, marginTop: 3 }}>{label}</div>
               </div>
             </div>
           ))}
@@ -326,11 +324,11 @@ export default function VaccinationSchedule() {
           {/* Left: Timeline */}
           <div className="vs-card">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18, flexWrap: 'wrap', gap: 10 }}>
-              <h5 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 16, fontWeight: 700, color: C.teal2, margin: 0 }}>📋 Complete Vaccine Timeline</h5>
-              <div style={{ display: 'flex', gap: 6, background: C.teal4, borderRadius: 10, padding: 4 }}>
+              <h5 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 16, fontWeight: 700, color: themeColors.teal2, margin: 0 }}>📋 Complete Vaccine Timeline</h5>
+              <div style={{ display: 'flex', gap: 6, background: themeColors.teal4, borderRadius: 10, padding: 4 }}>
                 {[['all', 'All'], ['done', 'Done'], ['due', 'Due'], ['upcoming', 'Upcoming'], ['missed', 'Missed']].map(([val, lbl]) => (
                   <button key={val} onClick={() => setFilter(val)}
-                    style={{ padding: '5px 12px', borderRadius: 8, fontSize: 11, fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: 'inherit', background: filter === val ? C.teal : 'transparent', color: filter === val ? '#fff' : C.muted }}>
+                    style={{ padding: '5px 12px', borderRadius: 8, fontSize: 11, fontWeight: 700, border: 'none', cursor: 'pointer', fontFamily: 'inherit', background: filter === val ? themeColors.teal : 'transparent', color: filter === val ? '#fff' : themeColors.muted }}>
                     {lbl}
                   </button>
                 ))}
@@ -342,14 +340,14 @@ export default function VaccinationSchedule() {
                 <div style={{ display: 'inline-block', width: 40, height: 40, border: '3px solid #c5e8ef', borderTopColor: '#0891b2', borderRadius: '50%', animation: 'spin .7s linear infinite' }} />
               </div>
             ) : vaccines.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '60px 20px', color: C.muted }}>
+              <div style={{ textAlign: 'center', padding: '60px 20px', color: themeColors.muted }}>
                 <div style={{ fontSize: 48, marginBottom: 16 }}>💉</div>
                 <h4 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 20, marginBottom: 12 }}>No Vaccination Data</h4>
                 <p>No vaccination records found. This is normal for new child profiles.</p>
                 <p style={{ fontSize: 13, marginTop: 8 }}>Vaccination schedule will auto-populate as your child grows. Mark vaccines as "Done" when administered.</p>
               </div>
             ) : filtered.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px 20px', color: C.muted, fontSize: 14 }}>No vaccines match this filter.</div>
+              <div style={{ textAlign: 'center', padding: '40px 20px', color: themeColors.muted, fontSize: 14 }}>No vaccines match this filter.</div>
             ) : (
               filtered.map((v, i) => <VaccineRow key={v._id} v={v} idx={i} updatingId={updatingId} setUpdatingId={setUpdatingId} setVaccines={setVaccines} />)
             )}
@@ -359,20 +357,20 @@ export default function VaccinationSchedule() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {/* Vaccination Centre */}
             <div className="vs-card">
-              <h5 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 15, fontWeight: 700, color: C.teal2, marginBottom: 14 }}>🏥 Vaccination Centre</h5>
+              <h5 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 15, fontWeight: 700, color: themeColors.teal2, marginBottom: 14 }}>🏥 Vaccination Centre</h5>
               {[
                 { icon: '🏛️', label: 'Centre Name', value: selectedChild?.ashaId?.block ? `PHC – ${selectedChild.ashaId.block}` : 'Primary Health Centre' },
                 { icon: '📍', label: 'Address', value: [selectedChild?.ashaId?.village, selectedChild?.ashaId?.block, selectedChild?.ashaId?.district].filter(Boolean).join(', ') || 'Block PHC, Main Road' },
                 { icon: '⏰', label: 'Timings', value: 'Mon–Sat: 9 AM – 1 PM' },
                 { icon: '📞', label: 'ASHA Contact', value: selectedChild?.ashaId?.userId?.phone || 'Contact your ASHA worker' },
               ].map(({ icon, label, value }) => (
-                <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', background: C.teal4, borderRadius: 9, marginBottom: 7 }}>
-                  <div style={{ width: 30, height: 30, borderRadius: '50%', background: C.teal3, display: 'grid', placeItems: 'center', fontSize: 14, flexShrink: 0 }}>{icon}</div>
+                <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', background: themeColors.teal4, borderRadius: 9, marginBottom: 7 }}>
+                  <div style={{ width: 30, height: 30, borderRadius: '50%', background: themeColors.teal3, display: 'grid', placeItems: 'center', fontSize: 14, flexShrink: 0 }}>{icon}</div>
                   <div>
-                    <div style={{ fontSize: 10, color: C.muted, fontWeight: 600 }}>{label}</div>
+                    <div style={{ fontSize: 10, color: themeColors.muted, fontWeight: 600 }}>{label}</div>
                     {label === 'ASHA Contact' && selectedChild?.ashaId?.userId?.phone
-                      ? <a href={`tel:${selectedChild.ashaId.userId.phone}`} style={{ fontSize: 12, fontWeight: 700, color: C.teal, textDecoration: 'none' }}>{value}</a>
-                      : <div style={{ fontSize: 12, fontWeight: 700, color: C.text }}>{value}</div>
+                      ? <a href={`tel:${selectedChild.ashaId.userId.phone}`} style={{ fontSize: 12, fontWeight: 700, color: themeColors.teal, textDecoration: 'none' }}>{value}</a>
+                      : <div style={{ fontSize: 12, fontWeight: 700, color: themeColors.text }}>{value}</div>
                     }
                   </div>
                 </div>
@@ -380,8 +378,8 @@ export default function VaccinationSchedule() {
             </div>
 
             {/* After Vaccination Tips */}
-            <div className="vs-card" style={{ background: C.teal4 }}>
-              <h5 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 15, fontWeight: 700, color: C.teal2, marginBottom: 12 }}>💡 After Vaccination Tips</h5>
+            <div className="vs-card" style={{ background: themeColors.teal4 }}>
+              <h5 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 15, fontWeight: 700, color: themeColors.teal2, marginBottom: 12 }}>💡 After Vaccination Tips</h5>
               {[
                 'Mild fever is normal – give paracetamol if needed',
                 'Keep the injection site clean and dry',
@@ -389,8 +387,8 @@ export default function VaccinationSchedule() {
                 'Comfort the child with breastfeeding or cuddles',
               ].map((tip, i) => (
                 <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 9, padding: '8px 10px', background: '#fff', borderRadius: 8 }}>
-                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: C.teal, flexShrink: 0, marginTop: 5 }} />
-                  <div style={{ fontSize: 12, color: C.text, lineHeight: 1.6 }}>{tip}</div>
+                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: themeColors.teal, flexShrink: 0, marginTop: 5 }} />
+                  <div style={{ fontSize: 12, color: themeColors.text, lineHeight: 1.6 }}>{tip}</div>
                 </div>
               ))}
               <div style={{ display: 'flex', gap: 8, marginTop: 4, padding: '8px 10px', background: '#fee2e2', borderRadius: 8 }}>
@@ -400,7 +398,7 @@ export default function VaccinationSchedule() {
             </div>
 
             {/* Coverage Progress */}
-            <div style={{ background: `linear-gradient(135deg,${C.teal2},${C.teal})`, borderRadius: 14, padding: '20px 18px', boxShadow: `0 4px 16px rgba(8,145,178,.2)` }}>
+            <div style={{ background: `linear-gradient(135deg,${themeColors.teal2},${themeColors.teal})`, borderRadius: 14, padding: '20px 18px', boxShadow: `0 4px 16px rgba(8,145,178,.2)` }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.65)', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 8 }}>Coverage Progress</div>
               <div style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 38, fontWeight: 700, color: '#fff', lineHeight: 1 }}>{pct}%</div>
               <div style={{ height: 8, background: 'rgba(255,255,255,.2)', borderRadius: 4, margin: '12px 0', overflow: 'hidden' }}>
@@ -415,9 +413,9 @@ export default function VaccinationSchedule() {
         </div>
       </div>
 
-      <div style={{ background: '#0e7490', color: 'rgba(255,255,255,.45)', textAlign: 'center', padding: 14, fontSize: 12 }}>
-        Sishu Arogaya © 2024 · Government Integrated Child Health Monitoring System · DBUU Dehradun
-      </div>
+      <footer style={{ background: '#0e7490', color: 'rgba(255,255,255,.45)', textAlign: 'center', padding: 14, fontSize: 12 }}>
+        Shishu Aarogya &copy; 2024 &middot; {t('homeFooter_copyright_long') || 'National Child Health Portal · Government of India'}
+      </footer>
     </div>
   );
 }

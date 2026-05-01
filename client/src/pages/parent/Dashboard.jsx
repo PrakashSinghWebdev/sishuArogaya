@@ -1,20 +1,17 @@
 import { useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react';
+import MediaCarousel, { MEDIA_ARRAY } from '../../components/MediaCarousel';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { notificationAPI, schemeAPI, vaccinationAPI, growthAPI, dietAPI } from '../../services/api';
+import { notificationAPI, schemeAPI, vaccinationAPI, growthAPI, dietAPI, searchAPI } from '../../services/api';
 import useSelectedChild from '../../hooks/useSelectedChild';
+import SearchBar from '../../components/SearchBar';
 
 const HospitalMap = lazy(() => import('../../components/HospitalMap'));
 
 /* ─── constants ──────────────────────────────────────────────────────────── */
 
-const SLIDES = [
-  'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=1400&q=80&fit=crop',
-  'https://images.unsplash.com/photo-1527482797697-8795b05a13fe?w=1400&q=80&fit=crop',
-  'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=1400&q=80&fit=crop',
-  'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=1400&q=80&fit=crop',
-];
+
 
 const QUICK_ACTIONS = [
   { emoji: '💉', labelKey: 'bookVaccine',    label: 'Vaccinations',    to: '/parent/vaccination' },
@@ -27,14 +24,14 @@ const QUICK_ACTIONS = [
 
 /* ─── helpers ────────────────────────────────────────────────────────────── */
 
-function fmt(date) {
+function formatDate(date) {
   const d = new Date(date);
   return Number.isNaN(d.getTime())
     ? 'Date unavailable'
     : d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
-function calcAge(dob) {
+function childAgeLabel(dob) {
   if (!dob) return null;
   const ms = Date.now() - new Date(dob).getTime();
   const months = Math.floor(ms / (1000 * 60 * 60 * 24 * 30.44));
@@ -107,7 +104,9 @@ export default function ParentDashboard() {
   const [prediction,    setPrediction]    = useState(null);
   const [diet,          setDiet]          = useState(null);
   const [loading,       setLoading]       = useState(true);
-  const [cur,           setCur]           = useState(0);
+  const [slideIndex,    setSlideIndex]    = useState(0);
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
   const timerRef = useRef(null);
 
   /* ── fetch notifications & schemes ── */
@@ -153,9 +152,27 @@ export default function ParentDashboard() {
 
   /* ── carousel timer ── */
   useEffect(() => {
-    timerRef.current = setInterval(() => setCur((p) => (p + 1) % SLIDES.length), 4500);
+    timerRef.current = setInterval(() => setSlideIndex((p) => (p + 1) % MEDIA_ARRAY.length), 4500);
     return () => clearInterval(timerRef.current);
   }, []);
+
+  /* ── search handler ── */
+  const handleSearch = async (query) => {
+    setSearchLoading(true);
+    try {
+      const res = await searchAPI.parentSearchChildren(query);
+      setSearchResults(res.data?.results || []);
+    } catch (err) {
+      console.error('Search error:', err);
+      setSearchResults([]);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const handleSearchResultClick = (child) => {
+    setSelectedChild(child._id);
+  };
 
   /* ── computed values ── */
   const due    = vaccines.filter((v) => v.status === 'due');
@@ -197,6 +214,26 @@ export default function ParentDashboard() {
         }
         @keyframes spin {
           to { transform: rotate(360deg); }
+        }
+
+        .sa-logo-box {
+          display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+          text-decoration: none;
+        }
+        .sa-logo-icon {
+          width: 42px; height: 42px; border-radius: 12px;
+          background: linear-gradient(135deg, #0891b2, #0e7490);
+          display: flex; align-items: center; justify-content: center;
+          font-size: 22px; color: #fff;
+          box-shadow: 0 4px 12px rgba(8, 145, 178, 0.3);
+        }
+        .sa-logo-text {
+          font-family: 'Libre Baskerville', serif;
+          font-weight: 700; font-size: 18px; color: #0e7490; line-height: 1;
+        }
+        .sa-logo-tag {
+          font-size: 10px; color: #4a7a8a; font-weight: 500; margin-top: 2px;
+          letter-spacing: 0.02em;
         }
 
         .sa-nav-link {
@@ -281,26 +318,19 @@ export default function ParentDashboard() {
         padding: '0 24px',
         gap: 16,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-          <div style={{
-            width: 38, height: 38, borderRadius: 10,
-            background: 'linear-gradient(135deg,#0891b2,#0e7490)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 20,
-          }}>🏥</div>
+        <Link className="sa-logo-box" to="/parent/dashboard">
+          <div className="sa-logo-icon">🏥</div>
           <div>
-            <div style={{ fontFamily: "'Libre Baskerville', serif", fontWeight: 700, fontSize: 16, color: '#0e7490', lineHeight: 1.1 }}>
-              Sishu Arogaya
-            </div>
-            <div style={{ fontSize: 10, color: '#4a7a8a', lineHeight: 1 }}>Child Health Portal</div>
+            <div className="sa-logo-text">Shishu Aarogya</div>
+            <div className="sa-logo-tag">National Child Health Portal</div>
           </div>
-        </div>
+        </Link>
 
         <div className="sa-navlinks" style={{
           display: 'flex', alignItems: 'center',
           gap: 2, flex: 1, justifyContent: 'center', flexWrap: 'nowrap', overflow: 'hidden',
         }}>
-          {navLinks.map(([label, to]) => (
+          {(navLinks && navLinks.length ? navLinks : NAV).map(([label, to]) => (
             <Link key={to} to={to} className={`sa-nav-link${location.pathname === to ? ' active' : ''}`}>
               {label}
             </Link>
@@ -333,15 +363,7 @@ export default function ParentDashboard() {
 
       {/* ════════════════════════════════════ HERO ════ */}
       <div style={{ position: 'relative', height: 300, overflow: 'hidden' }}>
-        {SLIDES.map((src, i) => (
-          <div key={src} style={{
-            position: 'absolute', inset: 0,
-            backgroundImage: `url(${src})`,
-            backgroundSize: 'cover', backgroundPosition: 'center',
-            opacity: i === cur ? 1 : 0,
-            transition: 'opacity 1.1s ease',
-          }} />
-        ))}
+        <MediaCarousel currentSlideIndex={slideIndex} />
 
         <div style={{
           position: 'absolute', inset: 0,
@@ -412,14 +434,14 @@ export default function ParentDashboard() {
           position: 'absolute', bottom: 14, left: '50%', transform: 'translateX(-50%)',
           zIndex: 3, display: 'flex', gap: 7,
         }}>
-          {SLIDES.map((_, i) => (
+          {MEDIA_ARRAY.map((_, i) => (
             <button
               key={i}
-              onClick={() => { setCur(i); clearInterval(timerRef.current); timerRef.current = setInterval(() => setCur((p) => (p + 1) % SLIDES.length), 4500); }}
+              onClick={() => { setSlideIndex(i); clearInterval(timerRef.current); timerRef.current = setInterval(() => setSlideIndex((p) => (p + 1) % MEDIA_ARRAY.length), 4500); }}
               style={{
-                width: i === cur ? 22 : 8, height: 8,
+                width: i === slideIndex? 22 : 8, height: 8,
                 borderRadius: 8, border: 'none', cursor: 'pointer',
-                background: i === cur ? '#fff' : 'rgba(255,255,255,.45)',
+                background: i === slideIndex? '#fff' : 'rgba(255,255,255,.45)',
                 transition: 'width .3s, background .3s',
                 padding: 0,
               }}
@@ -508,6 +530,19 @@ export default function ParentDashboard() {
               <div style={{ fontSize: 13, color: '#4a7a8a', fontWeight: 500 }}>{today}</div>
             </div>
 
+            {/* ── Search Bar ── */}
+            <div style={{ marginBottom: 24, animation: 'fadeUp .45s ease' }}>
+              <SearchBar
+                placeholder="Search children by name or ID..."
+                onSearch={handleSearch}
+                results={searchResults}
+                isLoading={searchLoading}
+                noResultsMessage="No children found"
+                onResultClick={handleSearchResultClick}
+                searchType="child"
+              />
+            </div>
+
             {/* ── Child card ── */}
             <div className="sa-card" style={{ padding: '20px 24px', marginBottom: 22, animation: 'fadeUp .45s ease' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
@@ -524,7 +559,7 @@ export default function ParentDashboard() {
                     </div>
                     <div style={{ fontSize: 13, color: '#4a7a8a', marginTop: 3 }}>
                       {[
-                        calcAge(selectedChild.dob) || (selectedChild.ageInMonths != null ? `${selectedChild.ageInMonths} months` : null),
+                        childAgeLabel(selectedChild.dob) || (selectedChild.ageInMonths != null ? `${selectedChild.ageInMonths} months` : null),
                         selectedChild.gender,
                         selectedChild.bloodGroup ? `Blood: ${selectedChild.bloodGroup}` : null,
                         selectedChild.nutritionStatus ? `Nutrition: ${selectedChild.nutritionStatus}` : null,
@@ -560,7 +595,7 @@ export default function ParentDashboard() {
                 emoji="⚖️" accent="#059669"
                 label="Current Weight"
                 value={latestGrowth?.weight ? `${latestGrowth.weight} kg` : (selectedChild.currentWeight ? `${selectedChild.currentWeight} kg` : 'N/A')}
-                sub={latestGrowth ? `Recorded ${fmt(latestGrowth.date)}` : 'No record yet'}
+                sub={latestGrowth ? `Recorded ${formatDate(latestGrowth.date)}` : 'No record yet'}
               />
               <StatCard
                 emoji="📏" accent="#f59e0b"
@@ -605,7 +640,7 @@ export default function ParentDashboard() {
                   }}>
                     <div>
                       <div style={{ fontWeight: 600, fontSize: 13, color: '#0c2340' }}>{v.vaccineName}</div>
-                      <div style={{ fontSize: 11, color: '#4a7a8a', marginTop: 2 }}>{fmt(v.dueDate)}</div>
+                      <div style={{ fontSize: 11, color: '#4a7a8a', marginTop: 2 }}>{formatDate(v.dueDate)}</div>
                     </div>
                     <span className={
                       v.status === 'done'     ? 'sa-badge-done'
@@ -619,19 +654,19 @@ export default function ParentDashboard() {
               </div>
 
               {/* Hospital Map */}
-              <div className="sa-card" style={{ padding: 0, overflow: 'hidden', minHeight: 380 }}>
-                <div style={{ padding: '14px 18px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #c5e8ef' }}>
+              <div className="sa-card" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '100%' }}>
+                <div style={{ padding: '14px 18px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #c5e8ef', flexShrink: 0 }}>
                   <h3 style={{ fontFamily: "'Libre Baskerville', serif", fontSize: 16, fontWeight: 700, margin: 0, color: '#0c2340' }}>
-                    🏥 Nearby Hospitals
+                    🏥 {t('nearbyHospitals') || 'Nearby Hospitals'}
                   </h3>
-                  <span style={{ fontSize: 11, color: '#4a7a8a' }}>Real-time · GPS</span>
+                  <span style={{ fontSize: 11, color: '#4a7a8a' }}>{t('realtimeGps') || 'Real-time · GPS'}</span>
                 </div>
                 <Suspense fallback={
                   <div style={{ height: 340, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4a7a8a', fontSize: 13 }}>
                     Loading map…
                   </div>
                 }>
-                  <HospitalMap height="340px" showSearchBar={true} />
+                  <HospitalMap height="100%" showSearchBar={true} />
                 </Suspense>
               </div>
             </div>
@@ -656,7 +691,7 @@ export default function ParentDashboard() {
                     <tbody>
                       {growth.map((g, i) => (
                         <tr key={g._id || i} style={{ borderBottom: '1px solid #f0fdff' }}>
-                          <td style={{ padding: '9px 12px', color: '#0c2340', fontWeight: 500 }}>{fmt(g.date || g.createdAt)}</td>
+                          <td style={{ padding: '9px 12px', color: '#0c2340', fontWeight: 500 }}>{formatDate(g.date || g.createdAt)}</td>
                           <td style={{ padding: '9px 12px', color: '#059669', fontWeight: 600 }}>{g.weight ?? '—'}</td>
                           <td style={{ padding: '9px 12px', color: '#0891b2', fontWeight: 600 }}>{g.height ?? '—'}</td>
                           <td style={{ padding: '9px 12px', color: '#4a7a8a' }}>{g.ageInMonths ?? '—'}</td>
@@ -751,7 +786,7 @@ export default function ParentDashboard() {
                       {n.title && n.message && (
                         <div style={{ fontSize: 12, color: '#4a7a8a' }}>{n.message}</div>
                       )}
-                      <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>{fmt(n.createdAt)}</div>
+                      <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>{formatDate(n.createdAt)}</div>
                     </div>
                     {!n.isRead && (
                       <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#0891b2', flexShrink: 0, marginTop: 4 }} />
@@ -851,15 +886,8 @@ export default function ParentDashboard() {
       </div>
 
       {/* ════════════════════════════════════ FOOTER ════ */}
-      <footer style={{
-        background: '#0e7490',
-        color: 'rgba(255,255,255,.5)',
-        textAlign: 'center',
-        padding: '18px 24px',
-        fontSize: 12,
-        letterSpacing: .3,
-      }}>
-        Sishu Arogaya © 2024 &nbsp;·&nbsp; Government Integrated Child Health Monitoring System &nbsp;·&nbsp; DBUU Dehradun
+      <footer style={{ marginTop: 40, borderTop: '1px solid #c5e8ef', paddingTop: 24, textAlign: 'center', fontSize: 13, color: '#4a7a8a' }}>
+        Shishu Aarogya &copy; 2024 &nbsp;·&nbsp; {t('homeFooter_copyright_long') || 'National Child Health Portal · Government of India'}
       </footer>
     </div>
   );

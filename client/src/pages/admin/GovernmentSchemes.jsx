@@ -14,7 +14,7 @@ const GovernmentSchemes = () => {
   const [saving, setSaving] = useState(false);
 
   const load = () => schemeAPI.list().then(r=>setSchemes(r.data)).catch(console.error).finally(()=>setLoading(false));
-  useEffect(load, []);
+  useEffect(() => { load(); }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault(); setSaving(true);

@@ -1,23 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { schemeAPI } from '../../services/api';
+import MediaCarousel, { MEDIA_ARRAY } from '../../components/MediaCarousel';
+import { useLanguage } from '../../context/LanguageContext';
 
-const SLIDES = [
-  'https://images.unsplash.com/photo-1559757175-0eb30cd8c063?w=1400&q=80&fit=crop',
-  'https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?w=1400&q=80&fit=crop',
-  'https://images.unsplash.com/photo-1476703993599-0eb30cd8c063?w=1400&q=80&fit=crop',
-];
 
-const NAV = [
-  ['🏠 Dashboard', '/parent/dashboard'],
-  ['👶 My Child', '/parent/child-profile'],
-  ['💉 Vaccines', '/parent/vaccination'],
-  ['📈 Growth', '/parent/growth'],
-  ['🥗 Diet Plan', '/parent/diet-plan'],
-  ['🏛️ Schemes', '/parent/schemes'],
-  ['📋 Reports', '/parent/reports'],
-  ['🔔 Notifications', '/parent/notifications'],
-];
+
+// navLinks moved to component body using useLanguage()
 
 const CATEGORY_COLOR = {
   nutrition:   '#059669',
@@ -40,6 +29,7 @@ function schemeColor(s) {
 }
 
 export default function GovernmentSchemes() {
+  const { navLinks, t } = useLanguage();
   const [slide,       setSlide]       = useState(0);
   const slideRef                      = useRef(0);
   const [schemes,     setSchemes]     = useState([]);
@@ -51,7 +41,7 @@ export default function GovernmentSchemes() {
   /* ── auto-slide ── */
   useEffect(() => {
     const id = setInterval(() => {
-      slideRef.current = (slideRef.current + 1) % SLIDES.length;
+      slideRef.current = (slideRef.current + 1) % MEDIA_ARRAY.length;
       setSlide(slideRef.current);
     }, 4500);
     return () => clearInterval(id);
@@ -168,19 +158,23 @@ export default function GovernmentSchemes() {
 
       {/* Navbar */}
       <nav className="topnav">
-        <Link className="nav-brand" to="/parent/dashboard">🌿 Sishu Arogaya</Link>
+        <Link className="nav-brand" to="/parent/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+           <div style={{ width: 32, height: 32, background: 'linear-gradient(135deg,#0891b2,#0e7490)', borderRadius: 8, display: 'grid', placeItems: 'center', fontSize: 16, color: '#fff' }}>🏥</div>
+           <div>
+             <div style={{ fontSize: 17 }}>Shishu Aarogya</div>
+             <div style={{ fontSize: 9, fontWeight: 500, color: '#4a7a8a', fontFamily: 'sans-serif' }}>National Child Health Portal</div>
+           </div>
+        </Link>
         <div className="navlinks">
-          {NAV.map(([label, href]) => (
-            <Link key={href} to={href} className={href === '/parent/schemes' ? 'active' : ''}>{label}</Link>
+          {(navLinks && navLinks.length ? navLinks : NAV).map(([label, to]) => (
+            <Link key={to} to={to} className={to === '/parent/schemes' ? 'active' : ''}>{label}</Link>
           ))}
         </div>
       </nav>
 
       {/* Hero */}
       <section className="hero">
-        {SLIDES.map((src, i) => (
-          <div key={i} className="hero-slide" style={{ backgroundImage:`url(${src})`, opacity:slide===i?1:0 }} />
-        ))}
+        <MediaCarousel currentSlideIndex={slide} />
         <div className="hero-overlay" />
         <div className="hero-content fade-up">
           <span className="hero-badge">🏛️ Government Schemes</span>
@@ -371,8 +365,8 @@ export default function GovernmentSchemes() {
         </div>
       )}
 
-      <footer style={{ background:'#0e7490', color:'rgba(255,255,255,.9)', textAlign:'center', padding:'18px 24px', fontSize:'.8rem' }}>
-        Sishu Arogaya © 2024 · Government Integrated Child Health Monitoring System · DBUU Dehradun
+      <footer style={{ background: '#0e7490', color: 'rgba(255,255,255,.9)', textAlign: 'center', padding: '18px 24px', fontSize: '.8rem' }}>
+        Shishu Aarogya &copy; 2024 &middot; {t('homeFooter_copyright_long') || 'National Child Health Portal · Government of India'}
       </footer>
     </>
   );

@@ -461,8 +461,7 @@ const clampZ = (z) => Math.max(-6, Math.min(6, z));
 
 const classify = (z) => {
   if (z < -3.0) return 'severe';
-  if (z < -2.0) return 'severe';
-  if (z < -1.0) return 'moderate';
+  if (z < -2.0) return 'moderate';
   return 'healthy';
 };
 

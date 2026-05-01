@@ -1,26 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { childAPI, growthAPI } from '../../services/api';
+import MediaCarousel, { MEDIA_ARRAY } from '../../components/MediaCarousel';
+import GrowthLineChart from '../../components/GrowthLineChart';
+import { useLanguage } from '../../context/LanguageContext';
 
-const NAV = [
-  ['🏠 Dashboard', '/parent/dashboard'],
-  ['👶 My Child', '/parent/child-profile'],
-  ['💉 Vaccines', '/parent/vaccination'],
-  ['📈 Growth', '/parent/growth'],
-  ['🥗 Diet Plan', '/parent/diet-plan'],
-  ['🏛️ Schemes', '/parent/schemes'],
-  ['📋 Reports', '/parent/reports'],
-  ['🔔 Notifications', '/parent/notifications'],
-];
+// navLinks moved to component body using useLanguage()
 
 const WHO_W = [3.3, 4.5, 5.6, 6.4, 7.0, 7.5, 7.9, 8.3, 8.6, 8.9, 9.2, 9.4, 9.6, 9.8, 10.0, 10.1, 10.3, 10.4, 10.6];
 const WHO_H = [49.9, 54.7, 58.4, 61.4, 63.9, 65.9, 67.6, 69.2, 70.6, 72.0, 73.3, 74.5, 75.7, 76.9, 78.0, 79.1, 80.2, 81.2, 82.3];
 
-const SLIDES = [
-  'https://images.unsplash.com/photo-1559757175-0eb30cd8c063?w=1400&q=80&fit=crop',
-  'https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?w=1400&q=80&fit=crop',
-  'https://images.unsplash.com/photo-1476703993599-0035a21b17a9?w=1400&q=80&fit=crop',
-];
+
 
 const TIPS = [
   ['🥦', 'Iron-rich foods', 'Dal, spinach, fortified cereals, and egg yolk support healthy growth.'],
@@ -93,6 +83,7 @@ function BarChart({ data, who, keyName, gradientFrom, gradientTo, max, title }) 
 }
 
 export default function GrowthMonitoring() {
+  const { navLinks, t } = useLanguage();
   const [children, setChildren] = useState([]);
   const [selected, setSelected] = useState(null);
   const [records, setRecords] = useState([]);
@@ -113,10 +104,21 @@ export default function GrowthMonitoring() {
     return Math.floor(ms / (1000 * 60 * 60 * 24 * 30.44));
   };
 
+  const getMaxWeight = () => {
+    if (!selected) return 14;
+    return selected.gender === 'female' ? 13 : 14;
+  };
+
+  const isWeightInvalid = formData.weight && parseFloat(formData.weight) > getMaxWeight();
+
   const handleSaveGrowth = async (e) => {
     e.preventDefault();
     if (!selected) return;
     if (!formData.weight && !formData.height) { setSaveMsg('⚠️ Enter at least weight or height.'); return; }
+    if (isWeightInvalid) {
+      setSaveMsg(`⚠️ Invalid: Weight exceeds max ${getMaxWeight()} kg for ${selected.gender === 'female' ? 'girls' : 'boys'}.`);
+      return;
+    }
     setSaving(true);
     setSaveMsg('');
     try {
@@ -165,7 +167,7 @@ export default function GrowthMonitoring() {
   }, [selected]);
 
   useEffect(() => {
-    const t = setInterval(() => setSlide((s) => (s + 1) % SLIDES.length), 4000);
+    const t = setInterval(() => setSlide((s) => (s + 1) % MEDIA_ARRAY.length), 4000);
     return () => clearInterval(t);
   }, []);
 
@@ -179,6 +181,7 @@ export default function GrowthMonitoring() {
   const whoH = WHO_H[Math.min(latest?.ageMonths || 0, WHO_H.length - 1)];
 
   const TABS = [
+    ['trend', '📈 Growth Trend', '#059669'],
     ['weight', '⚖️ Weight', '#0891b2'],
     ['height', '📏 Height', '#1d4ed8'],
     ['zscore', '📊 Z-Scores', '#f59e0b'],
@@ -218,13 +221,13 @@ export default function GrowthMonitoring() {
         <Link to="/parent/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', flexShrink: 0 }}>
           <div style={{ width: 38, height: 38, background: 'linear-gradient(135deg,#0891b2,#0e7490)', borderRadius: 10, display: 'grid', placeItems: 'center', fontSize: 20 }}>🏥</div>
           <div>
-            <div style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 17, fontWeight: 700, color: '#0e7490', lineHeight: 1.1 }}>Sishu Arogaya</div>
-            <div style={{ fontSize: 10, color: '#4a7a8a', lineHeight: 1.2 }}>Child Health Portal</div>
+            <div style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 17, fontWeight: 700, color: '#0e7490', lineHeight: 1.1 }}>Shishu Aarogya</div>
+            <div style={{ fontSize: 10, color: '#4a7a8a', lineHeight: 1.2 }}>National Child Health Portal</div>
           </div>
         </Link>
 
         <div className="navlinks">
-          {NAV.map(([label, to]) => (
+          {(navLinks && navLinks.length ? navLinks : NAV).map(([label, to]) => (
             <Link key={to} to={to} style={{
               padding: '7px 13px', borderRadius: 8, fontSize: 13, fontWeight: 500,
               textDecoration: 'none', whiteSpace: 'nowrap', transition: 'all .18s',
@@ -243,13 +246,7 @@ export default function GrowthMonitoring() {
 
       {/* HERO CAROUSEL */}
       <div style={{ height: 240, position: 'relative', overflow: 'hidden' }}>
-        {SLIDES.map((src, i) => (
-          <div key={i} style={{
-            position: 'absolute', inset: 0,
-            backgroundImage: `url(${src})`, backgroundSize: 'cover', backgroundPosition: 'center',
-            opacity: i === slide ? 1 : 0, transition: 'opacity .8s ease',
-          }} />
-        ))}
+        <MediaCarousel currentSlideIndex={slide} />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(100deg,rgba(8,145,178,.92),rgba(14,116,144,.6),rgba(8,145,178,.8))' }} />
         <div style={{ position: 'relative', zIndex: 1, maxWidth: 1200, margin: '0 auto', padding: '0 32px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(255,255,255,.15)', border: '1px solid rgba(255,255,255,.3)', borderRadius: 100, padding: '4px 14px', fontSize: 11, fontWeight: 700, color: '#cffafe', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 14, width: 'fit-content' }}>🏥 Growth Monitoring</div>
@@ -261,7 +258,7 @@ export default function GrowthMonitoring() {
           </p>
         </div>
         <div style={{ position: 'absolute', bottom: 16, left: 32, display: 'flex', gap: 7, zIndex: 2 }}>
-          {SLIDES.map((_, i) => (
+          {MEDIA_ARRAY.map((_, i) => (
             <button key={i} onClick={() => setSlide(i)} style={{
               width: i === slide ? 20 : 7, height: 7, borderRadius: 4, border: 'none', cursor: 'pointer',
               background: i === slide ? '#5eead4' : 'rgba(255,255,255,.45)', transition: 'all .3s', padding: 0,
@@ -331,6 +328,21 @@ export default function GrowthMonitoring() {
                 {loading ? (
                   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 160 }}>
                     <div style={{ width: 36, height: 36, border: '4px solid #c5e8ef', borderTopColor: '#0891b2', borderRadius: '50%', animation: 'spin .8s linear infinite' }} />
+                  </div>
+                ) : tab === 'trend' ? (
+                  <div>
+                    {data.length > 0 ? (
+                      <div>
+                        <div style={{ marginBottom: 24 }}>
+                          <GrowthLineChart data={data} type="weight" maxAge={24} />
+                        </div>
+                        <div style={{ marginBottom: 24 }}>
+                          <GrowthLineChart data={data} type="height" maxAge={24} />
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ textAlign: 'center', padding: '32px 0', color: '#4a7a8a' }}>No growth records available. Start by recording your baby's measurements!</div>
+                    )}
                   </div>
                 ) : tab === 'weight' ? (
                   <>
@@ -490,10 +502,52 @@ export default function GrowthMonitoring() {
         </div>
       </div>
 
-      {/* FOOTER */}
-      <div style={{ background: '#0e7490', color: 'rgba(255,255,255,.45)', textAlign: 'center', padding: '14px 20px', fontSize: 12, fontFamily: "'DM Sans',sans-serif" }}>
-        Sishu Arogaya &copy; 2026 &middot; Government Integrated Child Health Monitoring System &middot; Dev Bhoomi Uttarakhand University
-      </div>
+      {/* RECORD GROWTH MODAL */}
+      {showForm && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(12, 35, 64, 0.6)', backdropFilter: 'blur(4px)', display: 'grid', placeItems: 'center', padding: 20 }}>
+          <div className="sa-anim" style={{ background: '#fff', borderRadius: 24, width: '100%', maxWidth: 460, boxShadow: '0 20px 50px rgba(0,0,0,0.2)', overflow: 'hidden' }}>
+            <div style={{ background: 'linear-gradient(135deg,#0891b2,#0e7490)', padding: '24px 32px', color: '#fff' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 20, fontWeight: 700 }}>Record Growth</h3>
+                <button onClick={() => setShowForm(false)} style={{ background: 'rgba(255,255,255,.15)', border: 'none', width: 32, height: 32, borderRadius: '50%', color: '#fff', cursor: 'pointer', fontSize: 18 }}>×</button>
+              </div>
+              <p style={{ fontSize: 13, color: 'rgba(255,255,255,.7)', marginTop: 4 }}>Capture your child's current metrics.</p>
+            </div>
+            <form onSubmit={handleSaveGrowth} style={{ padding: 32, display: 'flex', flexDirection: 'column', gap: 20 }}>
+              <div className="g31">
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#4a7a8a', marginBottom: 8 }}>Weight (kg)</label>
+                  <input type="number" step="0.01" className="pretty-input" value={formData.weight} onChange={(e) => setFormData({ ...formData, weight: e.target.value })} style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: isWeightInvalid ? '2px solid #ef4444' : '1.5px solid #c5e8ef', outline: 'none', background: isWeightInvalid ? '#fef2f2' : '#f0fdff', color: '#0c2340', fontWeight: 600 }} placeholder="e.g. 8.5" />
+                  {isWeightInvalid && (
+                    <div style={{ marginTop: 6, padding: '6px 10px', background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 8, fontSize: 12, fontWeight: 700, color: '#ef4444', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      ❌ Invalid: Max weight for {selected?.gender === 'female' ? 'girls' : 'boys'} is {getMaxWeight()} kg
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#4a7a8a', marginBottom: 8 }}>Height (cm)</label>
+                  <input type="number" step="0.1" className="pretty-input" value={formData.height} onChange={(e) => setFormData({ ...formData, height: e.target.value })} style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: '1.5px solid #c5e8ef', outline: 'none', background: '#f0fdff', color: '#0c2340', fontWeight: 600 }} placeholder="e.g. 72.0" />
+                </div>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#4a7a8a', marginBottom: 8 }}>Head Circumference (cm) - Optional</label>
+                <input type="number" step="0.1" className="pretty-input" value={formData.headCircumference} onChange={(e) => setFormData({ ...formData, headCircumference: e.target.value })} style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: '1.5px solid #c5e8ef', outline: 'none', background: '#f0fdff', color: '#0c2340', fontWeight: 600 }} placeholder="e.g. 44.5" />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#4a7a8a', marginBottom: 8 }}>Notes</label>
+                <textarea className="pretty-input" rows="2" value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: '1.5px solid #c5e8ef', outline: 'none', background: '#f0fdff', color: '#0c2340', fontFamily: 'inherit', resize: 'none' }} placeholder="Any observations..."></textarea>
+              </div>
+              {saveMsg && <div style={{ fontSize: 13, fontWeight: 600, color: saveMsg.includes('✅') ? '#059669' : '#ef4444', textAlign: 'center' }}>{saveMsg}</div>}
+              <button disabled={saving} type="submit" style={{ width: '100%', padding: '14px', borderRadius: 12, border: 'none', background: saving ? '#4a7a8a' : 'linear-gradient(135deg,#0891b2,#0e7490)', color: '#fff', fontSize: 15, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', marginTop: 8 }}>
+                {saving ? 'Saving...' : '💾 Save Record'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+      <footer style={{ background: '#0e7490', color: 'rgba(255,255,255,.45)', textAlign: 'center', padding: 14, fontSize: 12 }}>
+        Shishu Aarogya &copy; 2024 &middot; {t('homeFooter_copyright_long') || 'National Child Health Portal · Government of India'}
+      </footer>
     </div>
   );
 }

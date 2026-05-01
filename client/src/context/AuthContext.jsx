@@ -37,8 +37,8 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const login = async (email, password) => {
-    const res = await api.post('/auth/login', { email, password });
+  const login = async (email, password, role) => {
+    const res = await api.post('/auth/login', { email, password, role });
     const { token: newToken, user: userData } = res.data;
     localStorage.setItem('sa_token', newToken);
     api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
