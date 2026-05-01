@@ -23,7 +23,6 @@ const CAPTIONS = [
 const ROLES = [
   { value: 'parent', icon: 'PA', label: 'Parent' },
   { value: 'asha', icon: 'AS', label: 'ASHA Worker' },
-  { value: 'admin', icon: 'AD', label: 'Admin' },
 ];
 
 // Verhoeff algorithm for Aadhaar validation

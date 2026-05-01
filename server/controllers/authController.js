@@ -36,8 +36,8 @@ const register = async (req, res) => {
       return res.status(400).json({ message: 'Name, email, phone, password, and role are required' });
     }
 
-    if (!['parent', 'asha', 'admin'].includes(role)) {
-      return res.status(400).json({ message: 'Invalid role selected' });
+    if (!['parent', 'asha'].includes(role)) {
+      return res.status(400).json({ message: 'Invalid role selected. Admin registration is not allowed.' });
     }
 
     if (role === 'asha' && (!ashaId?.trim() || !district?.trim() || !block?.trim())) {
