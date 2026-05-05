@@ -1,0 +1,24 @@
+- [x] Define the audit scope.
+- [x] SAST Recon on `server/server.js`
+- [ ] SAST Recon on `server/controllers/authController.js`
+  - [x] Investigate data flow from `req.body` in `register` (line 14)
+  - [x] Investigate data flow from `req.body` in `login` (line 83)
+  - [x] Investigate data flow from `req.body` in `forgotPassword` (line 170)
+  - [x] Investigate data flow from `req.body` in `resetPassword` (line 211)
+- [ ] SAST Recon on `server/controllers/childController.js`
+  - [x] Investigate potential ReDoS in `searchChildren` (line 174)
+- [x] SAST Recon on `server/controllers/growthController.js`
+- [ ] SAST Recon on `server/controllers/hospitalController.js`
+  - [x] Investigate potential ReDoS/Regex Injection in `searchHospitals` (line 52)
+  - [x] Investigate potential Regex Injection in `listAll` (line 103)
+- [x] SAST Recon on `server/controllers/notificationController.js`
+- [ ] SAST Recon on `server/controllers/chatbotController.js`
+  - [x] Investigate potential Prompt Injection in `askGemini` (line 289)
+- [x] SAST Recon on `server/middleware/auth.js`
+- [x] SAST Recon on `server/middleware/role.js`
+- [x] SAST Recon on `server/utils/auditLogger.js`
+- [ ] SAST Recon on `server/controllers/adminController.js`
+  - [ ] Investigate potential ReDoS in `searchAshaWorkers` (line 117)
+- [ ] SAST Recon on `client/src/services/api.js`
+- [ ] SAST Recon on `client/src/context/AuthContext.jsx`
+- [ ] Conduct the final review of all findings as per your **Minimizing False Positives** operating principle and generate the final report.

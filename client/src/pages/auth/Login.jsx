@@ -79,13 +79,6 @@ export default function SishuLogin() {
     return () => clearInterval(timerRef.current);
   }, []);
 
-  // Redirect already-logged-in users to their dashboard
-  useEffect(() => {
-    if (token && user && !redirected) {
-      navigate(getDashboardPath(user.role));
-    }
-  }, [token, user, redirected, navigate, getDashboardPath]);
-
   const isLoginStep = step === 'login';
   const isForgotRequestStep = step === 'forgot-request';
 

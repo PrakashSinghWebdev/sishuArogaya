@@ -177,6 +177,18 @@ export default function AshaDashboard() {
           }}>
             {userInitial}
           </Link>
+          <button
+            onClick={() => { logout(); navigate('/login'); }}
+            style={{
+              background: '#fee2e2', color: '#dc2626', border: '1px solid #fecaca',
+              borderRadius: 8, padding: '6px 12px', fontSize: 12, fontWeight: 700,
+              cursor: 'pointer', transition: 'all .2s', marginLeft: 4,
+            }}
+            onMouseOver={e => { e.currentTarget.style.background = '#ef4444'; e.currentTarget.style.color = '#fff'; }}
+            onMouseOut={e => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.color = '#dc2626'; }}
+          >
+            {t('logout') || 'Logout'}
+          </button>
         </div>
       </nav>
 

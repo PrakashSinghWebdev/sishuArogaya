@@ -27,7 +27,7 @@ const OVERPASS_EPS   = [
   'https://lz4.overpass-api.de/api/interpreter',
 ];
 const OSRM           = 'https://router.project-osrm.org/route/v1/driving';
-const RADIUS_M       = 15_000; // 15 km in metres
+const RADIUS_M       = 100_000; // 100 km in metres
 
 /* ── amenity config ──────────────────────────────────── */
 const A = {
@@ -47,21 +47,14 @@ const FILTER_TABS = [
 
 /* ── static fallback data ────────────────────────────── */
 const STATIC = [
-  { id:'s01', lat:28.6362, lng:77.2166, type:'hospital', name: 'AIIMS New Delhi',            address:'Ansari Nagar, New Delhi',    phone:'011-26588500', isGovernment:true,  hasEmergency:true,  hasICU:true  },
-  { id:'s02', lat:28.6517, lng:77.2219, type:'hospital', name: 'Safdarjung Hospital',         address:'Ring Road, New Delhi',       phone:'011-26730000', isGovernment:true,  hasEmergency:true,  hasICU:true  },
-  { id:'s03', lat:19.0176, lng:72.8561, type:'hospital', name: 'KEM Hospital Mumbai',         address:'Parel, Mumbai',              phone:'022-24107000', isGovernment:true,  hasEmergency:true,  hasICU:true  },
-  { id:'s04', lat:13.0102, lng:80.2356, type:'hospital', name: 'Govt General Hospital',       address:'Park Town, Chennai',         phone:'044-25305000', isGovernment:true,  hasEmergency:true,  hasICU:true  },
-  { id:'s05', lat:22.5726, lng:88.3639, type:'hospital', name: 'SSKM Hospital Kolkata',       address:'AJC Bose Road, Kolkata',     phone:'033-22041739', isGovernment:true,  hasEmergency:true,  hasICU:true  },
-  { id:'s06', lat:17.3850, lng:78.4867, type:'hospital', name: 'Osmania General Hyderabad',   address:'Afzalgunj, Hyderabad',       phone:'040-24600124', isGovernment:true,  hasEmergency:true,  hasICU:true  },
-  { id:'s07', lat:12.9716, lng:77.5946, type:'hospital', name: 'Victoria Hospital Bengaluru', address:'Fort Road, Bengaluru',       phone:'080-26700000', isGovernment:true,  hasEmergency:true,  hasICU:true  },
-  { id:'s08', lat:26.8467, lng:80.9462, type:'hospital', name: 'KGMU Lucknow',               address:'Shah Mina Road, Lucknow',    phone:'0522-2257450', isGovernment:true,  hasEmergency:true,  hasICU:true  },
-  { id:'s09', lat:23.0225, lng:72.5714, type:'hospital', name: 'Civil Hospital Ahmedabad',    address:'Asarwa, Ahmedabad',          phone:'079-22680058', isGovernment:true,  hasEmergency:true,  hasICU:true  },
-  { id:'s10', lat:18.5204, lng:73.8567, type:'hospital', name: 'Sassoon General Pune',        address:'Dhanraj Nana Chowk, Pune',  phone:'020-26128000', isGovernment:true,  hasEmergency:true,  hasICU:true  },
-  { id:'s11', lat:25.5941, lng:85.1376, type:'hospital', name: 'PMCH Patna',                  address:'Ashok Rajpath, Patna',       phone:'0612-2300016', isGovernment:true,  hasEmergency:true,  hasICU:false },
-  { id:'s12', lat:26.9124, lng:75.8235, type:'hospital', name: 'SMS Medical College Jaipur',  address:'JLN Marg, Jaipur',           phone:'0141-2518501', isGovernment:true,  hasEmergency:true,  hasICU:true  },
   { id:'s13', lat:30.0869, lng:78.2650, type:'hospital', name: 'AIIMS Rishikesh',             address:'Virbhadra Rd, Rishikesh',    phone:'0135-2462916', isGovernment:true,  hasEmergency:true,  hasICU:true  },
   { id:'s14', lat:30.3165, lng:78.0338, type:'hospital', name: 'Doon Govt Hospital',          address:'Sharanpur Rd, Dehradun',     phone:'0135-2714441', isGovernment:true,  hasEmergency:true,  hasICU:true  },
   { id:'s15', lat:29.9457, lng:78.1642, type:'hospital', name: 'District Hospital Haridwar',  address:'Ranipur More, Haridwar',     phone:'01334-226506', isGovernment:true,  hasEmergency:true,  hasICU:false },
+  { id:'s16', lat:30.3145, lng:78.0357, type:'hospital', name: 'Combined Medical Institute',  address:'54, Haridwar Road, Dehradun', phone:'0135-2720921', isGovernment:false, hasEmergency:true,  hasICU:true  },
+  { id:'s17', lat:30.3850, lng:78.0850, type:'hospital', name: 'Max Super Specialty Hospital', address:'Malsi, Mussoorie Rd, Dehradun', phone:'0135-6673555', isGovernment:false, hasEmergency:true,  hasICU:true  },
+  { id:'s01', lat:28.6362, lng:77.2166, type:'hospital', name: 'AIIMS New Delhi',            address:'Ansari Nagar, New Delhi',    phone:'011-26588500', isGovernment:true,  hasEmergency:true,  hasICU:true  },
+  { id:'s02', lat:28.6517, lng:77.2219, type:'hospital', name: 'Safdarjung Hospital',         address:'Ring Road, New Delhi',       phone:'011-26730000', isGovernment:true,  hasEmergency:true,  hasICU:true  },
+  { id:'s03', lat:19.0176, lng:72.8561, type:'hospital', name: 'KEM Hospital Mumbai',         address:'Parel, Mumbai',              phone:'022-24107000', isGovernment:true,  hasEmergency:true,  hasICU:true  },
 ];
 
 /* ── helpers ─────────────────────────────────────────── */
@@ -373,7 +366,7 @@ export default function HospitalMap({ height = '100%', showSearchBar = true }) {
   const handleLocate = useCallback(() => {
     followRef.current = true;
     setIsFollowing(true);
-    fetchedOnceRef.current = false; // force refresh
+    lastFetchPosRef.current = null; // Force a fresh fetch on next GPS update
     startTracking();
     if (userPosRef.current && mapRef.current) {
       mapRef.current.setView([userPosRef.current.lat, userPosRef.current.lng], 15);
@@ -394,14 +387,70 @@ export default function HospitalMap({ height = '100%', showSearchBar = true }) {
 
   /* ── Emergency mode ── */
   const handleEmergency = useCallback(() => {
-    const nearest = filtered.find(h => h.type === 'hospital') || filtered[0];
-    if (!nearest) { alert('No hospitals found. Tap 📍 GPS first.'); return; }
+    const origin = userPosRef.current;
+    if (!origin) {
+      alert(t('hospital_gps_denied') || 'Allow location access first to find the nearest hospital.');
+      handleLocate(); // Try to trigger GPS
+      return;
+    }
+
+    if (hospitals.length === 0) {
+      alert(t('hospital_searching') || 'Finding nearby hospitals...');
+      fetchHospitals(origin);
+      return;
+    }
+
+    // Intelligent nearest hospital search:
+    // 1. Recalculate distance for ALL loaded hospitals to ensure accuracy
+    // 2. Prioritize 'hospital' type over clinic/pharmacy
+    // 3. Pick the absolute closest
+    let nearest = null;
+    let minHospitalDist = Infinity;
+    let nearestAny = null;
+    let minAnyDist = Infinity;
+
+    hospitals.forEach(h => {
+      const d = distKm(origin.lat, origin.lng, h.lat, h.lng);
+      
+      // Track absolute nearest of any type as fallback
+      if (d < minAnyDist) {
+        minAnyDist = d;
+        nearestAny = h;
+      }
+
+      // Track nearest actual hospital
+      if (h.type === 'hospital' && d < minHospitalDist) {
+        minHospitalDist = d;
+        nearest = h;
+      }
+    });
+
+    const target = nearest || nearestAny;
+
+    if (!target) {
+      alert('No facilities found in your region. Try searching for a city.');
+      return;
+    }
+
     setEmergencyMode(true);
-    setSelectedId(nearest.id);
-    drawRouteRef.current(nearest.lat, nearest.lng, nearest.name);
-    mapRef.current?.setView([nearest.lat, nearest.lng], 15);
-    setTimeout(() => markerMapRef.current[nearest.id]?.openPopup(), 400);
-  }, [filtered]);
+    setSelectedId(target.id);
+    
+    // Immediate routing and focus
+    drawRouteRef.current(target.lat, target.lng, target.name, { fitBounds: true });
+    
+    // Zoom in on target
+    if (mapRef.current) {
+      mapRef.current.setView([target.lat, target.lng], 16, { animate: true });
+    }
+
+    // Force popup open after a small delay to allow map transition
+    setTimeout(() => {
+      const marker = markerMapRef.current[target.id];
+      if (marker) {
+        marker.openPopup();
+      }
+    }, 500);
+  }, [hospitals, t, handleLocate, fetchHospitals]);
 
   /* ── Search ── */
   const handleSearch = useCallback(async (e) => {
@@ -495,9 +544,26 @@ export default function HospitalMap({ height = '100%', showSearchBar = true }) {
         shadowUrl:     'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
       });
 
-      const map = L.map(mapDivRef.current, { center:[20.5937, 78.9629], zoom:5, zoomControl:true });
-      L.tileLayer(SATELLITE_TILE, { attribution:'Tiles © Esri', maxZoom:19 }).addTo(map);
-      L.tileLayer(LABELS_TILE,    { attribution:'',              maxZoom:19, opacity:.85 }).addTo(map);
+      const map = L.map(mapDivRef.current, { center:[20.5937, 78.9629], zoom:5, zoomControl:true, maxZoom:20 });
+      
+      // Standard OSM as a robust background fallback
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{y}/{x}.png', { 
+        attribution:'© OpenStreetMap', 
+        maxZoom:20 
+      }).addTo(map);
+
+      // Satellite layer with upscaling (maxNativeZoom) to avoid "Map data not available" tiles
+      L.tileLayer(SATELLITE_TILE, { 
+        attribution:'Tiles © Esri', 
+        maxZoom:20,
+        maxNativeZoom:18 
+      }).addTo(map);
+
+      L.tileLayer(LABELS_TILE, { 
+        attribution:'', 
+        maxZoom:20, 
+        opacity:.85 
+      }).addTo(map);
       layerRef.current = L.layerGroup().addTo(map);
       mapRef.current   = map;
 

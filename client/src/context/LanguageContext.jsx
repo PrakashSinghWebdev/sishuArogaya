@@ -1207,11 +1207,8 @@ export function LanguageProvider({ children }) {
       if (saved && LANGUAGES.some((lang) => lang.code === saved)) {
         setLanguageState(saved);
       } else {
-        const detected = await detectLanguage();
-        if (detected && detected !== 'English') {
-          setSuggestedLanguageState(detected);
-        }
-        setLanguageState(saved || 'English');
+        // Always default to English - removed auto-detection
+        setLanguageState('English');
       }
     };
     initLang();

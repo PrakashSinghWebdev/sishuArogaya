@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react';
 import MediaCarousel, { MEDIA_ARRAY } from '../../components/MediaCarousel';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { notificationAPI, schemeAPI, vaccinationAPI, growthAPI, dietAPI, searchAPI } from '../../services/api';
@@ -92,8 +92,9 @@ function SectionHeader({ title, linkTo, linkLabel }) {
 /* ─── main component ─────────────────────────────────────────────────────── */
 
 export default function ParentDashboard() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const { navLinks, t } = useLanguage();
   const { children, selectedChild, selectedChildId, setSelectedChild, loading: childLoading } = useSelectedChild();
 
@@ -358,6 +359,18 @@ export default function ParentDashboard() {
             cursor: 'pointer', userSelect: 'none', textDecoration: 'none',
             flexShrink: 0,
           }}>{userInitial}</Link>
+          <button
+            onClick={() => { logout(); navigate('/login'); }}
+            style={{
+              background: '#fee2e2', color: '#dc2626', border: '1px solid #fecaca',
+              borderRadius: 8, padding: '6px 12px', fontSize: 13, fontWeight: 600,
+              cursor: 'pointer', transition: 'all .2s', whiteSpace: 'nowrap',
+            }}
+            onMouseOver={e => { e.currentTarget.style.background = '#ef4444'; e.currentTarget.style.color = '#fff'; }}
+            onMouseOut={e => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.color = '#dc2626'; }}
+          >
+            ⬅️ {t('logout') || 'Logout'}
+          </button>
         </div>
       </nav>
 

@@ -236,6 +236,18 @@ const Layout = ({ children, role }) => {
                 }}>{userInitial}</span>
                 <span style={{ fontSize: 12, fontWeight: 700, color: '#0c2340' }}>{user?.name || 'ASHA User'}</span>
               </Link>
+              <button
+                onClick={() => { logout(); navigate('/login'); }}
+                style={{
+                  background: '#fee2e2', color: '#dc2626', border: '1px solid #fecaca',
+                  borderRadius: 8, padding: '6px 12px', fontSize: 11, fontWeight: 700,
+                  cursor: 'pointer', transition: 'all .2s',
+                }}
+                onMouseOver={e => { e.currentTarget.style.background = '#ef4444'; e.currentTarget.style.color = '#fff'; }}
+                onMouseOut={e => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.color = '#dc2626'; }}
+              >
+                {t('logout') || 'Logout'}
+              </button>
             </div>
           </div>
 
@@ -778,7 +790,7 @@ const Layout = ({ children, role }) => {
                   <span style={{ fontSize: 11, color: '#4a7a8a', textTransform: 'capitalize' }}>{role}</span>
                 </span>
               </div>
-              <button type="button" className="portal-chip danger" onClick={logout}>
+              <button type="button" className="portal-chip danger" onClick={() => { logout(); navigate('/login'); }}>
                 <i className="bi bi-box-arrow-right" />
                 <span>{t('logout') || 'Logout'}</span>
               </button>

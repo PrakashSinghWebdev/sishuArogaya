@@ -118,6 +118,15 @@ const Topbar = () => {
             </li>
           </ul>
         </div>
+
+        <button
+          className="btn btn-sm btn-danger d-flex align-items-center gap-1 px-3"
+          onClick={() => { logout(); navigate('/login'); }}
+          style={{ borderRadius: '20px', fontWeight: 600 }}
+        >
+          <i className="bi bi-box-arrow-right"></i>
+          <span className="d-none d-md-inline">{t('logout')}</span>
+        </button>
       </div>
     </div>
   );

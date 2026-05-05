@@ -987,8 +987,3 @@ export default function DietPlan() {
     </div>
   );
 }
-d Health Portal · Government of India'}
-      </footer>
-    </div>
-  );
-}

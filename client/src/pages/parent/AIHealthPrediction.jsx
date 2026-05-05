@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../../context/LanguageContext';
 import MediaCarousel, { MEDIA_ARRAY } from '../../components/MediaCarousel';
+import GNNVisualization from '../../components/GNNVisualization';
+import GeminiInsights from '../../components/GeminiInsights';
 import { childAPI, growthAPI, reportAPI } from '../../services/api';
 
 
@@ -316,6 +318,18 @@ export default function AIHealthPrediction() {
                 <span className="score-lbl">{meta.scoreLabel}</span>
               </div>
             </div>
+
+            {/* GNN Graph Visualization */}
+            {prediction.graph && (
+              <GNNVisualization graph={prediction.graph} prediction={prediction} />
+            )}
+
+            {/* Gemini AI Insights */}
+            <GeminiInsights
+              insights={prediction.insights}
+              loading={false}
+              error={prediction.error}
+            />
 
             {/* Z-Score Cards */}
             <div className="z-grid">
