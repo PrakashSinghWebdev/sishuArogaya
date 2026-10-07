@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { childAPI, dietAPI, dietChecklistAPI } from '../../services/api';
+import { dietAPI, dietChecklistAPI } from '../../services/api';
 import { normalizeText, useLanguage } from '../../context/LanguageContext';
 import useSelectedChild from '../../hooks/useSelectedChild';
 
@@ -457,7 +457,6 @@ export default function DietPlan() {
   // Checklist state
   const [checks, setChecks] = useState([]);
   const [checkNotes, setCheckNotes] = useState('');
-  const [checkCompletedAt, setCheckCompletedAt] = useState(null);
   const [streak, setStreak] = useState(0);
   const [checkLoading, setCheckLoading] = useState(false);
   const [checkSaving, setCheckSaving] = useState(false);
@@ -550,7 +549,6 @@ export default function DietPlan() {
         ]);
         setChecks(clRes.data.checks ?? []);
         setCheckNotes(clRes.data.notes ?? '');
-        setCheckCompletedAt(clRes.data.completedAt ?? null);
         setStreak(stRes.data.streak ?? 0);
       } catch {
         // silently ignore — checklist is optional
@@ -566,7 +564,7 @@ export default function DietPlan() {
     if (!selectedChild?._id || !ageGroup?.tag) return;
     setCheckSaving(true);
     try {
-      const res = await dietChecklistAPI.save({
+      await dietChecklistAPI.save({
         childId: selectedChild._id,
         date: todayStr,
         ageGroup: ageGroup.tag,
@@ -574,7 +572,6 @@ export default function DietPlan() {
         notes: newNotes,
         totalItems: totalCheckItems,
       });
-      setCheckCompletedAt(res.data.completedAt ?? null);
     } catch {
       // silent
     } finally {
@@ -724,7 +721,6 @@ export default function DietPlan() {
             <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
               {[
                 { key: 'plan', label: '📋 Daily Meal Plan' },
-                { key: 'checklist', label: `✅ Daily Checklist${doneCount > 0 ? ` (${doneCount}/${totalCheckItems})` : ''}` },
                 { key: 'superfoods', label: '⭐ Superfoods & Tips' },
               ].map(tab => (
                 <button
@@ -797,157 +793,116 @@ export default function DietPlan() {
                     ))}
                   </div>
                 </div>
-              </div>
-            )}
 
-            {activeTab === 'checklist' && (
-              <div>
-                {/* Day complete banner */}
-                {doneCount === totalCheckItems && totalCheckItems > 0 && (
-                  <div style={{ background: 'linear-gradient(135deg,#d1fae5,#a7f3d0)', border: '1.5px solid #6ee7b7', borderRadius: 16, padding: '18px 24px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 14 }}>
-                    <span style={{ fontSize: 36 }}>🎉</span>
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: 16, color: '#065f46' }}>Day Complete! Amazing job!</div>
-                      <div style={{ fontSize: 13, color: '#047857', marginTop: 2 }}>
-                        All {totalCheckItems} feeding slots completed today for {selectedChild?.name}.
-                        {streak > 0 && <span> 🔥 <strong>{streak}-day streak!</strong></span>}
+                <div style={{ marginTop: 20, background: '#fff', border: `1.5px solid ${themeColors.border}`, borderRadius: 16, overflow: 'hidden' }}>
+                  <div style={{ background: 'linear-gradient(135deg, #f0fdff, #ecfeff)', borderBottom: `1px solid ${themeColors.border}`, padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                    <div style={{ fontWeight: 700, fontSize: 15, color: themeColors.text }}>✅ Daily Meal Checklist</div>
+                    <div style={{ fontSize: 12, color: themeColors.teal2, fontWeight: 700 }}>{doneCount} / {totalCheckItems} done</div>
+                  </div>
+
+                  {doneCount === totalCheckItems && totalCheckItems > 0 && (
+                    <div style={{ background: 'linear-gradient(135deg,#d1fae5,#a7f3d0)', borderBottom: '1px solid #6ee7b7', padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <span style={{ fontSize: 28 }}>🎉</span>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: 14, color: '#065f46' }}>Day complete! Well done.</div>
+                        {streak > 0 && <div style={{ fontSize: 12, color: '#047857' }}>🔥 {streak}-day streak</div>}
                       </div>
                     </div>
-                  </div>
-                )}
-
-                {/* Progress bar */}
-                <div style={{ background: '#fff', border: `1.5px solid ${themeColors.border}`, borderRadius: 14, padding: '16px 20px', marginBottom: 20 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                    <span style={{ fontWeight: 700, fontSize: 14, color: themeColors.text }}>Today's Progress</span>
-                    <span style={{ fontWeight: 700, fontSize: 14, color: themeColors.teal }}>{doneCount} / {totalCheckItems} slots</span>
-                  </div>
-                  <div style={{ background: themeColors.teal3, borderRadius: 99, height: 12, overflow: 'hidden' }}>
-                    <div style={{
-                      background: `linear-gradient(90deg,${themeColors.teal},${themeColors.teal2})`,
-                      height: '100%',
-                      borderRadius: 99,
-                      width: `${totalCheckItems > 0 ? Math.round((doneCount / totalCheckItems) * 100) : 0}%`,
-                      transition: 'width .4s ease',
-                    }} />
-                  </div>
-                  {streak > 0 && doneCount < totalCheckItems && (
-                    <div style={{ marginTop: 8, fontSize: 12, color: themeColors.muted }}>🔥 Current streak: <strong>{streak} day{streak !== 1 ? 's' : ''}</strong></div>
                   )}
-                </div>
 
-                {checkLoading ? (
-                  <div style={{ textAlign: 'center', padding: 40, color: themeColors.muted }}>Loading checklist...</div>
-                ) : (
-                  <div style={{ display: 'grid', gap: 14 }}>
-                    {dietData.meals.map((meal, mi) => {
-                      const mealDone = meal.items.filter((item, ii) => {
-                        const slot = `${mi}-${ii}`;
-                        return item.type === 'options'
-                          ? checks.some(k => k.startsWith(slot + ':'))
-                          : checks.includes(slot);
-                      }).length;
-                      return (
-                        <div key={mi} style={{ background: '#fff', border: `1.5px solid ${themeColors.border}`, borderRadius: 16, overflow: 'hidden' }}>
-                          <div style={{ background: dietData.color, padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <span style={{ fontSize: 20 }}>{meal.icon}</span>
-                            <div>
-                              <div style={{ fontWeight: 700, fontSize: 14, color: themeColors.text }}>{meal.name}</div>
-                              <div style={{ fontSize: 12, color: themeColors.muted }}>🕐 {meal.time}</div>
-                            </div>
-                            <div style={{ marginLeft: 'auto', fontSize: 12, color: themeColors.teal, fontWeight: 600 }}>
-                              {mealDone}/{meal.items.length} done
-                            </div>
-                          </div>
-                          <div style={{ padding: '10px 20px' }}>
-                            {meal.items.map((item, ii) => {
-                              const slot = `${mi}-${ii}`;
-                              const borderStyle = ii < meal.items.length - 1 ? `1px solid ${themeColors.border}` : 'none';
-
-                              if (item.type === 'options') {
-                                const selected = checks.find(k => k.startsWith(slot + ':'));
-                                const slotDone = !!selected;
-                                return (
-                                  <div key={ii} style={{ padding: '10px 0', borderBottom: borderStyle }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                                      {slotDone
-                                        ? <span style={{ fontSize: 16 }}>✅</span>
-                                        : <span style={{ fontSize: 15, color: themeColors.muted }}>⬜</span>}
-                                      <span style={{ fontSize: 12, fontWeight: 700, color: themeColors.teal2, textTransform: 'uppercase', letterSpacing: '.5px' }}>
-                                        {item.label}
-                                      </span>
-                                    </div>
-                                    <div style={{ display: 'grid', gap: 6, paddingLeft: 8 }}>
-                                      {item.options.map((opt, oi) => {
-                                        const optKey = `${slot}:${oi}`;
-                                        const isSelected = checks.includes(optKey);
-                                        return (
-                                          <label key={oi} style={{
-                                            display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px',
-                                            borderRadius: 10, cursor: 'pointer', border: `1.5px solid ${isSelected ? themeColors.teal : themeColors.border}`,
-                                            background: isSelected ? themeColors.teal4 : '#fafafa', transition: 'all .15s',
-                                          }}>
-                                            <input
-                                              type="radio"
-                                              name={`slot-${slot}`}
-                                              checked={isSelected}
-                                              onChange={() => selectCheck(optKey, true, slot)}
-                                              style={{ accentColor: themeColors.teal, cursor: 'pointer', flexShrink: 0 }}
-                                            />
-                                            <span style={{ fontSize: 18, flexShrink: 0 }}>{opt.emoji}</span>
-                                            <div style={{ flex: 1 }}>
-                                              <div style={{ fontWeight: 600, fontSize: 13, color: isSelected ? themeColors.teal2 : themeColors.text }}>{opt.name}</div>
-                                              <div style={{ fontSize: 11, color: themeColors.muted }}>📏 {opt.qty}{opt.note ? ` · ${opt.note}` : ''}</div>
-                                            </div>
-                                          </label>
-                                        );
-                                      })}
-                                    </div>
-                                  </div>
-                                );
-                              }
-
-                              // Regular item — checkbox
-                              const checked = checks.includes(slot);
-                              return (
-                                <label key={ii} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: borderStyle, cursor: 'pointer' }}>
-                                  <input
-                                    type="checkbox"
-                                    checked={checked}
-                                    onChange={() => selectCheck(slot, false, slot)}
-                                    style={{ width: 18, height: 18, accentColor: themeColors.teal, cursor: 'pointer', flexShrink: 0 }}
-                                  />
-                                  <span style={{ fontSize: 20, flexShrink: 0 }}>{item.emoji}</span>
-                                  <div style={{ flex: 1 }}>
-                                    <div style={{ fontWeight: 600, fontSize: 14, color: checked ? themeColors.muted : themeColors.text, textDecoration: checked ? 'line-through' : 'none' }}>{item.name}</div>
-                                    <div style={{ fontSize: 12, color: themeColors.teal, fontWeight: 500 }}>📏 {item.qty}</div>
-                                    {item.note && <div style={{ fontSize: 11, color: themeColors.muted }}>💡 {item.note}</div>}
-                                  </div>
-                                  {checked && <span style={{ fontSize: 18 }}>✅</span>}
-                                </label>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      );
-                    })}
+                  <div style={{ padding: '18px 20px 6px' }}>
+                    <div style={{ background: themeColors.teal3, borderRadius: 99, height: 12, overflow: 'hidden', marginBottom: 18 }}>
+                      <div style={{
+                        background: `linear-gradient(90deg,${themeColors.teal},${themeColors.teal2})`,
+                        height: '100%',
+                        borderRadius: 99,
+                        width: `${totalCheckItems > 0 ? Math.round((doneCount / totalCheckItems) * 100) : 0}%`,
+                        transition: 'width .4s ease',
+                      }} />
+                    </div>
                   </div>
-                )}
 
-                {/* Notes */}
-                <div style={{ background: '#fff', border: `1.5px solid ${themeColors.border}`, borderRadius: 14, padding: 20, marginTop: 20 }}>
-                  <label style={{ fontWeight: 600, fontSize: 14, color: themeColors.text, display: 'block', marginBottom: 8 }}>📝 Notes for today</label>
-                  <textarea
-                    rows={3}
-                    placeholder="Any observations about meals today... (e.g. baby refused spinach)"
-                    value={checkNotes}
-                    onChange={e => {
-                      setCheckNotes(e.target.value);
-                      saveChecklist(checks, e.target.value);
-                    }}
-                    style={{ width: '100%', padding: 12, border: `1.5px solid ${themeColors.border}`, borderRadius: 10, fontSize: 13, resize: 'vertical', fontFamily: 'inherit', outline: 'none' }}
-                  />
-                  {checkSaving && <div style={{ fontSize: 11, color: themeColors.muted, marginTop: 4 }}>Saving...</div>}
+                  {checkLoading ? (
+                    <div style={{ textAlign: 'center', padding: 40, color: themeColors.muted }}>Loading checklist...</div>
+                  ) : (
+                    <div style={{ display: 'grid', gap: 14, padding: '0 20px 20px' }}>
+                      {dietData.meals.map((meal, mi) => {
+                        const mealDone = meal.items.filter((item, ii) => {
+                          const slot = `${mi}-${ii}`;
+                          return item.type === 'options'
+                            ? checks.some(k => k.startsWith(slot + ':'))
+                            : checks.includes(slot);
+                        }).length;
+                        return (
+                          <div key={mi} style={{ background: '#fff', border: `1.5px solid ${themeColors.border}`, borderRadius: 14, overflow: 'hidden' }}>
+                            <div style={{ background: dietData.color, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                              <span style={{ fontSize: 18 }}>{meal.icon}</span>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontWeight: 700, fontSize: 14, color: themeColors.text }}>{meal.name}</div>
+                                <div style={{ fontSize: 12, color: themeColors.muted }}>🕐 {meal.time}</div>
+                              </div>
+                              <div style={{ fontSize: 12, color: themeColors.teal, fontWeight: 700 }}>{mealDone}/{meal.items.length}</div>
+                            </div>
+                            <div style={{ padding: '12px 16px' }}>
+                              {meal.items.map((item, ii) => {
+                                const slot = `${mi}-${ii}`;
+                                const borderStyle = ii < meal.items.length - 1 ? `1px solid ${themeColors.border}` : 'none';
+
+                                if (item.type === 'options') {
+                                  const selected = checks.find(k => k.startsWith(slot + ':'));
+                                  const slotDone = !!selected;
+                                  return (
+                                    <div key={ii} style={{ padding: '10px 0', borderBottom: borderStyle }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                                        {slotDone ? <span style={{ fontSize: 16 }}>✅</span> : <span style={{ fontSize: 15, color: themeColors.muted }}>⬜</span>}
+                                        <span style={{ fontSize: 12, fontWeight: 700, color: themeColors.teal2, textTransform: 'uppercase', letterSpacing: '.5px' }}>{item.label}</span>
+                                      </div>
+                                      <div style={{ display: 'grid', gap: 6, paddingLeft: 8 }}>
+                                        {item.options.map((opt, oi) => {
+                                          const optKey = `${slot}:${oi}`;
+                                          const isSelected = checks.includes(optKey);
+                                          return (
+                                            <label key={oi} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 10, cursor: 'pointer', border: `1.5px solid ${isSelected ? themeColors.teal : themeColors.border}`, background: isSelected ? themeColors.teal4 : '#fafafa' }}>
+                                              <input type="radio" name={`slot-${slot}`} checked={isSelected} onChange={() => selectCheck(optKey, true, slot)} style={{ accentColor: themeColors.teal, cursor: 'pointer', flexShrink: 0 }} />
+                                              <span style={{ fontSize: 18, flexShrink: 0 }}>{opt.emoji}</span>
+                                              <div style={{ flex: 1 }}>
+                                                <div style={{ fontWeight: 600, fontSize: 13, color: isSelected ? themeColors.teal2 : themeColors.text }}>{opt.name}</div>
+                                                <div style={{ fontSize: 11, color: themeColors.muted }}>📏 {opt.qty}{opt.note ? ` · ${opt.note}` : ''}</div>
+                                              </div>
+                                            </label>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  );
+                                }
+
+                                const checked = checks.includes(slot);
+                                return (
+                                  <label key={ii} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: borderStyle, cursor: 'pointer' }}>
+                                    <input type="checkbox" checked={checked} onChange={() => selectCheck(slot, false, slot)} style={{ width: 18, height: 18, accentColor: themeColors.teal, cursor: 'pointer', flexShrink: 0 }} />
+                                    <span style={{ fontSize: 20, flexShrink: 0 }}>{item.emoji}</span>
+                                    <div style={{ flex: 1 }}>
+                                      <div style={{ fontWeight: 600, fontSize: 14, color: checked ? themeColors.muted : themeColors.text, textDecoration: checked ? 'line-through' : 'none' }}>{item.name}</div>
+                                      <div style={{ fontSize: 12, color: themeColors.teal, fontWeight: 500 }}>📏 {item.qty}</div>
+                                      {item.note && <div style={{ fontSize: 11, color: themeColors.muted }}>💡 {item.note}</div>}
+                                    </div>
+                                    {checked && <span style={{ fontSize: 18 }}>✅</span>}
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  <div style={{ background: '#fff', borderTop: `1px solid ${themeColors.border}`, padding: 20 }}>
+                    <label style={{ fontWeight: 600, fontSize: 14, color: themeColors.text, display: 'block', marginBottom: 8 }}>📝 Notes for today</label>
+                    <textarea rows={3} placeholder="Any observations about meals today..." value={checkNotes} onChange={e => { setCheckNotes(e.target.value); saveChecklist(checks, e.target.value); }} style={{ width: '100%', padding: 12, border: `1.5px solid ${themeColors.border}`, borderRadius: 10, fontSize: 13, resize: 'vertical', fontFamily: 'inherit', outline: 'none' }} />
+                    {checkSaving && <div style={{ fontSize: 11, color: themeColors.muted, marginTop: 4 }}>Saving...</div>}
+                  </div>
                 </div>
               </div>
             )}

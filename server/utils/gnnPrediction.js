@@ -1,14 +1,14 @@
 /**
- * GNN-Based Growth Prediction Module
- * Uses Graph Neural Networks to predict child health metrics
- * Integrated with Gemini API for intelligent insights
+ * Graph-based Growth Prediction Module
+ * Builds a child → growth-record graph, assesses risk from WHO z-scores,
+ * projects next-month growth from the child's own trend, and asks the
+ * local LLM (Ollama, Gemini fallback) for parent-friendly insights.
  */
 
-const { GoogleGenerativeAI } = require('@google/generative-ai');
 const GrowthRecord = require('../models/GrowthRecord');
 const Child = require('../models/Child');
-
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY);
+const { predictMalnutrition } = require('./zScore');
+const { chat } = require('./llm');
 
 // ═══════════════════════════════════════════════════════════════════════════
 // 1. GRAPH NEURAL NETWORK NODE CREATION
@@ -45,8 +45,9 @@ class GrowthGraph {
         weight: record.weight,
         height: record.height,
         ageMonths: record.ageMonths,
-        weightForAgeZ: record.weightForAgeZ,
-        heightForAgeZ: record.heightForAgeZ,
+        weightForAgeZ: record.wazScore,
+        heightForAgeZ: record.hazScore,
+        weightForHeightZ: record.whzScore,
         date: record.recordedDate,
       },
     });
@@ -131,30 +132,27 @@ function gnnMessagePass(graph) {
 // 3. PREDICTION MODEL
 // ═══════════════════════════════════════════════════════════════════════════
 
-function predictUsingGNN(nodeFeatures) {
+function predictUsingGNN(nodeFeatures, trend = null) {
   const {
     weight = 0,
     height = 0,
     ageMonths = 0,
-    gender = 'unknown',
     weightForAgeZ = 0,
     heightForAgeZ = 0,
+    weightForHeightZ = 0,
   } = nodeFeatures || {};
-
-  // WHO Z-score thresholds
-  const wfaThreshold = -2; // Weight for age
-  const hfaThreshold = -2; // Height for age
 
   const waz = Number(weightForAgeZ) || 0;
   const haz = Number(heightForAgeZ) || 0;
+  const whz = Number(weightForHeightZ) || 0; // wasting — the primary SAM/MAM criterion
 
   let riskLevel = 'low';
   let confidence = 0.95;
   let recommendation = 'Continue regular health check-ups.';
 
-  // Assess malnutrition risk
-  if (waz < wfaThreshold || haz < hfaThreshold) {
-    if (waz < -3 || haz < -3) {
+  // WHO cut-offs: < -2 SD moderate, < -3 SD severe
+  if (waz < -2 || haz < -2 || whz < -2) {
+    if (waz < -3 || haz < -3 || whz < -3) {
       riskLevel = 'severe';
       confidence = 0.98;
       recommendation =
@@ -167,9 +165,12 @@ function predictUsingGNN(nodeFeatures) {
     }
   }
 
-  // Predict next month metrics using linear trend
-  const predictedWeight = (Number(weight) || 0) * 1.02 + Math.random() * 0.2; // 2% growth + noise
-  const predictedHeight = (Number(height) || 0) * 1.005 + Math.random() * 0.3; // 0.5% growth + noise
+  // Next-month projection: the child's own monthly trend when there are 2+ records,
+  // otherwise a conservative default (+2% weight, +0.5% height). Deterministic, never negative.
+  const w = Number(weight) || 0;
+  const h = Number(height) || 0;
+  const predictedWeight = w + Math.max(0, trend?.weightPerMonth ?? w * 0.02);
+  const predictedHeight = h + Math.max(0, trend?.heightPerMonth ?? h * 0.005);
 
   return {
     riskLevel,
@@ -178,8 +179,9 @@ function predictUsingGNN(nodeFeatures) {
       weight: Number(weight) || 0,
       height: Number(height) || 0,
       ageMonths: Number(ageMonths) || 0,
-      weightForAgeZ: parseFloat((waz || 0).toFixed(2)),
-      heightForAgeZ: parseFloat((haz || 0).toFixed(2)),
+      weightForAgeZ: parseFloat(waz.toFixed(2)),
+      heightForAgeZ: parseFloat(haz.toFixed(2)),
+      weightForHeightZ: parseFloat(whz.toFixed(2)),
     },
     prediction: {
       predictedWeight: parseFloat(predictedWeight.toFixed(2)),
@@ -196,22 +198,11 @@ function predictUsingGNN(nodeFeatures) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 async function getGeminiInsights(prediction, childName, childAge) {
-  try {
-    if (!process.env.GOOGLE_AI_API_KEY) {
-      return {
-        insights: null,
-        error: 'Gemini API not configured',
-      };
-    }
-
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
-
-    const prompt = `You are a pediatric health advisor. Based on this health data, provide brief actionable insights.
-
-Child: ${childName}, Age: ${childAge} months
+  const prompt = `Child: ${childName}, Age: ${childAge} months
 Risk Level: ${prediction.riskLevel}
 Weight-for-Age Z-score: ${prediction.currentStatus.weightForAgeZ}
 Height-for-Age Z-score: ${prediction.currentStatus.heightForAgeZ}
+Weight-for-Height Z-score: ${prediction.currentStatus.weightForHeightZ}
 Predicted Weight Next Month: ${prediction.prediction.predictedWeight}kg
 Recommendation: ${prediction.recommendation}
 
@@ -219,25 +210,17 @@ Provide:
 1. Health Assessment (1 sentence)
 2. Key Concern (if any)
 3. Action Items (2-3 bullet points)
-4. When to Seek Help (1 sentence)
+4. When to Seek Help (1 sentence)`;
 
-Keep response concise and practical for parents.`;
-
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-
-    return {
-      insights: text,
-      model: 'gemini-pro',
-      timestamp: new Date(),
-    };
+  try {
+    const { text, source } = await chat(
+      'You are a pediatric health advisor for Indian parents. Use WHO growth standards. Be concise, practical and never prescribe medicines. Plain English, under 150 words.',
+      [{ role: 'user', content: prompt }]
+    );
+    return { insights: text, model: source, timestamp: new Date() };
   } catch (error) {
-    console.error('Gemini API error:', error.message);
-    return {
-      insights: null,
-      error: 'Failed to generate insights',
-    };
+    console.error('AI insights error:', error.message);
+    return { insights: null, error: 'AI insights unavailable' };
   }
 }
 
@@ -245,7 +228,7 @@ Keep response concise and practical for parents.`;
 // 5. MAIN PREDICTION FUNCTION
 // ═══════════════════════════════════════════════════════════════════════════
 
-async function predictGrowthWithGNN(childId) {
+async function predictGrowthWithGNN(childId, { insights = true } = {}) {
   try {
     const child = await Child.findById(childId);
     if (!child) {
@@ -280,25 +263,45 @@ async function predictGrowthWithGNN(childId) {
     const latestNodeId = `growth_${latestRecord._id}`;
     const latestNode = updatedNodes.find((n) => n.id === latestNodeId);
     const recordObj = latestRecord.toObject();
-    const nodeFeatures = latestNode?.attributes || {
-      weight: recordObj.weight,
-      height: recordObj.height,
-      ageMonths: recordObj.ageMonths,
-      gender: child.gender,
-      weightForAgeZ: recordObj.wazScore || 0,
-      heightForAgeZ: recordObj.hazScore || 0,
-      whzScore: recordObj.whzScore || 0,
-    };
+
+    // Monthly growth rate between the two most recent records
+    let trend = null;
+    if (records.length >= 2) {
+      const prev = records[records.length - 2];
+      const months = (latestRecord.ageMonths - prev.ageMonths) || (latestRecord.recordedDate - prev.recordedDate) / (30.44 * 864e5);
+      if (months > 0) {
+        trend = {
+          weightPerMonth: (latestRecord.weight - prev.weight) / months,
+          heightPerMonth: (latestRecord.height - prev.height) / months,
+        };
+      }
+    }
 
     // 4. Make prediction
-    const prediction = predictUsingGNN(nodeFeatures);
+    const prediction = predictUsingGNN(latestNode.attributes, trend);
+
+    // 4b. WHO LMS z-score assessment of the latest record.
+    //     Returned as `zScores` so the UI gets WAZ/HAZ/WHZ + advice without
+    //     changing the existing `prediction` (GNN) object contract.
+    let zScores = null;
+    try {
+      if (recordObj.weight != null && recordObj.height != null) {
+        zScores = predictMalnutrition(
+          Number(recordObj.weight),
+          Number(recordObj.height),
+          Number(latestRecord.ageMonths) || 0,
+          child.gender
+        );
+      }
+    } catch (zErr) {
+      console.error('WHO z-score calculation failed:', zErr.message);
+      zScores = null;
+    }
 
     // 5. Get Gemini insights
-    const geminiResult = await getGeminiInsights(
-      prediction,
-      child.name,
-      latestRecord.ageMonths
-    );
+    const geminiResult = insights
+      ? await getGeminiInsights(prediction, child.name, latestRecord.ageMonths)
+      : { insights: null };
 
     // 6. Return complete result
     return {
@@ -306,13 +309,15 @@ async function predictGrowthWithGNN(childId) {
       childName: child.name,
       childAge: latestRecord.ageMonths,
       prediction,
+      zScores,
       insights: geminiResult.insights,
       graph: {
         nodeCount: graph.nodes.length,
         edgeCount: graph.edges.length,
         nodes: graph.nodes.slice(0, 10), // Return sample nodes
+        edges: graph.edges.slice(0, 20), // Required by GNNVisualization
       },
-      model: 'GNN + Gemini',
+      model: `GNN + ${geminiResult.model || 'AI'}`,
     };
   } catch (error) {
     console.error('GNN Prediction error:', error);
@@ -320,11 +325,4 @@ async function predictGrowthWithGNN(childId) {
   }
 }
 
-module.exports = {
-  GrowthGraph,
-  aggregateNodeFeatures,
-  gnnMessagePass,
-  predictUsingGNN,
-  getGeminiInsights,
-  predictGrowthWithGNN,
-};
+module.exports = { predictGrowthWithGNN };

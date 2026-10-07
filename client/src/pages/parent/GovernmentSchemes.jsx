@@ -6,7 +6,6 @@ import { useLanguage } from '../../context/LanguageContext';
 
 
 
-// navLinks moved to component body using useLanguage()
 
 const CATEGORY_COLOR = {
   nutrition:   '#059669',
@@ -166,7 +165,7 @@ export default function GovernmentSchemes() {
            </div>
         </Link>
         <div className="navlinks">
-          {(navLinks && navLinks.length ? navLinks : NAV).map(([label, to]) => (
+          {(navLinks || []).map(([label, to]) => (
             <Link key={to} to={to} className={to === '/parent/schemes' ? 'active' : ''}>{label}</Link>
           ))}
         </div>

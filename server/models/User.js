@@ -10,6 +10,7 @@ const userSchema = new mongoose.Schema(
     phone: { type: String, required: true, unique: true },
     aadhar: { type: String, trim: true },
     dob: { type: Date },
+    state: { type: String, trim: true },
     district: { type: String, trim: true },
     block: { type: String, trim: true },
     password: { type: String, required: true, select: false },

@@ -27,7 +27,9 @@ const childReportPDF = async (req, res) => {
 
     const doc = new PDFDocument({ margin: 50, size: 'A4' });
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=${type}-report-${child.name.replace(/\s+/g, '-')}.pdf`);
+    // Non-ASCII names (e.g. Hindi) are invalid in a raw header value — use RFC 5987 encoding
+    const fileName = `${type}-report-${child.name.replace(/\s+/g, '-')}.pdf`;
+    res.setHeader('Content-Disposition', `attachment; filename="report.pdf"; filename*=UTF-8''${encodeURIComponent(fileName)}`);
     doc.pipe(res);
 
     // Header Decoration
@@ -95,6 +97,7 @@ const childReportPDF = async (req, res) => {
 
     doc.end();
   } catch (err) {
+    if (res.headersSent) return res.end();
     res.status(500).json({ message: err.message });
   }
 };
@@ -147,7 +150,7 @@ const districtReportExcel = async (req, res) => {
     });
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename=district-report-${req.params.districtId}.xlsx`);
+    res.setHeader('Content-Disposition', `attachment; filename="district-report.xlsx"; filename*=UTF-8''${encodeURIComponent(`district-report-${req.params.districtId}.xlsx`)}`);
     await workbook.xlsx.write(res);
     res.end();
   } catch (err) {

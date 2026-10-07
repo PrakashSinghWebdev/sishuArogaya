@@ -32,7 +32,6 @@ export default function GrowthLineChart({ data = [], type = 'weight', maxAge = 2
   const isHealthyGrowth = useMemo(() => {
     if (data.length < 2) return true;
     const latest = data[data.length - 1];
-    const previous = data[data.length - 2];
     const ageMonths = latest.ageMonths || 0;
     const whoValue = WHO_DATA[Math.min(Math.floor(ageMonths), WHO_DATA.length - 1)] || 0;
 

@@ -5,6 +5,7 @@ const Vaccination = require('../models/Vaccination');
 const GrowthRecord = require('../models/GrowthRecord');
 const AuditLog = require('../models/AuditLog');
 const { createAuditLog } = require('../utils/auditLogger');
+const escapeRegex = require('../utils/escapeRegex');
 
 // GET /api/admin/dashboard — district-level KPIs
 const getDashboardStats = async (req, res) => {
@@ -65,6 +66,9 @@ const toggleUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
+    if (String(user._id) === String(req.user._id)) {
+      return res.status(400).json({ message: 'You cannot deactivate your own account' });
+    }
     user.isActive = !user.isActive;
     await user.save({ validateBeforeSave: false });
     await createAuditLog({
@@ -125,7 +129,7 @@ const searchAshaWorkers = async (req, res) => {
       return res.json({ results: [] });
     }
 
-    const searchRegex = new RegExp(q.trim(), 'i');
+    const searchRegex = new RegExp(escapeRegex(q.trim()), 'i');
 
     const results = await AshaWorker.find({
       $or: [

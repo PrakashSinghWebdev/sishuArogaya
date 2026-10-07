@@ -3,9 +3,11 @@ const User = require('../models/User');
 const AshaWorker = require('../models/AshaWorker');
 
 const { createAuditLog } = require('../utils/auditLogger');
-const { generateOTP } = require('../utils/generateOTP');
-const sendEmail = require('../utils/sendEmail').sendEmail;
-const getOTPExpiry = (minutes = 10) => new Date(Date.now() + minutes * 60 * 1000);
+const { generateOTP, getOTPExpiry, sendOTPEmail } = require('../utils/otp');
+
+const MIN_PASSWORD_LENGTH = 6;
+const isValidPassword = (pw) => typeof pw === 'string' && pw.length >= MIN_PASSWORD_LENGTH;
+const PASSWORD_ERROR = `Password must be at least ${MIN_PASSWORD_LENGTH} characters`;
 
 const signToken = (id) =>
   jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRE || '7d' });
@@ -25,6 +27,7 @@ const register = async (req, res) => {
       password,
       role,
       ashaId,
+      state,
       district,
       block,
     } = req.body;
@@ -35,6 +38,8 @@ const register = async (req, res) => {
     if (!fullName || !normalizedEmail || !normalizedPhone || !password || !role) {
       return res.status(400).json({ message: 'Name, email, phone, password, and role are required' });
     }
+
+    if (!isValidPassword(password)) return res.status(400).json({ message: PASSWORD_ERROR });
 
     if (!['parent', 'asha'].includes(role)) {
       return res.status(400).json({ message: 'Invalid role selected. Admin registration is not allowed.' });
@@ -47,6 +52,10 @@ const register = async (req, res) => {
     const existing = await User.findOne({ $or: [{ email: normalizedEmail }, { phone: normalizedPhone }] });
     if (existing) return res.status(400).json({ message: 'Email or phone already registered' });
 
+    if (role === 'asha' && (await AshaWorker.exists({ ashaId: ashaId.trim() }))) {
+      return res.status(400).json({ message: 'ASHA ID already registered' });
+    }
+
     const user = await User.create({
       name: fullName,
       firstName: firstName?.trim(),
@@ -55,6 +64,7 @@ const register = async (req, res) => {
       phone: normalizedPhone,
       aadhar: aadhar?.trim(),
       dob: dob || undefined,
+      state: state?.trim(),
       district: district?.trim(),
       block: block?.trim(),
       password,
@@ -62,12 +72,19 @@ const register = async (req, res) => {
     });
 
     if (role === 'asha') {
-      await AshaWorker.create({
-        userId: user._id,
-        ashaId: ashaId.trim(),
-        district: district.trim(),
-        block: block.trim(),
-      });
+      try {
+        await AshaWorker.create({
+          userId: user._id,
+          ashaId: ashaId.trim(),
+          state: state?.trim(),
+          district: district.trim(),
+          block: block.trim(),
+        });
+      } catch (ashaErr) {
+        // Don't leave a half-registered ASHA user that can neither log in usefully nor re-register
+        await User.deleteOne({ _id: user._id });
+        throw ashaErr;
+      }
     }
 
     await createAuditLog({
@@ -147,8 +164,9 @@ const getMe = async (req, res) => {
 const changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
+    if (!isValidPassword(newPassword)) return res.status(400).json({ message: PASSWORD_ERROR });
     const user = await User.findById(req.user._id).select('+password');
-    if (!(await user.matchPassword(currentPassword))) {
+    if (!currentPassword || !(await user.matchPassword(currentPassword))) {
       return res.status(400).json({ message: 'Current password is incorrect' });
     }
     user.password = newPassword;
@@ -187,7 +205,7 @@ const forgotPassword = async (req, res) => {
     await user.save({ validateBeforeSave: false });
 
     try {
-      await sendEmail(user.email, otp);
+      await sendOTPEmail(user.email, otp, user.name, 'password reset');
     } catch (emailErr) {
       console.warn('Password reset OTP email failed:', emailErr.message);
 
@@ -214,12 +232,15 @@ const forgotPassword = async (req, res) => {
 const resetPassword = async (req, res) => {
   try {
     const { userId, otp, newPassword } = req.body;
+    if (!userId || !otp) return res.status(400).json({ message: 'OTP is required' });
+    if (!isValidPassword(newPassword)) return res.status(400).json({ message: PASSWORD_ERROR });
 
     const user = await User.findById(userId).select('+otp +otpExpiry +password');
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    if (user.otp !== otp) return res.status(400).json({ message: 'Invalid OTP' });
-    if (user.otpExpiry < new Date()) return res.status(400).json({ message: 'OTP expired' });
+    // A missing stored OTP must never match (undefined === undefined)
+    if (!user.otp || user.otp !== String(otp).trim()) return res.status(400).json({ message: 'Invalid OTP' });
+    if (!user.otpExpiry || user.otpExpiry < new Date()) return res.status(400).json({ message: 'OTP expired' });
 
     user.password = newPassword;
     user.otp = undefined;

@@ -1,6 +1,5 @@
 const crypto = require('crypto');
 const sgMail = require('@sendgrid/mail');
-const axios = require('axios');
 const nodemailer = require('nodemailer');
 
 // Generate a 6-digit OTP
@@ -88,22 +87,4 @@ const sendOTPEmail = async (email, otp, name, purpose = 'login') => {
   throw new Error(errors.join(' | ') || 'Email OTP service is not configured');
 };
 
-// Send OTP via SMS using Textbelt
-const sendOTPSMS = async (phone, otp) => {
-  const normalized = phone.replace(/\D/g, '');
-  const phoneWithCode = normalized.startsWith('91') ? normalized : `91${normalized}`;
-
-  const response = await axios.post('https://textbelt.com/text', {
-    phone: phoneWithCode,
-    message: `Your Sishu Arogaya OTP is: ${otp}. Valid for 10 minutes. Do not share.`,
-    key: process.env.TEXTBELT_API_KEY,
-  });
-
-  if (!response.data.success) {
-    throw new Error(`SMS failed: ${response.data.error || 'Unknown error'}`);
-  }
-
-  return response.data;
-};
-
-module.exports = { generateOTP, getOTPExpiry, sendOTPEmail, sendOTPSMS };
+module.exports = { generateOTP, getOTPExpiry, sendOTPEmail };

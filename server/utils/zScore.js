@@ -528,4 +528,27 @@ const predictMalnutrition = (weight, height, ageMonths, gender) => {
   return { waz, haz, whz, wazStatus, hazStatus, whzStatus, prediction, advice };
 };
 
-module.exports = { predictMalnutrition, computeWAZ, computeHAZ, computeWHZ, classify };
+// Whole months between dob and `at` (a month only counts once its day-of-month is reached)
+const completedMonths = (dob, at = new Date()) => {
+  const start = new Date(dob);
+  const end = new Date(at);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return null;
+  let months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+  if (end.getDate() < start.getDate()) months -= 1;
+  return Math.max(0, months);
+};
+
+// Returns an error message for physically implausible measurements, else null.
+// Uses the WHO weight-for-age z-score so the limit scales with age and gender (0–60 months).
+const validateMeasurements = (weight, height, ageMonths, gender) => {
+  const w = Number(weight);
+  const h = Number(height);
+  if (!Number.isFinite(w) || w <= 0 || w > 50) return 'Weight must be a number between 0 and 50 kg';
+  if (!Number.isFinite(h) || h < 30 || h > 130) return 'Height must be a number between 30 and 130 cm';
+  if (computeWAZ(w, Number(ageMonths) || 0, gender) > 5) {
+    return `Invalid weight: ${w} kg is implausibly high for a ${gender === 'female' ? 'girl' : 'boy'} aged ${ageMonths} months. Please re-check the measurement.`;
+  }
+  return null;
+};
+
+module.exports = { predictMalnutrition, computeWAZ, computeHAZ, computeWHZ, classify, completedMonths, validateMeasurements };

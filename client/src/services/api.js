@@ -49,7 +49,8 @@ export const childAPI = {
 export const growthAPI = {
   add: (data) => api.post('/growth/add', data),
   getHistory: (childId) => api.get(`/growth/${childId}`),
-  getPrediction: (childId) => api.get(`/growth/${childId}/predict`),
+  // insights=false skips the LLM write-up (seconds of CPU) when the page doesn't display it
+  getPrediction: (childId, { insights = true } = {}) => api.get(`/growth/${childId}/predict`, { params: insights ? {} : { insights: 'false' } }),
 };
 
 export const vaccinationAPI = {
@@ -104,7 +105,8 @@ export const dietAPI = {
 };
 
 export const chatbotAPI = {
-  query: (message, history = [], language = 'English') => api.post('/chatbot/query', { message, history, language }),
+  query: (message, history = [], language = 'English', location = null) =>
+    api.post('/chatbot/query', { message, history, language, location }),
 };
 
 export const dietChecklistAPI = {
@@ -119,12 +121,17 @@ export const hospitalAPI = {
   search: (q, lat, lng) =>
     api.get('/hospitals/search', { params: { q, lat, lng } }),
   list: (params) => api.get('/hospitals', { params }),
+  emergency: (lat, lng) => api.get('/hospitals/emergency', { params: { lat, lng } }),
 };
 
 export const searchAPI = {
   parentSearchChildren: (q) => api.get('/child/search/parent', { params: { q } }),
   ashaSearchChild: (childId) => api.get('/child/search/asha', { params: { childId } }),
   adminSearchAsha: (q) => api.get('/admin/search/asha', { params: { q } }),
+};
+
+export const statsAPI = {
+  public: () => api.get('/stats/public'),
 };
 
 export default api;

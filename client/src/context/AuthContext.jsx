@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import api from '../services/api';
 
 const AuthContext = createContext(null);
@@ -9,33 +9,19 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-      try {
-        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        await fetchMe();
-      } catch {
-        logout();
-      } finally {
-        setLoading(false);
-      }
-    };
-    checkAuth();
-  }, [token]);
-
-  const fetchMe = async () => {
-    try {
-      const res = await api.get('/auth/me');
-      setUser(res.data.user);
-    } catch {
-      logout();
-    } finally {
+    if (!token) {
       setLoading(false);
+      return;
     }
-  };
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    api.get('/auth/me')
+      .then((res) => setUser(res.data.user))
+      .catch((err) => {
+        // Only drop the session for a rejected token, not for network/server hiccups
+        if (err.response?.status === 401) logout();
+      })
+      .finally(() => setLoading(false));
+  }, [token]);
 
   const login = async (email, password, role) => {
     const res = await api.post('/auth/login', { email, password, role });

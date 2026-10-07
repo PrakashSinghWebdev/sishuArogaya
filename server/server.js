@@ -16,12 +16,14 @@ const app = express();
 app.use(helmet());
 app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5175', credentials: true }));
 
-// Rate limiting
-const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
-app.use('/api/', limiter);
+// Rate limiting — the SPA fires several calls per page, so keep the global cap generous
+// and put a strict cap on credential/OTP endpoints (brute-force protection).
+app.use('/api/', rateLimit({ windowMs: 15 * 60 * 1000, max: 1000 }));
+const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20, message: { message: 'Too many attempts. Please try again in 15 minutes.' } });
+app.use(['/api/auth/login', '/api/auth/forgot-password', '/api/auth/reset-password'], authLimiter);
 
 // Body parser
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: false }));
 
 // Logging (dev only)
@@ -42,6 +44,7 @@ app.use('/api/reports', require('./routes/reports'));
 app.use('/api/chatbot', require('./routes/chatbot'));
 app.use('/api/diet',      require('./routes/diet'));
 app.use('/api/hospitals', require('./routes/hospitals'));
+app.use('/api/stats',     require('./routes/stats'));
 
 // Health check
 app.get('/api/health', (req, res) => res.json({ status: 'OK', project: 'Sishu Arogaya' }));

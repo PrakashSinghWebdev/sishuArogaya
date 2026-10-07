@@ -26,7 +26,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^\d{10}$/;
 
 export default function SishuLogin() {
-  const { login, getDashboardPath, token, user } = useAuth();
+  const { login, getDashboardPath } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
 
@@ -45,7 +45,6 @@ export default function SishuLogin() {
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
-  const [redirected, setRedirected] = useState(false);
   const timerRef = useRef(null);
 
   const startCarousel = () => {
@@ -67,7 +66,6 @@ export default function SishuLogin() {
     setInfo('');
     setEmail('');
     setPassword('');
-    setRedirected(false);
     setEmailErr(false);
     setPassErr(false);
     setLoading(false);
@@ -122,7 +120,6 @@ export default function SishuLogin() {
     try {
       const selectedRole = ROLES[role].value;
       const userData = await login(email, password, selectedRole);
-      setRedirected(true);
       setInfo('Login successful. Redirecting...');
       setTimeout(() => navigate(getDashboardPath(userData.role)), 500);
     } catch (err) {
@@ -209,7 +206,6 @@ export default function SishuLogin() {
     setNewPassword('');
     setError('');
     setInfo('');
-    setRedirected(false);
   };
 
   const cap = CAPTIONS[cur];

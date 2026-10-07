@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LANGUAGES, useLanguage } from '../context/LanguageContext';
+import { useLanguage } from '../context/LanguageContext';
 import { useLocation as useGPSLocation } from '../context/LocationContext';
 
 const NAV_LINKS = {
@@ -52,8 +52,9 @@ const isActiveLink = (pathname, to) => pathname === to || pathname.startsWith(`$
 
 const Layout = ({ children, role }) => {
   const { user, logout } = useAuth();
-  const { t, language, setLanguage } = useLanguage();
+  const { t } = useLanguage();
   const location = useLocation();
+  const navigate = useNavigate();
   const { coords, accuracy, loading: gpsLoading } = useGPSLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -202,20 +203,6 @@ const Layout = ({ children, role }) => {
                   : gpsLoading ? (t('locationLoading') || 'Detecting…')
                   : (t('locationDenied') || 'No GPS')}
               </div>
-              {/* Language selector */}
-              <select
-                style={{
-                  border: '1px solid #c5e8ef', background: '#fff', color: '#0c2340',
-                  borderRadius: '999px', height: 34, padding: '0 10px',
-                  fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                }}
-                value={language}
-                onChange={(e) => setLanguage(e.target.value)}
-              >
-                {LANGUAGES.map((lang) => (
-                  <option key={lang.code} value={lang.code}>{lang.flag} {lang.label}</option>
-                ))}
-              </select>
               <Link to="/asha/notifications" className="asha-shell-secondary">
                 {t('notifications') || 'Notifications'}
               </Link>
@@ -253,7 +240,7 @@ const Layout = ({ children, role }) => {
 
         </div>
 
-        <div className="asha-shell-content asha-shell-main" style={{ maxWidth: 1280, margin: '0 auto', padding: '24px 28px 48px' }}>
+        <div className="asha-shell-content asha-shell-main" style={{ maxWidth: 1280, margin: '0 auto', padding: '20px 22px 40px' }}>
           {children}
         </div>
 
@@ -416,7 +403,7 @@ const Layout = ({ children, role }) => {
           align-items: center;
           justify-content: space-between;
           gap: 16px;
-          padding: 18px 28px;
+          padding: 16px 22px;
           background: rgba(255,255,255,0.82);
           backdrop-filter: blur(16px);
           border-bottom: 1px solid rgba(12, 35, 64, 0.07);
@@ -443,8 +430,7 @@ const Layout = ({ children, role }) => {
           justify-content: flex-end;
         }
 
-        .portal-chip,
-        .portal-lang-select {
+        .portal-chip {
           border: 1px solid #c5e8ef;
           background: #ffffff;
           color: #0c2340;
@@ -484,12 +470,12 @@ const Layout = ({ children, role }) => {
         }
 
         .portal-content {
-          padding: 28px;
+          padding: 20px 22px 36px;
         }
 
         .portal-hero {
-          margin-bottom: 24px;
-          padding: 22px 24px;
+          margin-bottom: 20px;
+          padding: 20px 22px;
           border-radius: 24px;
           background:
             radial-gradient(circle at top right, rgba(255,255,255,0.22), transparent 28%),
@@ -684,8 +670,8 @@ const Layout = ({ children, role }) => {
         @media (max-width: 900px) {
           .portal-topbar,
           .portal-content {
-            padding-left: 18px;
-            padding-right: 18px;
+            padding-left: 16px;
+            padding-right: 16px;
           }
 
           .portal-hero-grid {
@@ -768,17 +754,6 @@ const Layout = ({ children, role }) => {
             </div>
 
             <div className="portal-actions">
-              <select
-                className="portal-lang-select"
-                value={language}
-                onChange={(e) => setLanguage(e.target.value)}
-              >
-                {LANGUAGES.map((lang) => (
-                  <option key={lang.code} value={lang.code}>
-                    {lang.flag} {lang.label}
-                  </option>
-                ))}
-              </select>
               <Link to={`/${role}/notifications`} className="portal-chip">
                 <i className="bi bi-bell" />
                 <span>{stripLeadingDecorators(t('notifications') || 'Notifications')}</span>

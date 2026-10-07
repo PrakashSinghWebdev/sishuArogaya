@@ -4,11 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { authAPI } from '../../services/api';
 import './Register.css';
 
-const DISTRICTS = [
-  'Dehradun', 'Haridwar', 'Nainital', 'Udham Singh Nagar', 'Almora',
-  'Champawat', 'Bageshwar', 'Pithoragarh', 'Chamoli', 'Rudraprayag',
-  'Uttarkashi', 'Tehri Garhwal', 'Pauri Garhwal',
-];
+import { INDIA_DISTRICTS, INDIA_STATES } from '../../data/indiaDistricts';
 
 const CAPTIONS = [
   { e: 'AI', t: 'Early detection saves lives', d: 'AI malnutrition prediction using WHO z-score standards' },
@@ -75,7 +71,7 @@ export default function Register() {
   const timerRef = useRef(null);
   const [cur, setCur] = useState(0);
   const [role, setRole] = useState('parent');
-  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', mobile: '', aadhar: '', dob: '', district: '', block: '', ashaId: '', password: '', confirm: '' });
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', mobile: '', aadhar: '', dob: '', state: '', district: '', block: '', ashaId: '', password: '', confirm: '' });
   const [showPw, setShowPw] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [agreed, setAgreed] = useState(false);
@@ -120,10 +116,7 @@ export default function Register() {
         return;
       }
 
-      setAadharData({
-        state: DISTRICTS[Math.floor(Math.random() * DISTRICTS.length)] || 'Uttarakhand',
-        ageBand: '25-35'
-      });
+      setAadharData({ ageBand: '25-35' });
       setAadharStatus('valid');
     } catch (error) {
       setAadharStatus('invalid');
@@ -131,7 +124,9 @@ export default function Register() {
   };
 
   const update = (key) => (e) => {
-    setForm((prev) => ({ ...prev, [key]: e.target.value }));
+    const value = e.target.value;
+    // a new state invalidates the chosen district
+    setForm((prev) => ({ ...prev, [key]: value, ...(key === 'state' ? { district: '' } : {}) }));
     setFieldErrors((prev) => ({ ...prev, [key]: '' }));
     setError('');
   };
@@ -145,6 +140,7 @@ export default function Register() {
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) nextErrors.email = 'Enter a valid email address.';
     if (phone.length !== 10) nextErrors.mobile = 'Enter a valid 10-digit mobile number.';
     if (!form.dob) nextErrors.dob = 'Date of birth is required.';
+    if (!form.state) nextErrors.state = 'Select a state.';
     if (!form.district) nextErrors.district = 'Select a district.';
     if (!form.block.trim()) nextErrors.block = 'Enter your block or PHC.';
     if (role === 'asha' && !form.ashaId.trim()) nextErrors.ashaId = 'ASHA ID is required.';
@@ -172,6 +168,7 @@ export default function Register() {
         mobile: form.mobile.replace(/\D/g, ''),
         aadhar: form.aadhar.replace(/\D/g, ''),
         dob: form.dob,
+        state: form.state,
         district: form.district,
         block: form.block.trim(),
         password: form.password,
@@ -267,7 +264,7 @@ export default function Register() {
                 )}
                 {aadharStatus === 'valid' && aadharData && (
                   <div className="aadhar-verify-data">
-                    State: {aadharData.state} • Age Band: {aadharData.ageBand}
+                    Age Band: {aadharData.ageBand}
                   </div>
                 )}
                 {aadharStatus === 'invalid' && (
@@ -278,7 +275,8 @@ export default function Register() {
                 {fieldErrors.aadhar ? <div className="login-card__error">{fieldErrors.aadhar}</div> : null}
               </div>
               <div className="login-card__field"><label className="login-card__label">Date of Birth</label><div className="login-card__input-wrap"><span className="login-card__input-icon">DT</span><input type="date" value={form.dob} onChange={update('dob')} className={`login-card__input ${fieldErrors.dob ? 'has-error' : ''}`} /></div>{fieldErrors.dob ? <div className="login-card__error">{fieldErrors.dob}</div> : null}</div>
-              <div className="login-card__field"><label className="login-card__label">District</label><div className="login-card__input-wrap"><select value={form.district} onChange={update('district')} className={`register-form__select ${fieldErrors.district ? 'has-error' : ''}`}><option value="">Select district</option>{DISTRICTS.map((district) => <option key={district} value={district}>{district}</option>)}</select></div>{fieldErrors.district ? <div className="login-card__error">{fieldErrors.district}</div> : null}</div>
+              <div className="login-card__field"><label className="login-card__label">State / UT</label><div className="login-card__input-wrap"><select value={form.state} onChange={update('state')} className={`register-form__select ${fieldErrors.state ? 'has-error' : ''}`}><option value="">Select state</option>{INDIA_STATES.map((state) => <option key={state} value={state}>{state}</option>)}</select></div>{fieldErrors.state ? <div className="login-card__error">{fieldErrors.state}</div> : null}</div>
+              <div className="login-card__field"><label className="login-card__label">District</label><div className="login-card__input-wrap"><select value={form.district} onChange={update('district')} disabled={!form.state} className={`register-form__select ${fieldErrors.district ? 'has-error' : ''}`}><option value="">{form.state ? 'Select district' : 'Select state first'}</option>{(INDIA_DISTRICTS[form.state] || []).map((district) => <option key={district} value={district}>{district}</option>)}</select></div>{fieldErrors.district ? <div className="login-card__error">{fieldErrors.district}</div> : null}</div>
               <div className="login-card__field"><label className="login-card__label">Block / PHC</label><div className="login-card__input-wrap"><span className="login-card__input-icon">BL</span><input type="text" value={form.block} onChange={update('block')} placeholder="Enter your block" className={`login-card__input ${fieldErrors.block ? 'has-error' : ''}`} /></div>{fieldErrors.block ? <div className="login-card__error">{fieldErrors.block}</div> : null}</div>
               {role === 'asha' ? <div className="login-card__field register-form__full"><label className="login-card__label">ASHA ID</label><div className="login-card__input-wrap"><span className="login-card__input-icon">AS</span><input type="text" value={form.ashaId} onChange={update('ashaId')} placeholder="ASHA-UK-001" className={`login-card__input ${fieldErrors.ashaId ? 'has-error' : ''}`} /></div>{fieldErrors.ashaId ? <div className="login-card__error">{fieldErrors.ashaId}</div> : null}</div> : null}
               <div className="login-card__field"><label className="login-card__label">Password</label><div className="login-card__input-wrap"><span className="login-card__input-icon">#</span><input type={showPw ? 'text' : 'password'} value={form.password} onChange={update('password')} placeholder="Minimum 8 characters" className={`login-card__input login-card__input--password ${fieldErrors.password ? 'has-error' : ''}`} /><button type="button" className="login-card__toggle" onClick={() => setShowPw((prev) => !prev)}>{showPw ? 'Hide' : 'Show'}</button></div>{form.password ? <div className="register-form__strength"><div className="register-form__strength-bar"><div className="register-form__strength-fill" style={{ width: strength.width, background: strength.color }} /></div><div className="register-form__strength-label" style={{ color: strength.color || '#4a7a8a' }}>{strength.label || 'Add a stronger password'}</div></div> : null}{fieldErrors.password ? <div className="login-card__error">{fieldErrors.password}</div> : null}</div>

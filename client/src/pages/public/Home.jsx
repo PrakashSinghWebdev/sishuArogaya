@@ -3,14 +3,9 @@ import { Link } from 'react-router-dom';
 import slide1 from '../../assets/hero_mom_child.png';
 import slide2 from '../../assets/hero_growth_chart.png';
 import slide3 from '../../assets/hero_health_worker.png';
-import { LANGUAGES, useLanguage } from '../../context/LanguageContext';
+import { useLanguage } from '../../context/LanguageContext';
 
-const IMPACT_STATS_DATA = [
-  { value: '2.4M+', labelKey: 'aboutStat1Label', icon: '👶' },
-  { value: '89K+',  labelKey: 'aboutStat2Label', icon: '👩‍⚕️' },
-  { value: '680+',  labelKey: 'aboutStat3Label', icon: '🗺️' },
-  { value: '22',    labelKey: 'aboutStat4Label', icon: '🌐' },
-];
+import usePublicStats from '../../hooks/usePublicStats';
 
 const PARTNERS = [
   { name: 'Ministry of Health & Family Welfare', short: 'MoHFW' },
@@ -22,7 +17,14 @@ const PARTNERS = [
 ];
 
 const Home = () => {
-  const { language, setLanguage, t } = useLanguage();
+  const { t } = useLanguage();
+  const stats = usePublicStats();
+  const IMPACT_STATS_DATA = [
+    { value: stats.children,    labelKey: 'aboutStat1Label', icon: '👶' },
+    { value: stats.ashaWorkers, labelKey: 'aboutStat2Label', icon: '👩‍⚕️' },
+    { value: stats.districts,   labelKey: 'aboutStat3Label', icon: '🗺️' },
+    { value: stats.languages,   labelKey: 'aboutStat4Label', icon: '🌐' },
+  ];
 
   const TECH_FEATURES = [
     { icon: '📊', title: t('aboutFeature1'), desc: t('homeFeature1_desc_long') || 'LMS z-score method for weight-for-age, height-for-age, and weight-for-height with automated malnutrition flagging.' },
@@ -46,27 +48,13 @@ const Home = () => {
                 <div className="home-nav-brand-subtitle">National Child Health Portal</div>
               </div>
             </Link>
-            
+
             <div className="d-flex gap-3 align-items-center">
               <div className="d-none d-md-flex align-items-center gap-4 me-2">
                 <a className="home-nav-link" href="#features">{t('homeNav_features')}</a>
                 <a className="home-nav-link" href="#about">{t('homeNav_about')}</a>
                 <a className="home-nav-link" href="#contact">{t('homeNav_contact')}</a>
               </div>
-              {/* Language switcher */}
-              <select
-                value={language}
-                onChange={(e) => setLanguage(e.target.value)}
-                style={{
-                  border: '1px solid #c5e8ef', background: '#f0fdff', color: '#0e7490',
-                  borderRadius: 10, height: 38, padding: '0 10px', fontSize: 12,
-                  fontWeight: 600, cursor: 'pointer', maxWidth: 130,
-                }}
-              >
-                {LANGUAGES.map((l) => (
-                  <option key={l.code} value={l.code}>{l.flag} {l.label}</option>
-                ))}
-              </select>
               <Link to="/login" className="home-btn-outline">{t('login')}</Link>
               <Link to="/register" className="home-btn-primary">{t('register')}</Link>
             </div>
@@ -315,7 +303,7 @@ const Home = () => {
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=DM+Sans:wght@300;400;500;700&display=swap');
-        
+
         .home-shell {
           font-family: 'DM Sans', sans-serif;
           background: #f0fdff;
@@ -327,7 +315,7 @@ const Home = () => {
         /* Typography */
         .home-text-navy { color: #0c2340; }
         .home-text-muted { color: #4a7a8a; }
-        
+
         .home-section-title {
           font-family: 'Libre Baskerville', serif;
           font-weight: 700;
@@ -336,7 +324,7 @@ const Home = () => {
           letter-spacing: -0.01em;
         }
         .home-section-title span { color: #0e7490; }
-        
+
         .home-section-subtitle {
           color: #4a7a8a;
           font-size: 1.1rem;
@@ -484,7 +472,7 @@ const Home = () => {
         .home-footer-links a:hover {
           color: #f7c948 !important; /* Yellow hover on links */
         }
-        
+
         .carousel-indicators { margin-bottom: 2rem; z-index: 3; }
         .carousel-indicators [data-bs-target] {
           width: 8px; height: 8px; border-radius: 50%; border: none;

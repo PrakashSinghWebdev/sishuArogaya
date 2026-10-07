@@ -36,13 +36,27 @@ const A = {
   pharmacy:    { color:'#059669', label:'Pharmacy',    letter:'Rx', emoji:'💊' },
   health_post: { color:'#d97706', label:'Health Post', letter:'HP', emoji:'🏠' },
   doctors:     { color:'#7c3aed', label:'Doctor',      letter:'Dr', emoji:'👨‍⚕️' },
+  ambulance_station: { color:'#be123c', label:'Ambulance', letter:'🚑', emoji:'🚑' },
 };
+A.health_post.label = 'PHC / CHC';
+
+/* National numbers — ambulances in India are dispatched centrally, the same in every state */
+const EMERGENCY_NUMBERS = [
+  { number:'108', label:'Ambulance' },
+  { number:'102', label:'Mother & child' },
+  { number:'112', label:'Emergency' },
+];
+
+/* Facility names/addresses come from crowd-sourced OSM data — never inject them raw into popup HTML */
+const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+const telHref = (p) => `tel:${String(p).replace(/[^\d+]/g, '')}`;
 
 const FILTER_TABS = [
   { key:'all',       label:'All',        emoji:'📍' },
   { key:'hospital',  label:'Hospitals',  emoji:'🏥' },
+  { key:'health_post', label:'PHC / CHC', emoji:'🏠' },
   { key:'clinic',    label:'Clinics',    emoji:'🏨' },
-  { key:'pharmacy',  label:'Pharmacies', emoji:'💊' },
+  { key:'ambulance_station', label:'Ambulance', emoji:'🚑' },
 ];
 
 /* ── static fallback data ────────────────────────────── */
@@ -105,7 +119,7 @@ function userIcon() {
    COMPONENT
 ═══════════════════════════════════════════════════════ */
 export default function HospitalMap({ height = '100%', showSearchBar = true }) {
-  const { language, t } = useLanguage();
+  const { t } = useLanguage();
 
   /* ── map refs (never cause re-renders) ── */
   const mapDivRef      = useRef(null);   // DOM container
@@ -166,8 +180,9 @@ export default function HospitalMap({ height = '100%', showSearchBar = true }) {
             id: String(h._id), lat, lng,
             type: h.type || 'hospital',
             name: h.name, address: h.address || '', phone: h.phone || '',
+            emergencyPhone: h.emergencyPhone || '', ambulancePhone: h.ambulancePhone || '',
             district: h.district || '', state: h.state || '',
-            isGovernment: h.isGovernment ?? true,
+            isGovernment: h.isGovernment ?? false,
             hasEmergency: h.hasEmergency ?? false,
             hasICU: h.hasICU ?? false,
             dist: h.distanceMeters != null ? h.distanceMeters / 1000 : distKm(origin.lat, origin.lng, lat, lng),
@@ -472,8 +487,9 @@ export default function HospitalMap({ height = '100%', showSearchBar = true }) {
           return {
             id: String(h._id), lat, lng, type: h.type || 'hospital',
             name: h.name, address: h.address || '', phone: h.phone || '',
+            emergencyPhone: h.emergencyPhone || '', ambulancePhone: h.ambulancePhone || '',
             district: h.district || '', state: h.state || '',
-            isGovernment: h.isGovernment ?? true,
+            isGovernment: h.isGovernment ?? false,
             hasEmergency: h.hasEmergency ?? false, hasICU: h.hasICU ?? false,
             dist: pos ? distKm(pos.lat, pos.lng, lat, lng) : null,
             src: 'db',
@@ -547,7 +563,7 @@ export default function HospitalMap({ height = '100%', showSearchBar = true }) {
       const map = L.map(mapDivRef.current, { center:[20.5937, 78.9629], zoom:5, zoomControl:true, maxZoom:20 });
       
       // Standard OSM as a robust background fallback
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{y}/{x}.png', { 
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
         attribution:'© OpenStreetMap', 
         maxZoom:20 
       }).addTo(map);
@@ -566,6 +582,14 @@ export default function HospitalMap({ height = '100%', showSearchBar = true }) {
       }).addTo(map);
       layerRef.current = L.layerGroup().addTo(map);
       mapRef.current   = map;
+
+      /* Leaflet measures its box once; re-measure whenever the container resizes
+         (otherwise tiles render grey/offset when the page layout settles late) */
+      if (window.ResizeObserver) {
+        const ro = new ResizeObserver(() => map.invalidateSize());
+        ro.observe(mapDivRef.current);
+        map.on('unload', () => ro.disconnect());
+      }
 
       map.on('dragstart', () => { followRef.current = false; setIsFollowing(false); });
       map.on('zoomstart', () => { followRef.current = false; setIsFollowing(false); });
@@ -628,19 +652,22 @@ export default function HospitalMap({ height = '100%', showSearchBar = true }) {
 
       marker.bindPopup(`
         <div style="font-family:'DM Sans',sans-serif;min-width:240px;max-width:300px">
-          <div style="font-weight:700;font-size:14px;color:#0c2340;margin-bottom:4px">${cfg.emoji} ${h.name}</div>
+          <div style="font-weight:700;font-size:14px;color:#0c2340;margin-bottom:4px">${cfg.emoji} ${esc(h.name)}</div>
           <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">
             <span style="background:${cfg.color}22;color:${cfg.color};font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">${cfg.label}</span>
             ${badgeHtml}
           </div>
           ${distStr    ? `<div style="font-size:11px;color:#6b7280;margin-bottom:3px">📏 ${distStr}</div>` : ''}
-          ${h.address  ? `<div style="font-size:12px;color:#4a7a8a;margin-bottom:3px">📍 ${h.address}</div>` : ''}
-          ${(h.district||h.state) ? `<div style="font-size:11px;color:#64748b;margin-bottom:5px">🗺️ ${[h.district,h.state].filter(Boolean).join(', ')}</div>` : ''}
-          ${h.phone    ? `<div style="font-size:12px;margin-bottom:8px">📞 <a href="tel:${h.phone}" style="color:#059669;font-weight:700">${h.phone}</a></div>` : ''}
+          ${h.address  ? `<div style="font-size:12px;color:#4a7a8a;margin-bottom:3px">📍 ${esc(h.address)}</div>` : ''}
+          ${(h.district||h.state) ? `<div style="font-size:11px;color:#64748b;margin-bottom:5px">🗺️ ${esc([h.district,h.state].filter(Boolean).join(', '))}</div>` : ''}
+          ${h.phone    ? `<div style="font-size:12px;margin-bottom:4px">📞 <a href="${telHref(h.phone)}" style="color:#059669;font-weight:700">${esc(h.phone)}</a></div>` : ''}
+          ${h.emergencyPhone ? `<div style="font-size:12px;margin-bottom:4px">🚨 Emergency: <a href="${telHref(h.emergencyPhone)}" style="color:#dc2626;font-weight:700">${esc(h.emergencyPhone)}</a></div>` : ''}
+          ${h.ambulancePhone ? `<div style="font-size:12px;margin-bottom:4px">🚑 Ambulance: <a href="${telHref(h.ambulancePhone)}" style="color:#dc2626;font-weight:700">${esc(h.ambulancePhone)}</a></div>` : ''}
+          <div style="font-size:11px;margin:4px 0 8px;color:#64748b">🚑 Free ambulance: <a href="tel:108" style="color:#dc2626;font-weight:700">108</a> · Mother &amp; child: <a href="tel:102" style="color:#dc2626;font-weight:700">102</a></div>
           <div style="display:flex;flex-direction:column;gap:6px">
             <button id="dr-${h.id}" style="background:#2563eb;color:#fff;border:none;border-radius:8px;padding:8px;font-size:12px;cursor:pointer;font-weight:700;width:100%">${t('hospital_show_route')}</button>
-            ${h.phone   ? `<a href="tel:${h.phone}" style="background:#059669;color:#fff;border-radius:8px;padding:8px;font-size:12px;font-weight:700;text-align:center;text-decoration:none;display:block">${t('hospital_call_now')}</a>` : ''}
-            <a href="https://www.google.com/maps/dir/?api=1&destination=${h.lat},${h.lng}" target="_blank" rel="noreferrer"
+            ${h.phone   ? `<a href="${telHref(h.phone)}" style="background:#059669;color:#fff;border-radius:8px;padding:8px;font-size:12px;font-weight:700;text-align:center;text-decoration:none;display:block">${t('hospital_call_now')}</a>` : ''}
+            <a href="https://www.google.com/maps/dir/?api=1&destination=${Number(h.lat)},${Number(h.lng)}" target="_blank" rel="noreferrer"
               style="background:#0f766e;color:#fff;border-radius:8px;padding:8px;font-size:12px;font-weight:700;text-align:center;text-decoration:none;display:block">${t('hospital_open_gmaps')}</a>
           </div>
         </div>
@@ -722,6 +749,16 @@ export default function HospitalMap({ height = '100%', showSearchBar = true }) {
         </div>
       )}
 
+      {/* ── National emergency numbers ── */}
+      <div style={{ background:'#7f1d1d', padding:'5px 10px', display:'flex', gap:8, alignItems:'center', flexShrink:0, overflowX:'auto' }}>
+        {EMERGENCY_NUMBERS.map(({ number, label }) => (
+          <a key={number} href={`tel:${number}`}
+            style={{ color:'#fff', textDecoration:'none', fontSize:12, fontWeight:700, whiteSpace:'nowrap', background:'rgba(255,255,255,.15)', borderRadius:14, padding:'3px 10px' }}>
+            📞 {number} <span style={{ fontWeight:500, opacity:.85 }}>{label}</span>
+          </a>
+        ))}
+      </div>
+
       {/* ── Filter Tabs ── */}
       {showFilters && (
         <div style={{ background:'#0f172a', padding:'6px 10px', display:'flex', gap:6, flexShrink:0, overflowX:'auto' }}>
@@ -755,7 +792,7 @@ export default function HospitalMap({ height = '100%', showSearchBar = true }) {
         <div ref={mapDivRef} style={{ width:'100%', height:'100%' }} />
 
         {/* Loading overlay */}
-        {status === 'loading' && (
+        {status === 'loading' && hospitals.length === 0 && (
           <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,.3)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1200, pointerEvents:'none' }}>
             <div style={{ background:'rgba(12,35,64,.92)', borderRadius:14, padding:'18px 28px', display:'flex', flexDirection:'column', alignItems:'center', gap:10 }}>
               <div style={{ width:28, height:28, border:'3px solid #cffafe', borderTopColor:'transparent', borderRadius:'50%', animation:'spin .7s linear infinite' }} />
@@ -861,7 +898,7 @@ export default function HospitalMap({ height = '100%', showSearchBar = true }) {
                       Route
                     </button>
                     {h.phone && (
-                      <a href={`tel:${h.phone}`} onClick={e => e.stopPropagation()}
+                      <a href={telHref(h.phone)} onClick={e => e.stopPropagation()}
                         style={{ background:'#059669', color:'#fff', borderRadius:6, padding:'4px 8px', fontSize:10, fontWeight:700, textDecoration:'none', textAlign:'center' }}>
                         Call
                       </a>

@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import MediaCarousel, { MEDIA_ARRAY } from '../../components/MediaCarousel';
 import { reportAPI } from '../../services/api';
 import useSelectedChild from '../../hooks/useSelectedChild';
-import { normalizeText, useLanguage } from '../../context/LanguageContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 const NAV = [
   ['🏠 Dashboard', '/parent/dashboard'],
@@ -69,7 +69,6 @@ export default function HealthReports() {
   }, []);
 
   const handleReportAction = async (childId, childName, reportType, reportTitle, action) => {
-    const toast = action === 'preview' ? setDownloading : setDownloading; // Using downloading for both as a loading state
     setDownloading(`${childId}-${reportType}-${action}`);
 
     try {

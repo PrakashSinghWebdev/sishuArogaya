@@ -1,4 +1,6 @@
 const Hospital = require('../models/Hospital');
+const escapeRegex = require('../utils/escapeRegex');
+const { nearest, EMERGENCY_NUMBERS } = require('../utils/healthDirectory');
 
 /**
  * GET /api/hospitals/nearby?lat=&lng=&radius=30000&type=all
@@ -15,7 +17,7 @@ exports.getNearby = async (req, res) => {
       return res.status(400).json({ message: 'lat and lng query params are required.' });
     }
 
-    const matchStage = { isActive: true };
+    const matchStage = { isActive: true, approxLocation: { $ne: true } };
     if (type !== 'all') matchStage.type = type;
 
     const hospitals = await Hospital.aggregate([
@@ -31,8 +33,8 @@ exports.getNearby = async (req, res) => {
       { $limit: 200 },
       {
         $project: {
-          name: 1, type: 1, address: 1, phone: 1,
-          district: 1, state: 1, isGovernment: 1,
+          name: 1, type: 1, address: 1, phone: 1, emergencyPhone: 1, ambulancePhone: 1,
+          district: 1, state: 1, pincode: 1, isGovernment: 1,
           hasEmergency: 1, hasICU: 1,
           location: 1, distanceMeters: 1,
         },
@@ -60,7 +62,7 @@ exports.searchHospitals = async (req, res) => {
 
     // Text search
     let hospitals = await Hospital.find(
-      { $text: { $search: q }, isActive: true },
+      { $text: { $search: q }, isActive: true, approxLocation: { $ne: true } },
       { score: { $meta: 'textScore' } }
     ).sort({ score: { $meta: 'textScore' } }).limit(50);
 
@@ -68,11 +70,12 @@ exports.searchHospitals = async (req, res) => {
     if (!hospitals.length) {
       hospitals = await Hospital.find({
         isActive: true,
+        approxLocation: { $ne: true },
         $or: [
-          { name:     { $regex: q, $options: 'i' } },
-          { district: { $regex: q, $options: 'i' } },
-          { state:    { $regex: q, $options: 'i' } },
-          { address:  { $regex: q, $options: 'i' } },
+          { name:     { $regex: escapeRegex(q), $options: 'i' } },
+          { district: { $regex: escapeRegex(q), $options: 'i' } },
+          { state:    { $regex: escapeRegex(q), $options: 'i' } },
+          { address:  { $regex: escapeRegex(q), $options: 'i' } },
         ],
       }).limit(50);
     }
@@ -99,10 +102,29 @@ exports.searchHospitals = async (req, res) => {
 };
 
 /**
+ * GET /api/hospitals/emergency?lat=&lng=
+ * National ambulance/helpline numbers (same in every state) + nearest hospitals if coordinates are given.
+ */
+exports.getEmergency = async (req, res) => {
+  try {
+    const lat = parseFloat(req.query.lat);
+    const lng = parseFloat(req.query.lng);
+    const hospitals = Number.isFinite(lat) && Number.isFinite(lng)
+      ? await nearest({ lat, lng }, { limit: 5, maxKm: 100, types: ['hospital', 'ambulance_station'] })
+      : [];
+    res.json({ numbers: EMERGENCY_NUMBERS, hospitals });
+  } catch (err) {
+    console.error('getEmergency error:', err.message);
+    res.status(500).json({ message: 'Server error.' });
+  }
+};
+
+/**
  * GET /api/hospitals/:id
  */
 exports.getHospital = async (req, res) => {
   try {
+    if (!require('mongoose').isValidObjectId(req.params.id)) return res.status(404).json({ message: 'Hospital not found.' });
     const hospital = await Hospital.findById(req.params.id);
     if (!hospital) return res.status(404).json({ message: 'Hospital not found.' });
     res.json(hospital);
@@ -118,13 +140,20 @@ exports.listAll = async (req, res) => {
   try {
     const { state, district, type, emergency } = req.query;
     const filter = { isActive: true };
-    if (state)     filter.state    = { $regex: state, $options: 'i' };
-    if (district)  filter.district = { $regex: district, $options: 'i' };
+    if (state)     filter.state    = { $regex: escapeRegex(state), $options: 'i' };
+    if (district)  filter.district = { $regex: escapeRegex(district), $options: 'i' };
     if (type && type !== 'all') filter.type = type;
     if (emergency === 'true')   filter.hasEmergency = true;
 
-    const hospitals = await Hospital.find(filter).limit(500);
-    res.json({ count: hospitals.length, hospitals });
+    // List is capped for the browser; stats count the whole matching set
+    const [hospitals, total, emergencyCount, government, icu] = await Promise.all([
+      Hospital.find(filter).sort({ hasEmergency: -1, isGovernment: -1, name: 1 }).limit(500),
+      Hospital.countDocuments(filter),
+      Hospital.countDocuments({ ...filter, hasEmergency: true }),
+      Hospital.countDocuments({ ...filter, isGovernment: true }),
+      Hospital.countDocuments({ ...filter, hasICU: true }),
+    ]);
+    res.json({ count: hospitals.length, hospitals, stats: { total, emergency: emergencyCount, government, icu } });
   } catch (err) {
     res.status(500).json({ message: 'Server error.' });
   }

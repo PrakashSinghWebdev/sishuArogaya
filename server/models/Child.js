@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { completedMonths } = require('../utils/zScore');
 
 const childSchema = new mongoose.Schema(
   {
@@ -17,6 +18,7 @@ const childSchema = new mongoose.Schema(
     currentHeight: { type: Number },
     parentId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     ashaId: { type: mongoose.Schema.Types.ObjectId, ref: 'AshaWorker' },
+    state: { type: String },
     district: { type: String },
     block: { type: String },
     village: { type: String },
@@ -30,9 +32,9 @@ const childSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Generate unique childId before save
-childSchema.pre('save', async function (next) {
-  if (this.childId) return next();
+// Generate unique childId before validation so required validation passes
+childSchema.pre('validate', async function (next) {
+  if (typeof this.childId === 'string' && this.childId.trim().length > 0) return next();
 
   let childId;
   let isUnique = false;
@@ -51,11 +53,7 @@ childSchema.pre('save', async function (next) {
 
 // figure out the child's age without having to store it
 childSchema.virtual('ageInMonths').get(function () {
-  const now = new Date();
-  const birthDate = new Date(this.dob);
-  const yearDiff = now.getFullYear() - birthDate.getFullYear();
-  const monthDiff = now.getMonth() - birthDate.getMonth();
-  return yearDiff * 12 + monthDiff;
+  return completedMonths(this.dob);
 });
 
 childSchema.set('toJSON', { virtuals: true });

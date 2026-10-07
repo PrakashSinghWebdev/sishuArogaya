@@ -1,11 +1,11 @@
 import { Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { LocationProvider } from './context/LocationContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import MobileTabBar from './components/MobileTabBar';
 import ChatBot from './components/ChatBot';
-import VoiceGuide from './components/VoiceGuide';
 import ErrorBoundary from './components/ErrorBoundary';
 
 // Public pages — loaded eagerly since they're the entry point
@@ -76,14 +76,8 @@ function PageLoader() {
 }
 
 function AppRoutes() {
-  const location = useLocation();
-
-  // hide chatbot on auth pages — it doesn't make sense there
-  const hideBot = location.pathname === '/login' || location.pathname === '/register';
-
   return (
     <>
-      <VoiceGuide />
       <Suspense fallback={<PageLoader />}>
         <Routes>
           {/* Public routes */}
@@ -145,7 +139,12 @@ function AppRoutes() {
         </Routes>
       </Suspense>
 
-      {!hideBot && <ChatBot />}
+      {/*
+        Health assistant is mounted on every route — including /login and /register —
+        so visitors can ask child-health questions before they even sign in.
+      */}
+      <ChatBot />
+      <MobileTabBar />
     </>
   );
 }

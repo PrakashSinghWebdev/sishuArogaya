@@ -43,13 +43,10 @@ const getSchedule = async (req, res) => {
       .sort('dueDate')
       .populate('givenBy', 'name');
 
+    // Flip past-due 'upcoming' doses to 'due' in one write
     const now = new Date();
-    for (const vaccine of vaccines) {
-      if (vaccine.status === 'upcoming' && vaccine.dueDate < now) {
-        vaccine.status = 'due';
-        await vaccine.save();
-      }
-    }
+    await Vaccination.updateMany({ childId: req.params.childId, status: 'upcoming', dueDate: { $lt: now } }, { status: 'due' });
+    vaccines.forEach((v) => { if (v.status === 'upcoming' && v.dueDate < now) v.status = 'due'; });
 
     res.json(vaccines);
   } catch (err) {
@@ -61,12 +58,20 @@ const getSchedule = async (req, res) => {
 const updateVaccination = async (req, res) => {
   try {
     const { vaccineId, givenDate, notes } = req.body;
+    const existing = await Vaccination.findById(vaccineId).select('childId');
+    if (!existing) return res.status(404).json({ message: 'Vaccination record not found' });
+
+    // ASHA workers may only update vaccines of children assigned to them
+    const childIds = await getAccessibleChildIds(req.user);
+    if (!childIds?.some((id) => String(id) === String(existing.childId))) {
+      return res.status(403).json({ message: 'Not authorized to update this vaccination' });
+    }
+
     const vaccine = await Vaccination.findByIdAndUpdate(
       vaccineId,
       { status: 'done', givenDate: givenDate || new Date(), givenBy: req.user._id, notes },
       { new: true }
     );
-    if (!vaccine) return res.status(404).json({ message: 'Vaccination record not found' });
 
     const child = await Child.findById(vaccine.childId).populate('parentId', '_id name');
     if (child?.parentId?._id) {
@@ -123,9 +128,10 @@ const parentMarkDone = async (req, res) => {
     if (!vaccine) return res.status(404).json({ message: 'Vaccination record not found' });
 
     // Verify the parent owns this child
-    if (String(vaccine.childId.parentId) !== String(req.user._id)) {
+    if (String(vaccine.childId?.parentId) !== String(req.user._id)) {
       return res.status(403).json({ message: 'Not authorized' });
     }
+    if (vaccine.status === 'done') return res.json(vaccine);
 
     vaccine.status = 'done';
     vaccine.givenDate = vaccine.givenDate || new Date();

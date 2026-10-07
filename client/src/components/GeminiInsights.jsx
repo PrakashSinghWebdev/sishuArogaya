@@ -5,6 +5,11 @@ import React from 'react';
  * Displays AI-powered health insights from Gemini API
  */
 export default function GeminiInsights({ insights, loading, error }) {
+  // Guard against non-string payloads — rendering an object here previously
+  // blew up the whole page with "Objects are not valid as a React child".
+  const errorText = typeof error === 'string' ? error : (typeof error === 'number' ? String(error) : null);
+  const insightsText = typeof insights === 'string' ? insights : null;
+
   if (loading) {
     return (
       <div style={{
@@ -45,7 +50,7 @@ export default function GeminiInsights({ insights, loading, error }) {
     );
   }
 
-  if (error) {
+  if (errorText) {
     return (
       <div style={{
         background: '#fef2f2',
@@ -67,18 +72,18 @@ export default function GeminiInsights({ insights, loading, error }) {
           color: '#b91c1c',
           margin: 0
         }}>
-          {error}
+          {errorText}
         </p>
       </div>
     );
   }
 
-  if (!insights) {
+  if (!insightsText) {
     return null;
   }
 
   // Parse the insights text into sections
-  const sections = insights.split(/\n+/).filter(line => line.trim());
+  const sections = insightsText.split(/\n+/).filter(line => line.trim());
 
   return (
     <div style={{

@@ -2,6 +2,15 @@ const Child = require('../models/Child');
 const Vaccination = require('../models/Vaccination');
 const AshaWorker = require('../models/AshaWorker');
 const { createAuditLog } = require('../utils/auditLogger');
+const escapeRegex = require('../utils/escapeRegex');
+const { findAshaForArea, assignChild, claimUnassignedInArea } = require('../utils/ashaAssignment');
+
+// Fields a client may set on a child; ownership/status fields are server-controlled
+const EDITABLE_FIELDS = ['name', 'dob', 'gender', 'bloodGroup', 'birthWeight', 'birthHeight', 'currentWeight', 'currentHeight', 'state', 'district', 'block', 'village'];
+const pickEditable = (body, role) => {
+  const fields = role === 'admin' ? [...EDITABLE_FIELDS, 'parentId', 'ashaId', 'isActive'] : EDITABLE_FIELDS;
+  return Object.fromEntries(fields.filter((f) => body?.[f] !== undefined).map((f) => [f, body[f]]));
+};
 
 // Vaccination schedule — India NIS + IAP 2020-2021 recommendations
 const VACCINE_SCHEDULE = [
@@ -65,22 +74,33 @@ const addMonthsToDate = (date, months) => {
 // POST /api/child/add
 const addChild = async (req, res) => {
   try {
-    let payload = { ...req.body };
+    const payload = pickEditable(req.body, req.user.role);
     let ashaProfile = null;
 
     if (req.user.role === 'parent') {
       payload.parentId = req.user._id;
+      // The child lives where the parent registered unless the form says otherwise
+      payload.state = payload.state || req.user.state;
+      payload.district = payload.district || req.user.district;
+      payload.block = payload.block || req.user.block;
     }
 
     if (req.user.role === 'asha') {
       ashaProfile = await AshaWorker.findOne({ userId: req.user._id });
       if (!ashaProfile) return res.status(404).json({ message: 'ASHA profile not found' });
       payload.ashaId = ashaProfile._id;
+      payload.state = payload.state || ashaProfile.state;
       payload.district = payload.district || ashaProfile.district;
       payload.block = payload.block || ashaProfile.block;
     }
 
     const child = await Child.create(payload);
+
+    // Parent-registered children go to the ASHA worker covering their area
+    if (!ashaProfile && !child.ashaId) {
+      const asha = await findAshaForArea(child);
+      if (asha) await assignChild(child, asha);
+    }
 
     // Auto-generate vaccination schedule
     const vaccines = VACCINE_SCHEDULE.map((v) => ({
@@ -113,7 +133,7 @@ const addChild = async (req, res) => {
 
     res.status(201).json({ message: 'Child registered successfully', child: populatedChild });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(err.name === 'ValidationError' ? 400 : 500).json({ message: err.message });
   }
 };
 
@@ -150,6 +170,7 @@ const listChildren = async (req, res) => {
     if (req.user.role === 'asha') {
       const asha = await AshaWorker.findOne({ userId: req.user._id });
       if (!asha) return res.status(404).json({ message: 'ASHA profile not found' });
+      await claimUnassignedInArea(asha);
       filter.ashaId = asha._id;
     }
     // ASHA and admin: optional district/block filter from query
@@ -184,7 +205,9 @@ const updateChild = async (req, res) => {
       }
     }
 
-    const child = await Child.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true })
+    const updatePayload = pickEditable(req.body, req.user.role);
+
+    const child = await Child.findByIdAndUpdate(req.params.id, updatePayload, { new: true, runValidators: true })
       .populate('parentId', 'name phone email')
       .populate({ path: 'ashaId', select: 'ashaId district block village', populate: { path: 'userId', select: 'name phone' } });
     await createAuditLog({
@@ -209,7 +232,7 @@ const searchChildren = async (req, res) => {
       return res.json({ results: [] });
     }
 
-    const searchRegex = new RegExp(q.trim(), 'i');
+    const searchRegex = new RegExp(escapeRegex(q.trim()), 'i');
     const filter = { parentId: req.user._id };
 
     const results = await Child.find({
@@ -236,7 +259,7 @@ const searchByChildId = async (req, res) => {
       return res.json({ result: null });
     }
 
-    const child = await Child.findOne({ childId: childId.toUpperCase() })
+    const child = await Child.findOne({ childId: childId.trim().toUpperCase() })
       .populate('parentId', 'name phone email')
       .populate({ path: 'ashaId', select: 'ashaId district block village', populate: { path: 'userId', select: 'name phone' } });
 

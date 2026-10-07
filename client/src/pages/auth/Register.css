@@ -75,6 +75,7 @@
 .register-form__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 12px; }
 .register-form__full { grid-column: 1 / -1; }
 .register-form__select { appearance: none; cursor: pointer; }
+.register-form__select:disabled { cursor: not-allowed; opacity: .6; }
 .register-form__strength { margin-top: -4px; margin-bottom: 6px; }
 .register-form__strength-bar { width: 100%; height: 4px; border-radius: 999px; background: #e2e8f0; overflow: hidden; }
 .register-form__strength-fill { height: 100%; border-radius: 999px; transition: width .25s ease, background .25s ease; }

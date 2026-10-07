@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import MediaCarousel, { MEDIA_ARRAY } from '../../components/MediaCarousel';
 import { Link } from 'react-router-dom';
 import { childAPI, reportAPI } from '../../services/api';
@@ -60,7 +60,6 @@ export default function ChildProfile() {
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState('');
   const [slide, setSlide] = useState(0);
-  const slideRef = useRef(null);
   const [form, setForm] = useState({
     name: '', dob: '', gender: 'male', bloodGroup: 'Unknown', birthWeight: '', birthHeight: '',
   });

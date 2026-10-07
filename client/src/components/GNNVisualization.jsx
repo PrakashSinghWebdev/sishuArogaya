@@ -5,7 +5,10 @@ import React from 'react';
  * Displays growth prediction network graph
  */
 export default function GNNVisualization({ graph, prediction }) {
-  if (!graph || !graph.nodes) {
+  const nodes = Array.isArray(graph?.nodes) ? graph.nodes : [];
+  const edges = Array.isArray(graph?.edges) ? graph.edges : [];
+
+  if (!graph || typeof graph !== 'object' || !nodes.length) {
     return (
       <div style={{
         background: '#fff',
@@ -27,11 +30,12 @@ export default function GNNVisualization({ graph, prediction }) {
   const centerY = canvasHeight / 2;
 
   // Arrange nodes in circular layout
-  const arrangedNodes = graph.nodes.map((node, idx) => {
-    const angle = (idx / graph.nodes.length) * 2 * Math.PI;
+  const arrangedNodes = nodes.map((node, idx) => {
+    const angle = (idx / nodes.length) * 2 * Math.PI;
     const radius = 120;
     return {
       ...node,
+      id: String(node?.id ?? `node_${idx}`),
       x: centerX + Math.cos(angle) * radius,
       y: centerY + Math.sin(angle) * radius,
     };
@@ -62,7 +66,7 @@ export default function GNNVisualization({ graph, prediction }) {
         background: '#f0fdff',
       }}>
         {/* Draw edges */}
-        {graph.edges.map((edge, idx) => {
+        {edges.map((edge, idx) => {
           const sourceNode = arrangedNodes.find(n => n.id === edge.source);
           const targetNode = arrangedNodes.find(n => n.id === edge.target);
           if (!sourceNode || !targetNode) return null;
@@ -85,7 +89,6 @@ export default function GNNVisualization({ graph, prediction }) {
         {/* Draw nodes */}
         {arrangedNodes.map((node) => {
           let nodeColor = '#0891b2';
-          let textColor = '#fff';
 
           if (node.type === 'child') nodeColor = '#0e7490';
           else if (node.type === 'reference') {

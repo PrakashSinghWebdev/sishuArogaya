@@ -6,6 +6,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { notificationAPI, schemeAPI, vaccinationAPI, growthAPI, dietAPI, searchAPI } from '../../services/api';
 import useSelectedChild from '../../hooks/useSelectedChild';
 import SearchBar from '../../components/SearchBar';
+import { normalizePrediction } from '../../utils/predictionShape';
 
 const HospitalMap = lazy(() => import('../../components/HospitalMap'));
 
@@ -133,15 +134,15 @@ export default function ParentDashboard() {
     const ageMonths = selectedChild.ageInMonths;
 
     vaccinationAPI.getSchedule(childId)
-      .then((res) => setVaccines((res.data || []).slice(0, 8)))
+      .then((res) => setVaccines(res.data || []))
       .catch(console.error);
 
     growthAPI.getHistory(childId)
       .then((res) => setGrowth((res.data || []).slice(-6).reverse()))
       .catch(console.error);
 
-    growthAPI.getPrediction(childId)
-      .then((res) => setPrediction(res.data))
+    growthAPI.getPrediction(childId, { insights: false })
+      .then((res) => setPrediction(normalizePrediction(res.data)))
       .catch(() => setPrediction(null));
 
     if (ageMonths != null) {
@@ -331,7 +332,7 @@ export default function ParentDashboard() {
           display: 'flex', alignItems: 'center',
           gap: 2, flex: 1, justifyContent: 'center', flexWrap: 'nowrap', overflow: 'hidden',
         }}>
-          {(navLinks && navLinks.length ? navLinks : NAV).map(([label, to]) => (
+          {(navLinks || []).map(([label, to]) => (
             <Link key={to} to={to} className={`sa-nav-link${location.pathname === to ? ' active' : ''}`}>
               {label}
             </Link>
@@ -385,8 +386,8 @@ export default function ParentDashboard() {
 
         <div style={{
           position: 'relative', zIndex: 2,
-          maxWidth: 1280, margin: '0 auto',
-          padding: '0 48px',
+          maxWidth: 1180, margin: '0 auto',
+          padding: '0 22px',
           height: '100%',
           display: 'flex', flexDirection: 'column', justifyContent: 'center',
         }}>
@@ -464,7 +465,7 @@ export default function ParentDashboard() {
       </div>
 
       {/* ════════════════════════════════════ MAIN ════ */}
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '24px 28px 60px' }}>
+      <div style={{ maxWidth: 1180, margin: '0 auto', padding: '20px 18px 52px' }}>
 
         {loading || childLoading ? (
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 320 }}>
@@ -608,7 +609,7 @@ export default function ParentDashboard() {
                 emoji="⚖️" accent="#059669"
                 label="Current Weight"
                 value={latestGrowth?.weight ? `${latestGrowth.weight} kg` : (selectedChild.currentWeight ? `${selectedChild.currentWeight} kg` : 'N/A')}
-                sub={latestGrowth ? `Recorded ${formatDate(latestGrowth.date)}` : 'No record yet'}
+                sub={latestGrowth ? `Recorded ${formatDate(latestGrowth.recordedDate || latestGrowth.createdAt)}` : 'No record yet'}
               />
               <StatCard
                 emoji="📏" accent="#f59e0b"
@@ -625,17 +626,6 @@ export default function ParentDashboard() {
               />
             </div>
 
-            {/* ── Quick action tiles (6-col) ── */}
-            <div className="sa-grid3" style={{ marginBottom: 28, animation: 'fadeUp .55s ease' }}>
-              {QUICK_ACTIONS.map(({ emoji, label, to }) => (
-                <Link key={to} to={to} className="sa-card sa-card-hover" style={{ padding: '20px 16px', textAlign: 'center' }}>
-                  <div style={{ fontSize: 30, marginBottom: 8 }}>{emoji}</div>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: '#0c2340' }}>{label}</div>
-                  <div style={{ fontSize: 11, color: '#4a7a8a', marginTop: 3 }}>Tap to open →</div>
-                </Link>
-              ))}
-            </div>
-
             {/* ── 2-col grid: Vaccination + Hospital Map ── */}
             <div className="sa-grid2" style={{ marginBottom: 24, animation: 'fadeUp .6s ease' }}>
               {/* Vaccination snapshot */}
@@ -645,7 +635,7 @@ export default function ParentDashboard() {
                   <div style={{ color: '#4a7a8a', fontSize: 13, padding: '20px 0', textAlign: 'center' }}>
                     No vaccination records yet.
                   </div>
-                ) : vaccines.map((v) => (
+                ) : vaccines.slice(0, 8).map((v) => (
                   <div key={v._id} style={{
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                     padding: '10px 14px', marginBottom: 8,
@@ -679,7 +669,7 @@ export default function ParentDashboard() {
                     Loading map…
                   </div>
                 }>
-                  <HospitalMap height="100%" showSearchBar={true} />
+                  <HospitalMap height={440} showSearchBar={true} />
                 </Suspense>
               </div>
             </div>
@@ -704,20 +694,20 @@ export default function ParentDashboard() {
                     <tbody>
                       {growth.map((g, i) => (
                         <tr key={g._id || i} style={{ borderBottom: '1px solid #f0fdff' }}>
-                          <td style={{ padding: '9px 12px', color: '#0c2340', fontWeight: 500 }}>{formatDate(g.date || g.createdAt)}</td>
+                          <td style={{ padding: '9px 12px', color: '#0c2340', fontWeight: 500 }}>{formatDate(g.recordedDate || g.createdAt)}</td>
                           <td style={{ padding: '9px 12px', color: '#059669', fontWeight: 600 }}>{g.weight ?? '—'}</td>
                           <td style={{ padding: '9px 12px', color: '#0891b2', fontWeight: 600 }}>{g.height ?? '—'}</td>
-                          <td style={{ padding: '9px 12px', color: '#4a7a8a' }}>{g.ageInMonths ?? '—'}</td>
-                          <td style={{ padding: '9px 12px', color: '#4a7a8a' }}>{g.weightForAgeZ != null ? g.weightForAgeZ.toFixed(2) : '—'}</td>
-                          <td style={{ padding: '9px 12px', color: '#4a7a8a' }}>{g.heightForAgeZ != null ? g.heightForAgeZ.toFixed(2) : '—'}</td>
+                          <td style={{ padding: '9px 12px', color: '#4a7a8a' }}>{g.ageMonths ?? '—'}</td>
+                          <td style={{ padding: '9px 12px', color: '#4a7a8a' }}>{g.wazScore != null ? g.wazScore.toFixed(2) : '—'}</td>
+                          <td style={{ padding: '9px 12px', color: '#4a7a8a' }}>{g.hazScore != null ? g.hazScore.toFixed(2) : '—'}</td>
                           <td style={{ padding: '9px 12px' }}>
                             <span className={
-                              g.nutritionStatus === 'healthy'  ? 'sa-badge-done'
-                              : g.nutritionStatus === 'moderate' ? 'sa-badge-due'
-                              : g.nutritionStatus              ? 'sa-badge-upcoming'
+                              g.prediction === 'healthy'  ? 'sa-badge-done'
+                              : g.prediction === 'moderate' ? 'sa-badge-due'
+                              : g.prediction              ? 'sa-badge-upcoming'
                               : ''
                             }>
-                              {g.nutritionStatus || '—'}
+                              {g.prediction || '—'}
                             </span>
                           </td>
                         </tr>
@@ -745,19 +735,19 @@ export default function ParentDashboard() {
                     🤖 Growth Forecast for {selectedChild.name}
                   </h3>
                   <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-                    {prediction.predictedWeight != null && (
+                    {typeof prediction.predictedWeight === 'number' && (
                       <div>
                         <div style={{ fontSize: 11, color: '#cffafe', marginBottom: 2 }}>Predicted Weight</div>
                         <div style={{ fontSize: 22, fontWeight: 700, color: '#f7c948' }}>{prediction.predictedWeight} kg</div>
                       </div>
                     )}
-                    {prediction.predictedHeight != null && (
+                    {typeof prediction.predictedHeight === 'number' && (
                       <div>
                         <div style={{ fontSize: 11, color: '#cffafe', marginBottom: 2 }}>Predicted Height</div>
                         <div style={{ fontSize: 22, fontWeight: 700, color: '#f7c948' }}>{prediction.predictedHeight} cm</div>
                       </div>
                     )}
-                    {prediction.riskLevel && (
+                    {typeof prediction.riskLevel === 'string' && prediction.riskLevel && (
                       <div>
                         <div style={{ fontSize: 11, color: '#cffafe', marginBottom: 2 }}>Risk Level</div>
                         <div style={{ fontSize: 18, fontWeight: 700, color: prediction.riskLevel === 'low' ? '#86efac' : prediction.riskLevel === 'moderate' ? '#fde68a' : '#fca5a5' }}>
@@ -766,7 +756,7 @@ export default function ParentDashboard() {
                       </div>
                     )}
                   </div>
-                  {prediction.recommendation && (
+                  {typeof prediction.recommendation === 'string' && prediction.recommendation && (
                     <p style={{ color: 'rgba(255,255,255,.8)', fontSize: 13, margin: '12px 0 0', maxWidth: 500 }}>
                       {prediction.recommendation}
                     </p>

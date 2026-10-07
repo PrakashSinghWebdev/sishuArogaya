@@ -6,10 +6,9 @@ import { useLanguage } from '../../context/LanguageContext';
 const facilityTypes = [
   { value: 'all',         label: 'All Types'    },
   { value: 'hospital',    label: 'Hospitals'    },
+  { value: 'health_post', label: 'PHC / CHC'    },
   { value: 'clinic',      label: 'Clinics'      },
-  { value: 'pharmacy',    label: 'Pharmacies'   },
-  { value: 'health_post', label: 'Health Posts' },
-  { value: 'doctors',     label: 'Doctors'      },
+  { value: 'ambulance_station', label: 'Ambulance Stations' },
 ];
 
 // "health_post" → "Health Post"
@@ -20,6 +19,7 @@ function humaniseType(raw = '') {
 const HealthCentreDirectory = () => {
   const { t } = useLanguage();
   const [centres, setCentres] = useState([]);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
     district: '',
@@ -29,25 +29,30 @@ const HealthCentreDirectory = () => {
   });
 
   useEffect(() => {
+    let active = true;
     setLoading(true);
-    hospitalAPI
-      .list({
-        district: filters.district || undefined,
-        state: filters.state || undefined,
-        type: filters.type,
-        emergency: filters.emergency || undefined,
-      })
-      .then(res => setCentres(res.data?.hospitals || []))
-      .catch(() => setCentres([]))
-      .finally(() => setLoading(false));
+    // Debounced: district/state are free-text inputs
+    const timer = setTimeout(() => {
+      hospitalAPI
+        .list({
+          district: filters.district || undefined,
+          state: filters.state || undefined,
+          type: filters.type,
+          emergency: filters.emergency || undefined,
+        })
+        .then(res => { if (active) { setCentres(res.data?.hospitals || []); setStats(res.data?.stats || null); } })
+        .catch(() => { if (active) { setCentres([]); setStats(null); } })
+        .finally(() => { if (active) setLoading(false); });
+    }, 300);
+    return () => { active = false; clearTimeout(timer); };
   }, [filters]);
 
-  const summaryNumbers = useMemo(() => ({
+  const summaryNumbers = useMemo(() => stats || ({
     total:      centres.length,
     emergency:  centres.filter(c => c.hasEmergency).length,
     government: centres.filter(c => c.isGovernment).length,
     icu:        centres.filter(c => c.hasICU).length,
-  }), [centres]);
+  }), [centres, stats]);
 
   function setFilter(field, value) {
     setFilters(prev => ({ ...prev, [field]: value }));

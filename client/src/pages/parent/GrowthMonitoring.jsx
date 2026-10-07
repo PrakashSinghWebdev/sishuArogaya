@@ -4,13 +4,23 @@ import { childAPI, growthAPI } from '../../services/api';
 import MediaCarousel, { MEDIA_ARRAY } from '../../components/MediaCarousel';
 import GrowthLineChart from '../../components/GrowthLineChart';
 import { useLanguage } from '../../context/LanguageContext';
+import { normalizePrediction } from '../../utils/predictionShape';
 
 // navLinks moved to component body using useLanguage()
 
 const WHO_W = [3.3, 4.5, 5.6, 6.4, 7.0, 7.5, 7.9, 8.3, 8.6, 8.9, 9.2, 9.4, 9.6, 9.8, 10.0, 10.1, 10.3, 10.4, 10.6];
 const WHO_H = [49.9, 54.7, 58.4, 61.4, 63.9, 65.9, 67.6, 69.2, 70.6, 72.0, 73.3, 74.5, 75.7, 76.9, 78.0, 79.1, 80.2, 81.2, 82.3];
 
-
+const NAV = [
+  ['Dashboard', '/parent/dashboard'],
+  ['My Child', '/parent/child-profile'],
+  ['Vaccinations', '/parent/vaccination'],
+  ['Growth', '/parent/growth'],
+  ['Diet Plan', '/parent/diet-plan'],
+  ['Schemes', '/parent/schemes'],
+  ['Reports', '/parent/reports'],
+  ['Notifications', '/parent/notifications'],
+];
 
 const TIPS = [
   ['🥦', 'Iron-rich foods', 'Dal, spinach, fortified cereals, and egg yolk support healthy growth.'],
@@ -135,10 +145,10 @@ export default function GrowthMonitoring() {
       // Refresh data
       const [h, p] = await Promise.all([
         growthAPI.getHistory(selected._id),
-        growthAPI.getPrediction(selected._id).catch(() => ({ data: null })),
+        growthAPI.getPrediction(selected._id, { insights: false }).catch(() => ({ data: null })),
       ]);
       setRecords(h.data);
-      setPrediction(p.data);
+      setPrediction(normalizePrediction(p.data));
       setTimeout(() => { setSaveMsg(''); setShowForm(false); }, 2000);
     } catch (err) {
       setSaveMsg(`⚠️ ${err.response?.data?.message || 'Failed to save. Please try again.'}`);
@@ -159,10 +169,10 @@ export default function GrowthMonitoring() {
     setLoading(true);
     Promise.all([
       growthAPI.getHistory(selected._id),
-      growthAPI.getPrediction(selected._id).catch(() => ({ data: null })),
+      growthAPI.getPrediction(selected._id, { insights: false }).catch(() => ({ data: null })),
     ]).then(([h, p]) => {
       setRecords(h.data);
-      setPrediction(p.data);
+      setPrediction(normalizePrediction(p.data));
     }).catch(console.error).finally(() => setLoading(false));
   }, [selected]);
 
@@ -176,7 +186,12 @@ export default function GrowthMonitoring() {
   const prev = data[data.length - 2];
   const wGain = latest && prev ? (latest.weight - prev.weight).toFixed(1) : null;
   const hGain = latest && prev ? (latest.height - prev.height).toFixed(1) : null;
-  const statusText = prediction?.prediction || selected?.nutritionStatus || 'Normal';
+  // Never let an object reach the DOM — `prediction` may still arrive in the
+  // nested GNN shape from older cached payloads.
+  const predictionStatus = typeof prediction?.prediction === 'string' ? prediction.prediction : null;
+  const statusText = predictionStatus || selected?.nutritionStatus || 'Normal';
+  const predictionAdvice = typeof prediction?.advice === 'string' ? prediction.advice : null;
+  const predictionWaz = typeof prediction?.waz === 'number' ? prediction.waz : null;
   const whoW = WHO_W[Math.min(latest?.ageMonths || 0, WHO_W.length - 1)];
   const whoH = WHO_H[Math.min(latest?.ageMonths || 0, WHO_H.length - 1)];
 
@@ -295,8 +310,8 @@ export default function GrowthMonitoring() {
           {[
             ['⚖️', 'Current Weight', latest?.weight != null ? `${latest.weight} kg` : '—', '#0891b2', '#f0fdff', '#c5e8ef', wGain != null ? `+${wGain} kg since last` : 'No prior record'],
             ['📏', 'Current Height', latest?.height != null ? `${latest.height} cm` : '—', '#059669', '#f0fdf4', '#bbf7d0', hGain != null ? `+${hGain} cm since last` : 'No prior record'],
-            ['📊', 'WAZ Score', prediction?.waz != null ? prediction.waz.toFixed(1) : (latest?.wazScore != null ? latest.wazScore.toFixed(1) : '—'), '#f59e0b', '#fffbeb', '#fde68a', prediction?.wazStatus || 'Weight for age'],
-            ['🏥', 'Health Status', statusText, '#1d4ed8', '#eff6ff', '#bfdbfe', prediction?.advice ? prediction.advice.slice(0, 40) + '…' : 'Based on latest record'],
+            ['📊', 'WAZ Score', predictionWaz != null ? predictionWaz.toFixed(1) : (latest?.wazScore != null ? latest.wazScore.toFixed(1) : '—'), '#f59e0b', '#fffbeb', '#fde68a', prediction?.wazStatus || 'Weight for age'],
+            ['🏥', 'Health Status', statusText, '#1d4ed8', '#eff6ff', '#bfdbfe', predictionAdvice ? predictionAdvice.slice(0, 40) + '…' : 'Based on latest record'],
           ].map(([icon, label, value, color, bg, border, sub]) => (
             <div key={label} style={{ background: bg, border: `2px solid ${border}`, borderRadius: 14, padding: '18px 20px', boxShadow: '0 2px 10px rgba(8,145,178,.07)' }}>
               <div style={{ fontSize: 22, marginBottom: 8 }}>{icon}</div>
@@ -386,7 +401,7 @@ export default function GrowthMonitoring() {
                       </thead>
                       <tbody>
                         {data.length ? data.map((r, i) => {
-                          const s = (r.prediction || '').toLowerCase();
+                          const s = (typeof r.prediction === 'string' ? r.prediction : '').toLowerCase();
                           const cls = s.includes('severe') || s.includes('sam') ? 'p-bad' : s.includes('moderate') || s.includes('mam') ? 'p-warn' : 'p-ok';
                           return (
                             <tr key={r._id || i} style={{ borderBottom: '1px solid #c5e8ef', background: i % 2 === 0 ? '#fff' : '#f0fdff' }}>
@@ -396,7 +411,7 @@ export default function GrowthMonitoring() {
                               <td style={{ padding: '11px 12px', fontWeight: 600 }}>{r.height} cm</td>
                               <td style={{ padding: '11px 12px' }}>{r.wazScore?.toFixed(1) ?? '-'}</td>
                               <td style={{ padding: '11px 12px' }}>{r.hazScore?.toFixed(1) ?? '-'}</td>
-                              <td style={{ padding: '11px 12px' }}><span className={cls}>{r.prediction || 'Recorded'}</span></td>
+                              <td style={{ padding: '11px 12px' }}><span className={cls}>{typeof r.prediction === 'string' && r.prediction ? r.prediction : 'Recorded'}</span></td>
                             </tr>
                           );
                         }) : (
@@ -470,9 +485,9 @@ export default function GrowthMonitoring() {
                     </div>
                   );
                 })}
-                {prediction?.advice && (
+                {predictionAdvice && (
                   <div style={{ background: '#ecfdf5', borderRadius: 10, padding: '12px 14px', border: '1px solid #bbf7d0', fontSize: 12, color: '#065f46', lineHeight: 1.6 }}>
-                    <strong>Advice:</strong> {prediction.advice}
+                    <strong>Advice:</strong> {predictionAdvice}
                   </div>
                 )}
               </div>

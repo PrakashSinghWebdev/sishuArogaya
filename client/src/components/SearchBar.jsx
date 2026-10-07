@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import './SearchBar.css';
 
 export default function SearchBar({
@@ -8,17 +8,21 @@ export default function SearchBar({
   isLoading = false,
   noResultsMessage = 'No data found',
   onResultClick,
-  highlightKeyword = true,
   searchType = 'default'
 }) {
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
+  const timerRef = useRef(null);
+
+  useEffect(() => () => clearTimeout(timerRef.current), []);
 
   const handleChange = (e) => {
     const value = e.target.value;
     setQuery(value);
+    clearTimeout(timerRef.current);
     if (value.trim().length > 0) {
-      onSearch(value);
+      // Debounce so typing doesn't fire a request per keystroke
+      timerRef.current = setTimeout(() => onSearch(value.trim()), 300);
       setIsOpen(true);
     } else {
       setIsOpen(false);
@@ -31,14 +35,6 @@ export default function SearchBar({
     }
     setQuery('');
     setIsOpen(false);
-  };
-
-  const highlightMatch = (text, query) => {
-    if (!highlightKeyword || !query.trim()) return text;
-    const regex = new RegExp(`(${query})`, 'gi');
-    return text.split(regex).map((part, i) =>
-      regex.test(part) ? `<mark key=${i}>${part}</mark>` : part
-    );
   };
 
   return (

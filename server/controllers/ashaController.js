@@ -1,6 +1,8 @@
 const AshaWorker = require('../models/AshaWorker');
 const Child = require('../models/Child');
 const { createAuditLog } = require('../utils/auditLogger');
+const { completedMonths, validateMeasurements } = require('../utils/zScore');
+const { claimUnassignedInArea } = require('../utils/ashaAssignment');
 
 const normalizeVisitOutcome = (value) => {
   switch (String(value || '').toLowerCase()) {
@@ -21,8 +23,10 @@ const normalizeVisitOutcome = (value) => {
 
 const getProfile = async (req, res) => {
   try {
-    const asha = await AshaWorker.findOne({ userId: req.user._id }).populate('assignedChildren');
-    if (!asha) return res.status(404).json({ message: 'ASHA profile not found' });
+    const found = await AshaWorker.findOne({ userId: req.user._id });
+    if (!found) return res.status(404).json({ message: 'ASHA profile not found' });
+    await claimUnassignedInArea(found);
+    const asha = await AshaWorker.findById(found._id).populate('assignedChildren');
     res.json(asha);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -55,15 +59,10 @@ const logVisit = async (req, res) => {
     const normalizedOutcome = normalizeVisitOutcome(outcome);
     const normalizedVaccines = Array.isArray(vaccinesGiven) ? vaccinesGiven.filter(Boolean) : [];
 
-    // Weight limit validation based on child gender (0-24 month range)
-    if (weight != null && weight !== '') {
-      const MAX_WEIGHT = { male: 14, female: 13 };
-      const maxAllowed = MAX_WEIGHT[child.gender] || 14;
-      if (Number(weight) > maxAllowed) {
-        return res.status(400).json({
-          message: `Invalid weight: ${weight} kg exceeds the maximum allowed weight of ${maxAllowed} kg for ${child.gender === 'female' ? 'girls' : 'boys'} (0-24 months).`,
-        });
-      }
+    // Weight/height are optional on a visit; validate only when both were measured
+    if (weight != null && weight !== '' && height != null && height !== '') {
+      const measurementError = validateMeasurements(weight, height, completedMonths(child.dob), child.gender);
+      if (measurementError) return res.status(400).json({ message: measurementError });
     }
 
     asha.visits.push({
@@ -112,6 +111,7 @@ const getMyChildren = async (req, res) => {
   try {
     const asha = await AshaWorker.findOne({ userId: req.user._id });
     if (!asha) return res.status(404).json({ message: 'ASHA profile not found' });
+    await claimUnassignedInArea(asha);
     const children = await Child.find({ ashaId: asha._id }).populate('parentId', 'name phone');
     res.json(children);
   } catch (err) {
@@ -208,6 +208,9 @@ const toggleCheckupQueue = async (req, res) => {
 
     const asha = await AshaWorker.findOne({ userId: req.user._id });
     if (!asha) return res.status(404).json({ message: 'ASHA profile not found' });
+    if (!(await Child.exists({ _id: childId, ashaId: asha._id }))) {
+      return res.status(403).json({ message: 'Child is not assigned to this ASHA worker' });
+    }
 
     const idx = asha.checkupQueue.findIndex((id) => id.toString() === childId);
     let action;

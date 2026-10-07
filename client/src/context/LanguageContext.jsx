@@ -207,7 +207,7 @@ const T = {
     homeLiveBadge: 'Live monitoring active',
     homeAbout_badge: 'About Shishu Aarogya',
     homeAbout_headline: 'Empowering Communities, Nurturing Futures',
-    homeAbout_desc: "Shishu Aarogya is a government-backed digital health platform seamlessly connecting ASHA workers, parents, and district health authorities. We deliver real-time monitoring of childhood vaccinations and nutritional growth across India's 680+ districts — ensuring no child aged 0–5 falls behind on life-saving care.",
+    homeAbout_desc: "Shishu Aarogya is a government-backed digital health platform seamlessly connecting ASHA workers, parents, and district health authorities. We deliver real-time monitoring of childhood vaccinations and nutritional growth across India's districts — ensuring no child aged 0–5 falls behind on life-saving care.",
     homeAbout_feat1_title: 'Data-Driven Early Interventions',
     homeAbout_feat1_desc: 'WHO LMS z-scores catch moderate and severe malnutrition weeks before clinical symptoms appear.',
     homeAbout_feat2_title: 'Complete Immunization Tracking',
@@ -239,10 +239,6 @@ const T = {
     // About Page Detailed
     aboutPilotTitle: 'National Rollout Phase',
     aboutPilotDesc: 'Initiating nationwide coverage across all states and union territories.',
-    aboutStat1Value: '2.4M+',
-    aboutStat2Value: '89K+',
-    aboutStat3Value: '680+',
-    aboutStat4Value: '22+',
     // Hospital Map
     hospital_searching: 'Searching hospitals within 15 km…',
     hospital_calc_route: 'Calculating route…',
@@ -371,7 +367,7 @@ const T = {
     homeLiveBadge: 'लाइव निगरानी सक्रिय',
     homeAbout_badge: 'शिशु आरोग्य के बारे में',
     homeAbout_headline: 'समुदायों को सशक्त बनाना, भविष्य को पोषण देना',
-    homeAbout_desc: 'शिशु आरोग्य एक सरकार समर्थित डिजिटल स्वास्थ्य प्लेटफॉर्म है जो आशा कार्यकर्ताओं, माता-पिता और जिला स्वास्थ्य अधिकारियों को जोड़ता है। हम भारत के 680+ जिलों में बच्चों के टीकाकरण और पोषण की वास्तविक समय निगरानी प्रदान करते हैं।',
+    homeAbout_desc: 'शिशु आरोग्य एक सरकार समर्थित डिजिटल स्वास्थ्य प्लेटफॉर्म है जो आशा कार्यकर्ताओं, माता-पिता और जिला स्वास्थ्य अधिकारियों को जोड़ता है। हम भारत के जिलों में बच्चों के टीकाकरण और पोषण की वास्तविक समय निगरानी प्रदान करते हैं।',
     homeAbout_feat1_title: 'डेटा-आधारित प्रारंभिक हस्तक्षेप',
     homeAbout_feat1_desc: 'WHO LMS z-स्कोर लक्षण प्रकट होने से हफ्तों पहले कुपोषण का पता लगाते हैं।',
     homeAbout_feat2_title: 'संपूर्ण टीकाकरण ट्रैकिंग',
@@ -1127,65 +1123,6 @@ function translate(lang, key) {
   return normalizeText(T[lang]?.[key] ?? T.English[key] ?? key);
 }
 
-// ── Country → Language mapping ──────────────────────────────────────────
-const COUNTRY_LANG = {
-  'IN': 'हिंदी',   // India default
-  'PK': 'اردو',
-  'BD': 'বাংলা',
-  'NP': 'नेपाली',
-  'CA': 'English', 'GB': 'English', 'US': 'English', 'AU': 'English', 'SG': 'English', 'LK': 'English',
-  // Indian state codes (from geolocation)
-  'KA': 'ಕನ್ನಡ',  'TN': 'தமிழ்',  'AP': 'తెలుగు', 'TG': 'తెలుగు',
-  'KL': 'മലയാളം', 'MH': 'मराठी',  'GJ': 'ગુજરાતી', 'PB': 'ਪੰਜਾਬੀ',
-  'WB': 'বাংলা',  'AS': 'অসমীয়া', 'OR': 'ଓଡ଼ିଆ',   'JK': 'कश्मीरी',
-  'MN': 'মৈতৈলোন্', 'GA': 'कोंकणी',
-};
-
-// ── Enhanced location-based detection ─────────────────────────────────────
-async function detectLanguage() {
-  const saved = localStorage.getItem('sa_language');
-  if (saved) return saved;
-
-  try {
-    // 1. GPS (most accurate)
-    const pos = await new Promise((resolve, reject) => 
-      navigator.geolocation.getCurrentPosition(resolve, reject, { 
-        timeout: 8000, enableHighAccuracy: true 
-      })
-    );
-    const { latitude, longitude } = pos.coords;
-    
-    // Reverse geocode
-    const geoRes = await fetch(
-      `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
-    );
-    const geoData = await geoRes.json();
-    const suggested = normalizeText(COUNTRY_LANG[geoData.countryCode] || COUNTRY_LANG['IN']);
-    if (suggested && LANGUAGES.some(l => l.code === suggested)) {
-      return suggested;
-    }
-  } catch (gpsErr) {
-    // 2. IP geolocation fallback
-    try {
-      const ipRes = await fetch('https://ipapi.co/json/');
-      const ipData = await ipRes.json();
-      const suggested = normalizeText(COUNTRY_LANG[ipData.country_code] || 'English');
-      if (LANGUAGES.some(l => l.code === suggested)) {
-        return suggested;
-      }
-    } catch (ipErr) {
-      // Fallback to browser locale
-    }
-  }
-
-  // 3. Browser locale fallback (original logic)
-  const browserLang = (navigator.language || 'en').split('-')[0].toLowerCase();
-  for (const lang of LANGUAGES) {
-    if (lang.locale.includes(browserLang)) return lang.code;
-  }
-  return 'English';
-}
-
 // ── Context ────────────────────────────────────────────────────────────────
 const LanguageContext = createContext({
   language: 'English',
@@ -1199,6 +1136,8 @@ const LanguageContext = createContext({
 export function LanguageProvider({ children }) {
   const [language, setLanguageState] = useState('English');
   const [suggestedLanguage, setSuggestedLanguageState] = useState(null);
+  // Ask on every page load (state resets on refresh / new visit)
+  const [showPicker, setShowPicker] = useState(true);
 
   // Initialize language detection
   useEffect(() => {
@@ -1238,6 +1177,37 @@ export function LanguageProvider({ children }) {
   return (
     <LanguageContext.Provider value={{ language, setLanguage, t, navLinks, suggestedLanguage, dismissSuggestion }}>
       {children}
+      {showPicker && (
+        <div role="dialog" aria-modal="true" aria-label="Choose language" style={{
+          position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(12,35,64,0.55)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: 16, padding: 24, width: '100%', maxWidth: 560,
+            maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
+          }}>
+            <h2 style={{ margin: '0 0 4px', fontSize: 20, color: '#0c2340' }}>🌐 Choose your language</h2>
+            <p style={{ margin: '0 0 16px', fontSize: 13, color: '#4b6478' }}>अपनी भाषा चुनें</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 10 }}>
+              {LANGUAGES.map((lang) => (
+                <button
+                  key={lang.code}
+                  type="button"
+                  onClick={() => { setLanguage(lang.code); setShowPicker(false); }}
+                  style={{
+                    padding: '10px 12px', borderRadius: 10, cursor: 'pointer', fontSize: 14,
+                    fontWeight: 600, textAlign: 'left', fontFamily: 'inherit',
+                    border: lang.code === language ? '2px solid #0e7490' : '1px solid #c5e8ef',
+                    background: lang.code === language ? '#e0f7fa' : '#f0fdff', color: '#0e7490',
+                  }}
+                >
+                  {lang.flag} {lang.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </LanguageContext.Provider>
   );
 }
