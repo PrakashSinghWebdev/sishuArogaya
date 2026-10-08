@@ -18,6 +18,7 @@ const userSchema = new mongoose.Schema(
     otp: { type: String, select: false },
     otpExpiry: { type: Date, select: false },
     isActive: { type: Boolean, default: true },
+    sessionVersion: { type: Number, default: 0, select: false },
     language: { type: String, enum: ['en', 'hi'], default: 'en' },
   },
   { timestamps: true }

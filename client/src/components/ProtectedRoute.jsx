@@ -3,7 +3,7 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const ProtectedRoute = ({ allowedRoles = [] }) => {
-  const { user, token, loading } = useAuth();
+  const { user, loading } = useAuth();
   const location = useLocation();
   const [loadTimeout, setLoadTimeout] = useState(false);
 
@@ -45,7 +45,7 @@ const ProtectedRoute = ({ allowedRoles = [] }) => {
     );
   }
 
-  if (!token || !user) {
+  if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 

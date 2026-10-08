@@ -13,6 +13,9 @@ import Home from './pages/public/Home';
 import About from './pages/public/About';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
+import Shop from './pages/public/Shop';
+import ProductDetail from './pages/public/ProductDetail';
+import { Products, Cart, Checkout, Orders, OrderDetail, Wishlist } from './pages/public/ShopPages';
 
 // Parent portal pages — lazy so they don't bloat the initial bundle
 const ParentDashboard       = lazy(() => import('./pages/parent/Dashboard'));
@@ -85,6 +88,14 @@ function AppRoutes() {
           <Route path="/about" element={<About />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/shop" element={<Shop />} />
+          <Route path="/shop/products" element={<Products />} />
+          <Route path="/shop/cart" element={<Cart />} />
+          <Route path="/shop/checkout" element={<Checkout />} />
+          <Route path="/shop/orders" element={<Orders />} />
+          <Route path="/shop/orders/:id" element={<OrderDetail />} />
+          <Route path="/shop/wishlist" element={<Wishlist />} />
+          <Route path="/shop/:id" element={<ProductDetail />} />
 
           {/* Parent portal */}
           <Route element={<ProtectedRoute allowedRoles={['parent']} />}>

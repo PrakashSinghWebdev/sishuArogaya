@@ -5,38 +5,25 @@ const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('sa_token'));
   const [loading, setLoading] = useState(true);
 
+  // The session lives in an httpOnly cookie that JS can't read; ask the server who we are.
   useEffect(() => {
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    localStorage.removeItem('sa_token'); // drop tokens left by the old localStorage scheme
     api.get('/auth/me')
       .then((res) => setUser(res.data.user))
-      .catch((err) => {
-        // Only drop the session for a rejected token, not for network/server hiccups
-        if (err.response?.status === 401) logout();
-      })
+      .catch(() => setUser(null))
       .finally(() => setLoading(false));
-  }, [token]);
+  }, []);
 
   const login = async (email, password, role) => {
     const res = await api.post('/auth/login', { email, password, role });
-    const { token: newToken, user: userData } = res.data;
-    localStorage.setItem('sa_token', newToken);
-    api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
-    setToken(newToken);
-    setUser(userData);
-    return userData;
+    setUser(res.data.user);
+    return res.data.user;
   };
 
   const logout = () => {
-    localStorage.removeItem('sa_token');
-    delete api.defaults.headers.common['Authorization'];
-    setToken(null);
+    api.post('/auth/logout').catch(() => {}); // server revokes the session + clears the cookie
     setUser(null);
   };
 
@@ -46,7 +33,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, getDashboardPath }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, getDashboardPath }}>
       {children}
     </AuthContext.Provider>
   );

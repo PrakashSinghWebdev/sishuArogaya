@@ -55,6 +55,7 @@ const Home = () => {
                 <a className="home-nav-link" href="#about">{t('homeNav_about')}</a>
                 <a className="home-nav-link" href="#contact">{t('homeNav_contact')}</a>
               </div>
+              <Link to="/shop" className="home-btn-outline">🛒 Shop</Link>
               <Link to="/login" className="home-btn-outline">{t('login')}</Link>
               <Link to="/register" className="home-btn-primary">{t('register')}</Link>
             </div>

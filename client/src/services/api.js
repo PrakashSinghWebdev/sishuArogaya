@@ -2,33 +2,10 @@ import axios from 'axios';
 
 const api = axios.create({
   baseURL: '/api',
-  headers: { 'Content-Type': 'application/json' },
+  // Session cookie is httpOnly; the custom header proves the call came from our JS (CSRF guard)
+  withCredentials: true,
+  headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
 });
-
-// Attach token from storage on every request
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('sa_token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
-
-// Handle 401 globally
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    const status = error.response?.status;
-    const requestUrl = error.config?.url || '';
-    const isAuthEndpoint =
-      requestUrl.includes('/auth/login') ||
-      requestUrl.includes('/auth/register') ||
-      requestUrl.includes('/chatbot/');
-
-    if (status === 401 && !isAuthEndpoint) {
-      localStorage.removeItem('sa_token');
-    }
-    return Promise.reject(error);
-  }
-);
 
 export const authAPI = {
   login: (data) => api.post('/auth/login', data),

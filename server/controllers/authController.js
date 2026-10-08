@@ -9,8 +9,13 @@ const MIN_PASSWORD_LENGTH = 6;
 const isValidPassword = (pw) => typeof pw === 'string' && pw.length >= MIN_PASSWORD_LENGTH;
 const PASSWORD_ERROR = `Password must be at least ${MIN_PASSWORD_LENGTH} characters`;
 
-const signToken = (id) =>
-  jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRE || '7d' });
+const { COOKIE_NAME, cookieOptions } = require('../middleware/auth');
+
+const signToken = (user) =>
+  jwt.sign({ id: user._id, v: user.sessionVersion || 0 }, process.env.JWT_SECRET, {
+    algorithm: 'HS256',
+    expiresIn: process.env.JWT_EXPIRE || '1d',
+  });
 
 // POST /api/auth/register
 const register = async (req, res) => {
@@ -115,7 +120,7 @@ const login = async (req, res) => {
       ? { email: normalizedEmail }
       : { $or: [{ phone: identifier }, { email: normalizedEmail }] };
 
-    const user = await User.findOne(query).select('+password');
+    const user = await User.findOne(query).select('+password +sessionVersion');
     if (!user || !(await user.matchPassword(password))) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
@@ -133,7 +138,8 @@ const login = async (req, res) => {
     user.otpExpiry = undefined;
     await user.save({ validateBeforeSave: false });
 
-    const token = signToken(user._id);
+    // Session cookie (no maxAge): gone when the browser closes; the JWT expiry caps it otherwise
+    res.cookie(COOKIE_NAME, signToken(user), cookieOptions);
 
     await createAuditLog({
       req,
@@ -147,7 +153,6 @@ const login = async (req, res) => {
 
     res.json({
       message: 'Login successful',
-      token,
       user: { id: user._id, name: user.name, email: user.email, role: user.role },
     });
   } catch (err) {
@@ -160,17 +165,30 @@ const getMe = async (req, res) => {
   res.json({ user: req.user });
 };
 
+// POST /api/auth/logout — revoke server-side so a copied token stops working too
+const logout = async (req, res) => {
+  try {
+    await User.updateOne({ _id: req.user._id }, { $inc: { sessionVersion: 1 } });
+    res.clearCookie(COOKIE_NAME, cookieOptions);
+    res.json({ message: 'Logged out' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 // PUT /api/auth/change-password
 const changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
     if (!isValidPassword(newPassword)) return res.status(400).json({ message: PASSWORD_ERROR });
-    const user = await User.findById(req.user._id).select('+password');
+    const user = await User.findById(req.user._id).select('+password +sessionVersion');
     if (!currentPassword || !(await user.matchPassword(currentPassword))) {
       return res.status(400).json({ message: 'Current password is incorrect' });
     }
     user.password = newPassword;
+    user.sessionVersion = (user.sessionVersion || 0) + 1; // sign out every other device
     await user.save();
+    res.cookie(COOKIE_NAME, signToken(user), cookieOptions);
     await createAuditLog({
       req,
       actor: user,
@@ -235,7 +253,7 @@ const resetPassword = async (req, res) => {
     if (!userId || !otp) return res.status(400).json({ message: 'OTP is required' });
     if (!isValidPassword(newPassword)) return res.status(400).json({ message: PASSWORD_ERROR });
 
-    const user = await User.findById(userId).select('+otp +otpExpiry +password');
+    const user = await User.findById(userId).select('+otp +otpExpiry +password +sessionVersion');
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     // A missing stored OTP must never match (undefined === undefined)
@@ -245,6 +263,7 @@ const resetPassword = async (req, res) => {
     user.password = newPassword;
     user.otp = undefined;
     user.otpExpiry = undefined;
+    user.sessionVersion = (user.sessionVersion || 0) + 1; // revoke any hijacked sessions
     await user.save();
 
     await createAuditLog({
@@ -262,4 +281,4 @@ const resetPassword = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getMe, changePassword, forgotPassword, resetPassword };
+module.exports = { register, login, getMe, logout, changePassword, forgotPassword, resetPassword };
