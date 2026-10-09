@@ -19,12 +19,6 @@ const LINKS = {
       label: "Vaccines",
     },
     {
-      to: "/parent/growth",
-      icon: "bi-graph-up-arrow",
-      key: "growth",
-      label: "Growth",
-    },
-    {
       to: "/parent/diet-plan",
       icon: "bi-egg-fried",
       key: "dietPlan",

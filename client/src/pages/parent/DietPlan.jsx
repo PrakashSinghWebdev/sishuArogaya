@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { dietAPI, dietChecklistAPI } from '../../services/api';
 import { normalizeText, useLanguage } from '../../context/LanguageContext';
 import useSelectedChild from '../../hooks/useSelectedChild';
+import ParentNavbar from '../../components/ParentNavbar';
 
 const themeColors = {
   teal: '#0891b2', teal2: '#0e7490', teal3: '#cffafe', teal4: '#f0fdff',
@@ -21,7 +22,7 @@ const AGE_GROUPS = [
 //   regular  { emoji, name, qty, note }              → checkbox in checklist
 //   options  { type:'options', label, options:[...] } → radio buttons in checklist (pick ONE)
 
-const DIET_PLANS = {
+export const DIET_PLANS = {
   'exclusive-bf': {
     intro: 'Exclusive breastfeeding is the ONLY food your baby needs for the first 6 months. No water, no other milk, no solid food.',
     color: '#fce7f3',
@@ -422,7 +423,7 @@ const SUPERFOODS = [
   { name: 'Banana', desc: 'Potassium, B6, instant energy — perfect first food', emoji: '🍌' },
 ];
 
-function getAgeGroup(months) {
+export function getAgeGroup(months) {
   if (months == null) return null;
   return AGE_GROUPS.find(g => months >= g.minMonths && months <= g.maxMonths) || AGE_GROUPS[AGE_GROUPS.length - 1];
 }
@@ -433,19 +434,8 @@ function calcAgeMonths(dob) {
   return Math.floor(ms / (1000 * 60 * 60 * 24 * 30.44));
 }
 
-const NAV = [
-  ['🏠 Dashboard', '/parent/dashboard'],
-  ['👶 My Child', '/parent/child-profile'],
-  ['💉 Vaccines', '/parent/vaccination'],
-  ['📈 Growth', '/parent/growth'],
-  ['🥗 Diet Plan', '/parent/diet-plan'],
-  ['🏛️ Schemes', '/parent/schemes'],
-  ['📋 Reports', '/parent/reports'],
-  ['🔔 Notifications', '/parent/notifications'],
-];
-
 export default function DietPlan() {
-  const { navLinks, t } = useLanguage();
+  const { t } = useLanguage();
   const { selectedChild, children, loading: childLoading } = useSelectedChild();
   const [dietData, setDietData] = useState(null);
   const [dietLoading, setDietLoading] = useState(false);
@@ -610,27 +600,7 @@ export default function DietPlan() {
         @media(max-width:700px){.dp-nav-links{display:none!important}}
       `}</style>
 
-      <nav style={{ position: 'sticky', top: 0, zIndex: 100, background: '#fff', borderBottom: `1px solid ${themeColors.border}`, display: 'flex', alignItems: 'center', padding: '0 24px', height: 62, boxShadow: '0 2px 12px rgba(8,145,178,.08)', gap: 16 }}>
-        <Link to="/parent/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', flexShrink: 0 }}>
-          <div style={{ width: 36, height: 36, background: `linear-gradient(135deg,${themeColors.teal},${themeColors.teal2})`, borderRadius: 9, display: 'grid', placeItems: 'center', fontSize: 18 }}>🏥</div>
-          <div>
-            <div style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 16, fontWeight: 700, color: themeColors.teal2, lineHeight: 1.1 }}>Shishu Aarogya</div>
-            <div style={{ fontSize: 9, color: '#4a7a8a', fontWeight: 500, lineHeight: 1 }}>National Child Health Portal</div>
-          </div>
-        </Link>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, overflowX: 'auto' }}>
-          {(navLinks && navLinks.length ? navLinks : NAV).map(([label, to]) => (
-            <Link key={to} to={to} style={{ padding: '5px 11px', borderRadius: 6, fontSize: 13, textDecoration: 'none', whiteSpace: 'nowrap', transition: 'background .15s', ...(to === '/parent/diet-plan' ? { background: themeColors.teal4, color: themeColors.teal, fontWeight: 600 } : { background: 'transparent', color: themeColors.text, fontWeight: 500 }) }}>
-              {normalizeText(label)}
-            </Link>
-          ))}
-        </div>
-        {children.length > 1 && selectedChild && (
-          <select value={selectedChild._id || ''} style={{ padding: '7px 12px', borderRadius: 9, border: `1.5px solid ${themeColors.border}`, fontSize: 13, color: themeColors.text, outline: 'none', cursor: 'pointer' }} disabled>
-            {children.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
-          </select>
-        )}
-      </nav>
+      <ParentNavbar />
 
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 24px 60px' }}>
         <div style={{ marginBottom: 24 }}>

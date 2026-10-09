@@ -1,21 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import MediaCarousel, { MEDIA_ARRAY } from '../../components/MediaCarousel';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage, LANGUAGES } from '../../context/LanguageContext';
 import { authAPI } from '../../services/api';
 import useSelectedChild from '../../hooks/useSelectedChild';
-
-const NAV = [
-  ['🏠 Dashboard', '/parent/dashboard'],
-  ['👶 My Child', '/parent/child-profile'],
-  ['💉 Vaccines', '/parent/vaccination'],
-  ['📈 Growth', '/parent/growth'],
-  ['🥗 Diet Plan', '/parent/diet-plan'],
-  ['🏛️ Schemes', '/parent/schemes'],
-  ['📋 Reports', '/parent/reports'],
-  ['🔔 Notifications', '/parent/notifications'],
-];
+import ParentNavbar from '../../components/ParentNavbar';
 
 
 
@@ -51,10 +41,9 @@ function Toggle({ on, onToggle }) {
 
 export default function Settings() {
   const { user } = useAuth();
-  const location = useLocation();
   const navigate = useNavigate();
   const { selectedChild } = useSelectedChild();
-  const { language, setLanguage, t, navLinks } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
   const [cur, setCur] = useState(0);
   const timerRef = useRef(null);
 
@@ -145,22 +134,7 @@ export default function Settings() {
       `}</style>
 
       {/* Navbar */}
-      <nav style={{ position: 'sticky', top: 0, zIndex: 100, background: '#fff', height: 64, display: 'flex', alignItems: 'center', gap: 14, padding: '0 28px', borderBottom: '2px solid #cffafe', boxShadow: '0 2px 16px rgba(8,145,178,.1)' }}>
-        <Link to="/parent/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', flexShrink: 0 }}>
-          <div style={{ width: 38, height: 38, background: 'linear-gradient(135deg,#0891b2,#0e7490)', borderRadius: 10, display: 'grid', placeItems: 'center', fontSize: 20 }}>🏥</div>
-          <div style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 18, fontWeight: 700, color: '#0891b2' }}>Shishu Aarogya</div>
-        </Link>
-        <div className="navlinks" style={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, marginLeft: 8 }}>
-          {(navLinks && navLinks.length ? navLinks : NAV).map(([label, to]) => {
-            const active = location.pathname === to;
-            return (
-              <Link key={to} to={to} style={{ padding: '7px 13px', borderRadius: 8, fontSize: 13, fontWeight: 500, textDecoration: 'none', whiteSpace: 'nowrap', background: active ? '#f0fdff' : 'transparent', color: active ? '#0e7490' : '#4a7a8a' }}>
-                {label}
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
+      <ParentNavbar />
 
       {/* Hero */}
       <div style={{ height: 240, position: 'relative', overflow: 'hidden', background: '#0e7490' }}>

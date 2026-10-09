@@ -3,6 +3,7 @@ import MediaCarousel, { MEDIA_ARRAY } from '../../components/MediaCarousel';
 import { Link, useNavigate } from 'react-router-dom';
 import { childAPI, vaccinationAPI } from '../../services/api';
 import { useLanguage } from '../../context/LanguageContext';
+import ParentNavbar from '../../components/ParentNavbar';
 
 function printVaccineCard(child, vaccines) {
   const done = vaccines.filter(v => v.status === 'done' || v.status === 'completed');
@@ -38,17 +39,6 @@ const themeColors = {
   teal: '#0891b2', teal2: '#0e7490', teal3: '#cffafe', teal4: '#f0fdff',
   bg: '#f8fffe', text: '#0c2340', muted: '#4a7a8a', border: '#c5e8ef',
 };
-
-const NAV = [
-  ['🏠 Dashboard', '/parent/dashboard'],
-  ['👶 My Child', '/parent/child-profile'],
-  ['💉 Vaccines', '/parent/vaccination'],
-  ['📈 Growth', '/parent/growth'],
-  ['🥗 Diet Plan', '/parent/diet-plan'],
-  ['🏛️ Schemes', '/parent/schemes'],
-  ['📋 Reports', '/parent/reports'],
-  ['🔔 Notifications', '/parent/notifications'],
-];
 
 
 
@@ -145,7 +135,7 @@ function VaccineRow({ v, idx, updatingId, setUpdatingId, setVaccines }) {
 
 export default function VaccinationSchedule() {
   const navigate = useNavigate();
-  const { navLinks, t } = useLanguage();
+  const { t } = useLanguage();
   const [children, setChildren] = useState([]);
   const [updatingId, setUpdatingId] = useState(null);
   const [selectedChild, setSelectedChild] = useState(null);
@@ -227,28 +217,7 @@ export default function VaccinationSchedule() {
       `}</style>
 
       {/* Navbar */}
-      <nav style={{ position: 'sticky', top: 0, zIndex: 200, background: '#fff', borderBottom: `1px solid ${themeColors.border}`, display: 'flex', alignItems: 'center', padding: '0 24px', height: 62, boxShadow: '0 2px 12px rgba(8,145,178,.08)' }}>
-        <Link to="/parent/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', marginRight: 20, flexShrink: 0 }}>
-          <div style={{ width: 36, height: 36, background: `linear-gradient(135deg,${themeColors.teal},${themeColors.teal2})`, borderRadius: 9, display: 'grid', placeItems: 'center', fontSize: 18 }}>🏥</div>
-          <div>
-            <div style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 17, fontWeight: 700, color: themeColors.teal2, lineHeight: 1.1 }}>Shishu Aarogya</div>
-            <div style={{ fontSize: 9, color: '#4a7a8a', fontWeight: 500, lineHeight: 1 }}>National Child Health Portal</div>
-          </div>
-        </Link>
-        <div className="vs-nav-links" style={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, overflowX: 'auto' }}>
-          {(navLinks && navLinks.length ? navLinks : NAV).map(([label, to]) => (
-            <Link key={to} to={to} style={{ padding: '6px 11px', borderRadius: 8, fontSize: 12.5, fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap', background: to === '/parent/vaccination' ? themeColors.teal4 : 'transparent', color: to === '/parent/vaccination' ? themeColors.teal : themeColors.muted, borderBottom: to === '/parent/vaccination' ? `2px solid ${themeColors.teal}` : '2px solid transparent' }}>
-              {label}
-            </Link>
-          ))}
-        </div>
-        {children.length > 1 && (
-          <select value={selectedChild?._id || ''} onChange={(e) => setSelectedChild(children.find((c) => c._id === e.target.value))}
-            style={{ marginLeft: 12, padding: '6px 10px', borderRadius: 8, border: `1.5px solid ${themeColors.border}`, fontSize: 13, color: themeColors.text, background: '#fff', fontFamily: 'inherit' }}>
-            {children.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
-          </select>
-        )}
-      </nav>
+      <ParentNavbar />
 
       {/* Hero */}
       <div style={{ position: 'relative', height: 240, overflow: 'hidden' }}>

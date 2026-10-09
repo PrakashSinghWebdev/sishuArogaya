@@ -1,20 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import MediaCarousel, { MEDIA_ARRAY } from '../../components/MediaCarousel';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { notificationAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
-
-const NAV = [
-  ['🏠 Dashboard', '/parent/dashboard'],
-  ['👶 My Child', '/parent/child-profile'],
-  ['💉 Vaccines', '/parent/vaccination'],
-  ['📈 Growth', '/parent/growth'],
-  ['🥗 Diet Plan', '/parent/diet-plan'],
-  ['🏛️ Schemes', '/parent/schemes'],
-  ['📋 Reports', '/parent/reports'],
-  ['🔔 Notifications', '/parent/notifications'],
-];
+import ParentNavbar from '../../components/ParentNavbar';
 
 
 
@@ -38,9 +28,8 @@ function formatDate(dateStr) {
 }
 
 export default function Notifications() {
-  const { t, navLinks } = useLanguage();
+  const { t } = useLanguage();
   const { user } = useAuth();
-  const location = useLocation();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [cur, setCur] = useState(0);
@@ -95,22 +84,7 @@ export default function Notifications() {
       `}</style>
 
       {/* Navbar */}
-      <nav style={{ position: 'sticky', top: 0, zIndex: 100, background: '#fff', height: 64, display: 'flex', alignItems: 'center', gap: 14, padding: '0 28px', borderBottom: '2px solid #cffafe', boxShadow: '0 2px 16px rgba(8,145,178,.1)' }}>
-        <Link to="/parent/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', flexShrink: 0 }}>
-          <div style={{ width: 38, height: 38, background: 'linear-gradient(135deg,#0891b2,#0e7490)', borderRadius: 10, display: 'grid', placeItems: 'center', fontSize: 20 }}>🏥</div>
-          <div style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 18, fontWeight: 700, color: '#0891b2' }}>Shishu Aarogya</div>
-        </Link>
-        <div className="navlinks" style={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, marginLeft: 8 }}>
-          {(navLinks && navLinks.length ? navLinks : NAV).map(([label, to]) => {
-            const active = location.pathname === to;
-            return (
-              <Link key={to} to={to} style={{ padding: '7px 13px', borderRadius: 8, fontSize: 13, fontWeight: 500, textDecoration: 'none', whiteSpace: 'nowrap', background: active ? '#f0fdff' : 'transparent', color: active ? '#0e7490' : '#4a7a8a', fontFamily: "'DM Sans',sans-serif" }}>
-                {label}
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
+      <ParentNavbar />
 
       {/* Hero */}
       <div style={{ height: 240, position: 'relative', overflow: 'hidden', background: '#0e7490' }}>

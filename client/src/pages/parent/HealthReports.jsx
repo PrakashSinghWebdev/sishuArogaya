@@ -1,21 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { Link } from 'react-router-dom';
 import MediaCarousel, { MEDIA_ARRAY } from '../../components/MediaCarousel';
 import { reportAPI } from '../../services/api';
 import useSelectedChild from '../../hooks/useSelectedChild';
 import { useLanguage } from '../../context/LanguageContext';
-
-const NAV = [
-  ['🏠 Dashboard', '/parent/dashboard'],
-  ['👶 My Child', '/parent/child-profile'],
-  ['💉 Vaccines', '/parent/vaccination'],
-  ['📈 Growth', '/parent/growth'],
-  ['🥗 Diet Plan', '/parent/diet-plan'],
-  ['🏛️ Schemes', '/parent/schemes'],
-  ['📋 Reports', '/parent/reports'],
-  ['🔔 Notifications', '/parent/notifications'],
-];
+import ParentNavbar from '../../components/ParentNavbar';
 
 const REPORT_TYPES = [
   {
@@ -48,10 +37,7 @@ const REPORT_TYPES = [
 ];
 
 export default function HealthReports() {
-  const { user } = useAuth();
-  const location = useLocation();
-  const userInitial = (user?.name || 'P')[0].toUpperCase();
-  const { t, navLinks } = useLanguage();
+  const { t } = useLanguage();
   const [slide, setSlide] = useState(0);
   const slideRef = useRef(0);
   const { children, selectedChild, selectedChildId, setSelectedChild, loading } = useSelectedChild();
@@ -253,32 +239,7 @@ export default function HealthReports() {
         }
       `}</style>
 
-      <nav className="sa-navbar">
-        <Link className="sa-logo-box" to="/parent/dashboard">
-          <div className="sa-logo-icon">🏥</div>
-          <div>
-            <div className="sa-logo-text">Shishu Aarogya</div>
-            <div className="sa-logo-tag">National Child Health Portal</div>
-          </div>
-        </Link>
-
-        <div className="sa-nav-links">
-          {(navLinks && navLinks.length ? navLinks : NAV).map(([label, to]) => (
-            <Link 
-              key={to} 
-              to={to} 
-              className={`sa-nav-item ${location.pathname === to ? 'active' : ''}`}
-            >
-              {label}
-            </Link>
-          ))}
-        </div>
-
-        <div className="sa-navbar-right">
-          <Link to="/parent/notifications" style={{ textDecoration: 'none', fontSize: '20px', color: '#4a7a8a' }}>🔔</Link>
-          <Link to="/parent/settings" className="sa-nav-circle">{userInitial}</Link>
-        </div>
-      </nav>
+      <ParentNavbar />
 
       <section className="hero">
         <MediaCarousel currentSlideIndex={slide} />

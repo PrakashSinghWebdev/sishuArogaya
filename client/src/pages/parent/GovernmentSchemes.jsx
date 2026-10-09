@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { schemeAPI } from '../../services/api';
 import MediaCarousel, { MEDIA_ARRAY } from '../../components/MediaCarousel';
 import { useLanguage } from '../../context/LanguageContext';
+import ParentNavbar from '../../components/ParentNavbar';
 
 
 
@@ -28,7 +29,7 @@ function schemeColor(s) {
 }
 
 export default function GovernmentSchemes() {
-  const { navLinks, t } = useLanguage();
+  const { t } = useLanguage();
   const [slide,       setSlide]       = useState(0);
   const slideRef                      = useRef(0);
   const [schemes,     setSchemes]     = useState([]);
@@ -156,20 +157,7 @@ export default function GovernmentSchemes() {
       `}</style>
 
       {/* Navbar */}
-      <nav className="topnav">
-        <Link className="nav-brand" to="/parent/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-           <div style={{ width: 32, height: 32, background: 'linear-gradient(135deg,#0891b2,#0e7490)', borderRadius: 8, display: 'grid', placeItems: 'center', fontSize: 16, color: '#fff' }}>🏥</div>
-           <div>
-             <div style={{ fontSize: 17 }}>Shishu Aarogya</div>
-             <div style={{ fontSize: 9, fontWeight: 500, color: '#4a7a8a', fontFamily: 'sans-serif' }}>National Child Health Portal</div>
-           </div>
-        </Link>
-        <div className="navlinks">
-          {(navLinks || []).map(([label, to]) => (
-            <Link key={to} to={to} className={to === '/parent/schemes' ? 'active' : ''}>{label}</Link>
-          ))}
-        </div>
-      </nav>
+      <ParentNavbar />
 
       {/* Hero */}
       <section className="hero">

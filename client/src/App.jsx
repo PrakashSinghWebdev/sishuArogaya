@@ -21,7 +21,6 @@ import { Products, Cart, Checkout, Orders, OrderDetail, Wishlist } from './pages
 const ParentDashboard       = lazy(() => import('./pages/parent/Dashboard'));
 const ChildProfile          = lazy(() => import('./pages/parent/ChildProfile'));
 const VaccinationSchedule   = lazy(() => import('./pages/parent/VaccinationSchedule'));
-const GrowthMonitoring      = lazy(() => import('./pages/parent/GrowthMonitoring'));
 const DietPlan              = lazy(() => import('./pages/parent/DietPlan'));
 const AIHealthPrediction    = lazy(() => import('./pages/parent/AIHealthPrediction'));
 const ParentSchemes         = lazy(() => import('./pages/parent/GovernmentSchemes'));
@@ -102,7 +101,7 @@ function AppRoutes() {
             <Route path="/parent/dashboard"     element={<ParentDashboard />} />
             <Route path="/parent/child-profile" element={<ChildProfile />} />
             <Route path="/parent/vaccination"   element={<VaccinationSchedule />} />
-            <Route path="/parent/growth"        element={<GrowthMonitoring />} />
+            <Route path="/parent/growth"        element={<Navigate to="/parent/child-profile" replace />} />
             <Route path="/parent/diet-plan"     element={<DietPlan />} />
             <Route path="/parent/ai-prediction" element={<AIHealthPrediction />} />
             <Route path="/parent/schemes"       element={<ParentSchemes />} />
@@ -121,7 +120,7 @@ function AppRoutes() {
             <Route path="/asha/growth-records"       element={<GrowthRecords />} />
             <Route path="/asha/malnutrition-report"  element={<MalnutritionReport />} />
             <Route path="/asha/visit-history"        element={<VisitHistoryLog />} />
-            <Route path="/asha/area-map"             element={<Navigate to="/asha/dashboard#area-coverage" replace />} />
+            <Route path="/asha/area-map"             element={<Navigate to="/asha/dashboard" replace />} />
             <Route path="/asha/notifications"        element={<AshaNotifications />} />
             <Route path="/asha/generate-report"      element={<GenerateReport />} />
             <Route path="/asha/settings"             element={<AshaProfileSettings />} />

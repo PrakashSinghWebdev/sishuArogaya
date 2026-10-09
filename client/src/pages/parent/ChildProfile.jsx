@@ -1,25 +1,33 @@
 import { useEffect, useState } from 'react';
-import MediaCarousel, { MEDIA_ARRAY } from '../../components/MediaCarousel';
 import { Link } from 'react-router-dom';
-import { childAPI, reportAPI } from '../../services/api';
+import MediaCarousel, { MEDIA_ARRAY } from '../../components/MediaCarousel';
+import { childAPI, reportAPI, vaccinationAPI } from '../../services/api';
 import { useLanguage } from '../../context/LanguageContext';
 import useSelectedChild from '../../hooks/useSelectedChild';
+import ParentNavbar from '../../components/ParentNavbar';
+import GrowthMonitoring from './GrowthMonitoring';
+import { DIET_PLANS, getAgeGroup } from './DietPlan';
+import { currentMealIndex, mealItemsText } from '../../utils/mealTime';
+
+const VACCINE_BADGE = {
+  missed:   { bg: '#fee2e2', color: '#b91c1c', label: 'Missed' },
+  due:      { bg: '#fef3c7', color: '#92400e', label: 'Due' },
+  upcoming: { bg: '#f1f5f9', color: '#475569', label: 'Upcoming' },
+};
+
+function SideCardHeader({ title, linkTo, linkText }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
+      <h5 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 16, fontWeight: 700, color: themeColors.teal2, margin: 0 }}>{title}</h5>
+      <Link to={linkTo} style={{ fontSize: 12, fontWeight: 600, color: themeColors.teal, textDecoration: 'none' }}>{linkText} →</Link>
+    </div>
+  );
+}
 
 const themeColors = {
   teal: '#0891b2', teal2: '#0e7490', teal3: '#cffafe', teal4: '#f0fdff',
   bg: '#f8fffe', text: '#0c2340', muted: '#4a7a8a', border: '#c5e8ef',
 };
-
-const NAV = [
-  ['🏠 Dashboard', '/parent/dashboard'],
-  ['👶 My Child', '/parent/child-profile'],
-  ['💉 Vaccines', '/parent/vaccination'],
-  ['📈 Growth', '/parent/growth'],
-  ['🥗 Diet Plan', '/parent/diet-plan'],
-  ['🏛️ Schemes', '/parent/schemes'],
-  ['📋 Reports', '/parent/reports'],
-  ['🔔 Notifications', '/parent/notifications'],
-];
 
 
 
@@ -37,8 +45,6 @@ function calcAge(dob) {
   return `${Math.floor(months / 12)} years ${months % 12}m`;
 }
 
-function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
-
 function InfoRow({ icon, label, value }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: themeColors.teal4, borderRadius: 10, marginBottom: 8 }}>
@@ -52,23 +58,15 @@ function InfoRow({ icon, label, value }) {
 }
 
 export default function ChildProfile() {
-  const { t, navLinks } = useLanguage();
+  const { t } = useLanguage();
   const { children, selectedChild, selectedChildId, setSelectedChild, setChildren, loading } = useSelectedChild();
   const [showForm, setShowForm] = useState(false);
-  const [showEditForm, setShowEditForm] = useState(false);
+  const [showGrowthForm, setShowGrowthForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [updating, setUpdating] = useState(false);
   const [error, setError] = useState('');
   const [slide, setSlide] = useState(0);
   const [form, setForm] = useState({
-    name: '', dob: '', gender: 'male', bloodGroup: 'Unknown', birthWeight: '', birthHeight: '',
-  });
-  const [editForm, setEditForm] = useState({
-    currentWeight: selectedChild?.currentWeight || '',
-    currentHeight: selectedChild?.currentHeight || '',
-    headCircumference: selectedChild?.headCircumference || '',
-    nutritionStatus: selectedChild?.nutritionStatus || 'healthy',
-    medicalNotes: selectedChild?.medicalNotes || '',
+    name: '', dob: '', gender: 'male', bloodGroup: 'Unknown', birthWeight: '', birthHeight: '', motherName: '', fatherName: '', contactPhone: '',
   });
 
   useEffect(() => {
@@ -90,7 +88,7 @@ export default function ChildProfile() {
         setSelectedChild(refreshed.data[0]._id);
       }
       setShowForm(false);
-      setForm({ name: '', dob: '', gender: 'male', bloodGroup: 'Unknown', birthWeight: '', birthHeight: '' });
+      setForm({ name: '', dob: '', gender: 'male', bloodGroup: 'Unknown', birthWeight: '', birthHeight: '', motherName: '', fatherName: '', contactPhone: '' });
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to add child.');
     } finally {
@@ -98,50 +96,33 @@ export default function ChildProfile() {
     }
   };
 
-  const getMaxWeight = () => {
-    if (!selectedChild) return 14;
-    return selectedChild.gender === 'female' ? 13 : 14;
+  // Recording growth updates the child's current weight/height/status on the server
+  const refreshSelectedChild = async () => {
+    const { data } = await childAPI.get(selectedChild._id);
+    setChildren((prev) => prev.map((c) => (c._id === data._id ? data : c)));
+    setSelectedChild(data);
   };
 
-  const isEditWeightInvalid = editForm.currentWeight && parseFloat(editForm.currentWeight) > getMaxWeight();
-
-  const handleUpdate = async (e) => {
-    e.preventDefault();
-    if (isEditWeightInvalid) {
-      setError(`Invalid weight: ${editForm.currentWeight} kg exceeds the maximum of ${getMaxWeight()} kg for ${selectedChild.gender === 'female' ? 'girls' : 'boys'}.`);
-      return;
-    }
-    setUpdating(true);
-    setError('');
-    try {
-      await childAPI.update(selectedChild._id, editForm);
-      const refreshed = await childAPI.get(selectedChild._id);
-      setChildren(prev => prev.map(c => c._id === selectedChild._id ? refreshed.data : c));
-      setSelectedChild(refreshed.data);
-      setShowEditForm(false);
-      alert('Health status updated successfully!');
-    } catch (err) {
-      setError(err.response?.data?.message || 'Update failed.');
-    } finally {
-      setUpdating(false);
-    }
-  };
-
-  // Sync editForm when selectedChild changes
+  const [vaccines, setVaccines] = useState([]);
   useEffect(() => {
-    if (selectedChild) {
-      setEditForm({
-        currentWeight: selectedChild.currentWeight || '',
-        currentHeight: selectedChild.currentHeight || '',
-        headCircumference: selectedChild.headCircumference || '',
-        nutritionStatus: selectedChild.nutritionStatus || 'healthy',
-        medicalNotes: selectedChild.medicalNotes || '',
-      });
-    }
-  }, [selectedChild]);
+    setVaccines([]);
+    if (!selectedChild?._id) return;
+    vaccinationAPI.getSchedule(selectedChild._id).then((res) => setVaccines(res.data || [])).catch(() => {});
+  }, [selectedChild?._id]);
+  const vaccinesDone = vaccines.filter((v) => v.status === 'done').length;
+  const nextVaccines = vaccines.filter((v) => v.status !== 'done')
+    .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate)).slice(0, 4);
+
+  const ageMonths = selectedChild
+    ? selectedChild.ageInMonths ?? Math.floor((Date.now() - new Date(selectedChild.dob)) / (1000 * 60 * 60 * 24 * 30.44))
+    : null;
+  const dietPlan = DIET_PLANS[getAgeGroup(ageMonths)?.tag];
+  const meals = dietPlan?.meals || [];
+  const nowMeal = currentMealIndex(meals);
+  // Current meal + the one after it (wrapping to tomorrow's first); "every 2–3 hours" plans have one entry
+  const feedNow = nowMeal === -1 ? meals.slice(0, 1) : [meals[nowMeal], meals[(nowMeal + 1) % meals.length]].filter((m, i, a) => a.indexOf(m) === i);
 
   const [dlLoading, setDlLoading] = useState(false);
-  const [reminderMsg, setReminderMsg] = useState('');
 
   const handleDownload = async () => {
     if (!selectedChild) return;
@@ -158,34 +139,6 @@ export default function ChildProfile() {
     } catch { alert('Failed to download report.'); }
     finally { setDlLoading(false); }
   };
-
-  const handleSetReminder = () => {
-    const visitDate = selectedChild?.nextVisitDate
-      ? new Date(selectedChild.nextVisitDate).toLocaleDateString('en-IN')
-      : 'next scheduled visit';
-    localStorage.setItem('sa_visit_reminder', JSON.stringify({
-      childId: selectedChild?._id,
-      childName: selectedChild?.name,
-      visitDate,
-      set: new Date().toISOString(),
-    }));
-    setReminderMsg(`✓ Reminder set for ${visitDate}`);
-    setTimeout(() => setReminderMsg(''), 4000);
-  };
-
-  // Health score
-  const status = selectedChild?.nutritionStatus || 'healthy';
-  const healthScore = status === 'severe' ? 42 : status === 'moderate' ? 62 : 80;
-  const circumference = 2 * Math.PI * 36;
-
-  // WHO Z-scores
-  const latestGrowth = selectedChild?.latestGrowth || {};
-  const waz = latestGrowth.waz ?? null;
-  const haz = latestGrowth.haz ?? null;
-  const whz = latestGrowth.whz ?? null;
-  const wazPct = waz !== null ? clamp(((waz + 3) / 6) * 100, 0, 100) : 50;
-  const hazPct = haz !== null ? clamp(((haz + 3) / 6) * 100, 0, 100) : 50;
-  const whzPct = whz !== null ? clamp(((whz + 3) / 6) * 100, 0, 100) : 50;
 
   return (
     <div style={{ fontFamily: "'DM Sans', sans-serif", background: themeColors.bg, minHeight: '100vh', color: themeColors.text }}>
@@ -205,27 +158,7 @@ export default function ChildProfile() {
       `}</style>
 
       {/* Navbar */}
-      <nav style={{ position: 'sticky', top: 0, zIndex: 200, background: '#fff', borderBottom: `1px solid ${themeColors.border}`, display: 'flex', alignItems: 'center', padding: '0 24px', height: 62, boxShadow: '0 2px 12px rgba(8,145,178,.08)' }}>
-        <Link to="/parent/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', marginRight: 24, flexShrink: 0 }}>
-          <div style={{ width: 36, height: 36, background: `linear-gradient(135deg,${themeColors.teal},${themeColors.teal2})`, borderRadius: 9, display: 'grid', placeItems: 'center', fontSize: 18 }}>🏥</div>
-          <div>
-            <div style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 17, fontWeight: 700, color: themeColors.teal2, lineHeight: 1.1 }}>Shishu Aarogya</div>
-            <div style={{ fontSize: 9, color: '#4a7a8a', fontWeight: 500, lineHeight: 1 }}>National Child Health Portal</div>
-          </div>
-        </Link>
-        <div className="cp-nav-links" style={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, overflowX: 'auto' }}>
-          {(navLinks && navLinks.length ? navLinks : NAV).map(([label, to]) => (
-            <Link key={to} to={to} style={{ padding: '6px 11px', borderRadius: 8, fontSize: 12.5, fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap', background: to === '/parent/child-profile' ? themeColors.teal4 : 'transparent', color: to === '/parent/child-profile' ? themeColors.teal : themeColors.muted, borderBottom: to === '/parent/child-profile' ? `2px solid ${themeColors.teal}` : '2px solid transparent' }}>
-              {label}
-            </Link>
-          ))}
-        </div>
-        {children.length > 1 && (
-          <select value={selectedChildId} onChange={(e) => setSelectedChild(e.target.value)} style={{ marginLeft: 12, padding: '6px 10px', borderRadius: 8, border: `1.5px solid ${themeColors.border}`, fontSize: 13, color: themeColors.text, background: '#fff', fontFamily: 'inherit' }}>
-            {children.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
-          </select>
-        )}
-      </nav>
+      <ParentNavbar />
 
       {/* Hero */}
       <div style={{ position: 'relative', height: 240, overflow: 'hidden' }}>
@@ -246,14 +179,14 @@ export default function ChildProfile() {
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '28px 24px 60px' }}>
         {/* Page Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
-<h2 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 24, fontWeight: 700, color: themeColors.text, margin: 0 }}>👶 {t('myChild')}</h2>
+<h2 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 24, fontWeight: 700, color: themeColors.text, margin: 0 }}>{t('myChild')}</h2>
           <div style={{ display: 'flex', gap: 10 }}>
               <button className="cp-btn cp-btn-out" onClick={() => setShowForm(true)} style={{ background: '#fef3c7', color: '#92400e', borderColor: '#fed7aa' }}>
               ➕ {t('addChild')}
             </button>
             {selectedChild && (
-              <button className="cp-btn cp-btn-teal" onClick={() => setShowEditForm(!showEditForm)}>
-                ✏️ {showEditForm ? t('cancel') : `${t('edit')} ${t('status')}`}
+              <button className="cp-btn cp-btn-teal" onClick={() => setShowGrowthForm(true)}>
+                📏 Record Growth
               </button>
             )}
             {selectedChild && (
@@ -270,58 +203,6 @@ export default function ChildProfile() {
           </div>
         ) : (
           <>
-            {/* Edit Health Status Form */}
-            {showEditForm && selectedChild && (
-              <div className="cp-card" style={{ animation: 'fadeUp .4s ease', marginBottom: 24 }}>
-                <h5 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 17, fontWeight: 700, color: themeColors.teal2, marginBottom: 16 }}>✏️ {t('update')} {selectedChild.name} {t('status')}</h5>
-                {error && <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '10px 14px', borderRadius: 8, marginBottom: 14, fontSize: 13 }}>{error}</div>}
-                <form onSubmit={handleUpdate}>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 14 }}>
-                    <div>
-                      <label style={{ fontSize: 12, fontWeight: 600, color: themeColors.muted, display: 'block', marginBottom: 5 }}>{t('weight')} ({t('weightKg')})</label>
-                      <input type="number" step="0.1" value={editForm.currentWeight} onChange={e => setEditForm({...editForm, currentWeight: e.target.value})}
-                        style={{ width: '100%', padding: '9px 12px', border: isEditWeightInvalid ? '2px solid #ef4444' : `1.5px solid ${themeColors.border}`, borderRadius: 9, fontSize: 13, background: isEditWeightInvalid ? '#fef2f2' : '#fff' }} />
-                      {isEditWeightInvalid && (
-                        <div style={{ marginTop: 5, padding: '5px 10px', background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 6, fontSize: 11, fontWeight: 700, color: '#ef4444' }}>
-                          ❌ Invalid: Max weight for {selectedChild?.gender === 'female' ? 'girls' : 'boys'} is {getMaxWeight()} kg
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <label style={{ fontSize: 12, fontWeight: 600, color: themeColors.muted, display: 'block', marginBottom: 5 }}>{t('height')} ({t('heightCm')})</label>
-                      <input type="number" step="0.1" value={editForm.currentHeight} onChange={e => setEditForm({...editForm, currentHeight: e.target.value})}
-                        style={{ width: '100%', padding: '9px 12px', border: `1.5px solid ${themeColors.border}`, borderRadius: 9, fontSize: 13 }} />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: 12, fontWeight: 600, color: themeColors.muted, display: 'block', marginBottom: 5 }}>Head Circumference (cm)</label>
-                      <input type="number" step="0.1" value={editForm.headCircumference} onChange={e => setEditForm({...editForm, headCircumference: e.target.value})}
-                        style={{ width: '100%', padding: '9px 12px', border: `1.5px solid ${themeColors.border}`, borderRadius: 9, fontSize: 13 }} />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: 12, fontWeight: 600, color: themeColors.muted, display: 'block', marginBottom: 5 }}>Nutrition Status</label>
-                      <select value={editForm.nutritionStatus} onChange={e => setEditForm({...editForm, nutritionStatus: e.target.value})}
-                        style={{ width: '100%', padding: '9px 12px', border: `1.5px solid ${themeColors.border}`, borderRadius: 9, fontSize: 13 }}>
-                        <option value="healthy">Healthy</option>
-                        <option value="moderate">Moderate Malnutrition</option>
-                        <option value="severe">Severe Malnutrition</option>
-                      </select>
-                    </div>
-                    <div style={{ gridColumn: '1 / -1' }}>
-                      <label style={{ fontSize: 12, fontWeight: 600, color: themeColors.muted, display: 'block', marginBottom: 5 }}>Medical Notes</label>
-                      <textarea rows="3" value={editForm.medicalNotes} onChange={e => setEditForm({...editForm, medicalNotes: e.target.value})}
-                        style={{ width: '100%', padding: '9px 12px', border: `1.5px solid ${themeColors.border}`, borderRadius: 9, fontSize: 13, fontFamily: 'inherit' }} />
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', gap: 10, marginTop: 18, justifyContent: 'flex-end' }}>
-                    <button type="submit" className="cp-btn cp-btn-teal" disabled={updating}>
-                      {updating ? 'Updating...' : '💾 Save Changes'}
-                    </button>
-                    <button type="button" className="cp-btn cp-btn-out" onClick={() => { setShowEditForm(false); setError(''); }}>Cancel</button>
-                  </div>
-                </form>
-              </div>
-            )}
-
             {/* Add Child Form */}
             {showForm && (
               <div className="cp-card" style={{ animation: 'fadeUp .4s ease', marginBottom: 24 }}>
@@ -334,6 +215,9 @@ export default function ChildProfile() {
                       { label: 'Date of Birth', field: 'dob', type: 'date', required: true },
                       { label: 'Birth Weight (kg)', field: 'birthWeight', type: 'number', placeholder: '3.2', step: '0.1' },
                       { label: 'Birth Height (cm)', field: 'birthHeight', type: 'number', placeholder: '50', step: '0.1' },
+                      { label: "Mother's Name", field: 'motherName', type: 'text', placeholder: "Mother's full name" },
+                      { label: "Father's Name", field: 'fatherName', type: 'text', placeholder: "Father's full name" },
+                      { label: 'Contact Phone', field: 'contactPhone', type: 'tel', placeholder: '10-digit mobile' },
                     ].map(({ label, field, type, placeholder, required, step }) => (
                       <div key={field}>
                         <label style={{ fontSize: 12, fontWeight: 600, color: themeColors.muted, display: 'block', marginBottom: 5 }}>{label}</label>
@@ -386,44 +270,6 @@ export default function ChildProfile() {
                       ))}
                     </div>
                   </div>
-                  <div style={{ textAlign: 'center', flexShrink: 0 }}>
-                    <div style={{ position: 'relative', width: 90, height: 90 }}>
-                      <svg width="90" height="90" viewBox="0 0 90 90" style={{ transform: 'rotate(-90deg)' }}>
-                        <circle cx="45" cy="45" r="36" fill="none" stroke="rgba(255,255,255,.2)" strokeWidth="8" />
-                        <circle cx="45" cy="45" r="36" fill="none" stroke="#fff" strokeWidth="8"
-                          strokeDasharray={circumference}
-                          strokeDashoffset={circumference - (healthScore / 100) * circumference}
-                          strokeLinecap="round" />
-                      </svg>
-                      <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center' }}>
-                        <div style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 22, fontWeight: 700, color: '#fff', lineHeight: 1 }}>{healthScore}</div>
-                      </div>
-                    </div>
-                    <div style={{ color: 'rgba(255,255,255,.85)', fontSize: 11, marginTop: 4 }}>Excellent ✓</div>
-                  </div>
-                </div>
-
-                {/* Current Vitals Label */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '24px 0 16px' }}>
-                  <span style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 14, fontWeight: 700, color: themeColors.muted, textTransform: 'uppercase', letterSpacing: '.08em' }}>{t('status')}</span>
-                  <div style={{ flex: 1, height: 1, background: themeColors.border }} />
-                </div>
-
-                {/* Stat Grid */}
-                <div className="cp-grid4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 24 }}>
-                  {[
-                    { icon: '⚖️', label: t('weight'), value: selectedChild.currentWeight ? `${selectedChild.currentWeight} kg` : '—', color: themeColors.teal, trend: '↑' },
-                    { icon: '📏', label: t('height'), value: selectedChild.currentHeight ? `${selectedChild.currentHeight} cm` : '—', color: '#16a34a', trend: '↑' },
-                    { icon: '🔵', label: 'Head Circ.', value: selectedChild.headCircumference ? `${selectedChild.headCircumference} cm` : '—', color: '#d97706', trend: '→' },
-                    { icon: '📊', label: 'BMI', value: selectedChild.bmi ? selectedChild.bmi.toFixed(1) : '—', color: '#2563eb', trend: '↑' },
-                  ].map(({ icon, label, value, color, trend }) => (
-                    <div key={label} style={{ background: '#fff', borderRadius: 14, border: `1.5px solid ${themeColors.border}`, padding: '18px 16px', borderTop: `3px solid ${color}`, boxShadow: '0 2px 8px rgba(8,145,178,.06)', textAlign: 'center' }}>
-                      <div style={{ fontSize: 26, marginBottom: 6 }}>{icon}</div>
-                      <div style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 22, fontWeight: 700, color, lineHeight: 1 }}>{value}</div>
-                      <div style={{ fontSize: 11, color: themeColors.muted, marginTop: 4 }}>{label}</div>
-                      <div style={{ fontSize: 11, color: '#16a34a', marginTop: 3 }}>{trend} Normal</div>
-                    </div>
-                  ))}
                 </div>
 
                 {/* 2-column grid */}
@@ -439,60 +285,12 @@ export default function ChildProfile() {
                     <InfoRow icon="👩" label="Mother's Name" value={selectedChild.motherName || '—'} />
                     <InfoRow icon="👨" label="Father's Name" value={selectedChild.fatherName || '—'} />
                     <InfoRow icon="📞" label="Contact" value={selectedChild.contactPhone || '—'} />
-                    {selectedChild.ashaId ? (
-                      <InfoRow icon="🏥" label="ASHA Worker" value={`${selectedChild.ashaId.userId?.name || 'ASHA'} · ${selectedChild.ashaId.ashaId}`} />
-                    ) : (
-                      <InfoRow icon="🏥" label="ASHA Worker" value="Not assigned" />
-                    )}
                   </div>
 
                   {/* Right column */}
                   <div>
-                    {/* WHO Z-Scores */}
-                    <div className="cp-card" style={{ marginBottom: 0 }}>
-                      <h5 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 16, fontWeight: 700, color: themeColors.teal2, marginBottom: 16 }}>📊 WHO Z-Scores</h5>
-                      {[
-                        { label: 'WAZ (Weight-for-Age)', value: waz, pct: wazPct, color: themeColors.teal },
-                        { label: 'HAZ (Height-for-Age)', value: haz, pct: hazPct, color: '#2563eb' },
-                        { label: 'WHZ (Weight-for-Height)', value: whz, pct: whzPct, color: '#16a34a' },
-                      ].map(({ label, value, pct, color }) => (
-                        <div key={label} style={{ marginBottom: 14 }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                            <span style={{ fontSize: 12, fontWeight: 600, color: themeColors.muted }}>{label}</span>
-                            <span style={{ fontSize: 12, fontWeight: 700, color }}>{value !== null ? value.toFixed(2) : '--'}</span>
-                          </div>
-                          <div style={{ height: 7, borderRadius: 4, background: themeColors.teal3, overflow: 'hidden' }}>
-                            <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: 4, transition: 'width .6s ease' }} />
-                          </div>
-                        </div>
-                      ))}
-                      <div style={{ fontSize: 11, color: '#16a34a', background: '#dcfce7', padding: '7px 12px', borderRadius: 8, marginTop: 4, fontWeight: 600 }}>✓ All scores within WHO normal range</div>
-                    </div>
-
-                    {/* Allergies */}
-                    <div className="cp-card" style={{ marginTop: 16 }}>
-                      <h5 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 16, fontWeight: 700, color: themeColors.teal2, marginBottom: 12 }}>🚫 Allergies &amp; Medical Notes</h5>
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#dcfce7', color: '#15803d', padding: '5px 14px', borderRadius: 100, fontSize: 12, fontWeight: 700, marginBottom: 12 }}>✓ No known allergies</div>
-                      <div style={{ fontSize: 13, color: themeColors.muted, lineHeight: 1.65 }}>
-                        {selectedChild.medicalNotes || 'No recent medical notes. Child is developing normally with regular check-ups.'}
-                      </div>
-                    </div>
-
-                    {/* Next Visit */}
-                    <div style={{ background: `linear-gradient(135deg,${themeColors.teal2},${themeColors.teal})`, borderRadius: 14, padding: '18px 20px', marginTop: 16, boxShadow: `0 4px 16px rgba(8,145,178,.18)` }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.65)', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 8 }}>Next Scheduled Visit</div>
-                      <div style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 4 }}>
-                        {selectedChild.nextVisitDate ? fmt(selectedChild.nextVisitDate) : 'Contact ASHA worker'}
-                      </div>
-                      <div style={{ fontSize: 12, color: 'rgba(255,255,255,.7)', marginBottom: 14 }}>
-                        {selectedChild.ashaId?.village || 'Primary Health Centre'}
-                      </div>
-                      <button className="cp-btn" style={{ background: 'rgba(255,255,255,.2)', color: '#fff', border: '1px solid rgba(255,255,255,.4)', fontSize: 12 }} onClick={handleSetReminder}>🔔 Set Reminder</button>
-                      {reminderMsg && <div style={{ marginTop: 8, fontSize: 11, color: '#cffafe', fontWeight: 600 }}>{reminderMsg}</div>}
-                    </div>
-
                     {/* ASHA Worker */}
-                    <div className="cp-card" style={{ marginTop: 16 }}>
+                    <div className="cp-card" style={{ marginBottom: 0 }}>
                       <h5 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 16, fontWeight: 700, color: themeColors.teal2, marginBottom: 14 }}>👩‍⚕️ Assigned ASHA Worker</h5>
                       {selectedChild.ashaId ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', background: themeColors.teal4, borderRadius: 12, border: `1px solid ${themeColors.border}` }}>
@@ -517,8 +315,60 @@ export default function ChildProfile() {
                         </div>
                       )}
                     </div>
+
+                    {/* Upcoming Vaccines */}
+                    <div className="cp-card" style={{ marginTop: 16, marginBottom: 0 }}>
+                      <SideCardHeader title="💉 Upcoming Vaccines" linkTo="/parent/vaccination" linkText={vaccines.length ? `${vaccinesDone}/${vaccines.length} done` : 'View all'} />
+                      {nextVaccines.length === 0 ? (
+                        <div style={{ fontSize: 13, color: themeColors.muted }}>{vaccines.length ? '✅ All vaccines given' : 'No schedule yet.'}</div>
+                      ) : nextVaccines.map((v) => {
+                        const badge = VACCINE_BADGE[v.status] || VACCINE_BADGE.upcoming;
+                        return (
+                          <div key={v._id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '9px 12px', marginBottom: 6, background: themeColors.teal4, borderRadius: 10 }}>
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ fontSize: 13, fontWeight: 600, color: themeColors.text }}>{v.vaccineName}</div>
+                              <div style={{ fontSize: 11, color: themeColors.muted }}>{fmt(v.dueDate)}</div>
+                            </div>
+                            <span style={{ fontSize: 11, fontWeight: 700, background: badge.bg, color: badge.color, borderRadius: 20, padding: '2px 10px', flexShrink: 0 }}>{badge.label}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Feeding now */}
+                    {feedNow.length > 0 && (
+                      <div className="cp-card" style={{ marginTop: 16, marginBottom: 0 }}>
+                        <SideCardHeader title="🥗 Feeding Now" linkTo="/parent/diet-plan" linkText="Full plan" />
+                        {feedNow.map((meal, i) => (
+                          <div key={meal.time} style={{ padding: '9px 12px', marginBottom: 6, borderRadius: 10, background: i === 0 ? themeColors.teal4 : '#fff', border: `1px solid ${i === 0 ? themeColors.teal : themeColors.border}` }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: themeColors.text }}>
+                              {meal.icon} {meal.name}
+                              <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 700, color: themeColors.teal2 }}>{nowMeal === -1 ? meal.time : `${i === 0 ? 'Now' : 'Next'} · ${meal.time}`}</span>
+                            </div>
+                            <div style={{ fontSize: 11, color: themeColors.muted, marginTop: 3 }}>{mealItemsText(meal)}</div>
+                          </div>
+                        ))}
+                        {dietPlan.tips?.length > 0 && (
+                          <ul style={{ margin: '12px 0 0', paddingLeft: 18, fontSize: 12, color: themeColors.text, lineHeight: 1.7 }}>
+                            {dietPlan.tips.slice(0, 3).map((tip) => <li key={tip}>{tip}</li>)}
+                          </ul>
+                        )}
+                        {dietPlan.avoidFoods?.length > 0 && (
+                          <div style={{ marginTop: 10 }}>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: '#b91c1c', marginBottom: 6 }}>🚫 Avoid</div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                              {dietPlan.avoidFoods.map((food) => (
+                                <span key={food} style={{ fontSize: 11, background: '#fee2e2', color: '#b91c1c', borderRadius: 20, padding: '2px 10px' }}>{food}</span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
+
+                <GrowthMonitoring child={selectedChild} onSaved={refreshSelectedChild} showForm={showGrowthForm} setShowForm={setShowGrowthForm} />
               </>
             )}
           </>

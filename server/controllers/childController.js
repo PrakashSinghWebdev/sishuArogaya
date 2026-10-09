@@ -6,7 +6,7 @@ const escapeRegex = require('../utils/escapeRegex');
 const { findAshaForArea, assignChild, claimUnassignedInArea } = require('../utils/ashaAssignment');
 
 // Fields a client may set on a child; ownership/status fields are server-controlled
-const EDITABLE_FIELDS = ['name', 'dob', 'gender', 'bloodGroup', 'birthWeight', 'birthHeight', 'currentWeight', 'currentHeight', 'state', 'district', 'block', 'village'];
+const EDITABLE_FIELDS = ['name', 'dob', 'gender', 'bloodGroup', 'birthWeight', 'birthHeight', 'currentWeight', 'currentHeight', 'motherName', 'fatherName', 'contactPhone', 'state', 'district', 'block', 'village'];
 const pickEditable = (body, role) => {
   const fields = role === 'admin' ? [...EDITABLE_FIELDS, 'parentId', 'ashaId', 'isActive'] : EDITABLE_FIELDS;
   return Object.fromEntries(fields.filter((f) => body?.[f] !== undefined).map((f) => [f, body[f]]));
@@ -207,9 +207,20 @@ const updateChild = async (req, res) => {
 
     const updatePayload = pickEditable(req.body, req.user.role);
 
+    // Moving the child to another block hands them to that block's ASHA (admins assign explicitly)
+    const norm = (v) => String(v ?? '').trim().toLowerCase();
+    const areaChanged = ['state', 'district', 'block'].some((f) => updatePayload[f] !== undefined && norm(updatePayload[f]) !== norm(existing[f]));
+    let newAsha = null;
+    if (areaChanged && updatePayload.ashaId === undefined) {
+      newAsha = await findAshaForArea({ ...existing.toObject(), ...updatePayload });
+      updatePayload.ashaId = newAsha?._id ?? null;
+      if (existing.ashaId) await AshaWorker.updateOne({ _id: existing.ashaId }, { $pull: { assignedChildren: existing._id } });
+    }
+
     const child = await Child.findByIdAndUpdate(req.params.id, updatePayload, { new: true, runValidators: true })
       .populate('parentId', 'name phone email')
       .populate({ path: 'ashaId', select: 'ashaId district block village', populate: { path: 'userId', select: 'name phone' } });
+    if (newAsha) await AshaWorker.updateOne({ _id: newAsha._id }, { $addToSet: { assignedChildren: child._id } });
     await createAuditLog({
       req,
       action: 'CHILD_UPDATED',

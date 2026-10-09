@@ -271,7 +271,7 @@ const LogHomeVisit = () => {
               {[
                 ['Gender',   chosenChild.gender     || '—'],
                 ['Block',    chosenChild.block       || '—'],
-                ['Guardian', chosenChild.parentName  || '—'],
+                ['Guardian', chosenChild.motherName || chosenChild.fatherName || chosenChild.parentId?.name || '—'],
                 ['Village',  chosenChild.village     || '—'],
               ].map(([key, val]) => (
                 <div key={key} style={{ background: palette.bg, borderRadius: 8, padding: '6px 10px' }}>

@@ -251,6 +251,11 @@ const T = {
     hospital_db_source: '🗄️ Database',
     hospital_osm_source: '🌐 OpenStreetMap',
     hospital_cached_source: '📋 Cached',
+    cached: 'cached', facilities: 'facilities', error: 'Something went wrong',
+    realtimeGps: 'Real-time · GPS',
+    hospital_idle_msg: 'Tap 📍 to find hospitals near you',
+    hospital_data_fallback_msg: 'Live hospital data unavailable. Showing nearest known facilities.',
+    hospital_gps_directions_needed: 'Allow location access first to get directions.',
     hospital_gps_denied: '🔒 Location permission denied. Click the lock icon in your browser → set Location to "Allow" → tap 📍 GPS.',
     hospital_gps_unavailable: '📡 Location unavailable. Enable GPS/Location on your device then tap 📍 GPS.',
     hospital_gps_timeout: '⏱️ Location timed out. Check your GPS signal and tap 📍 GPS.',
@@ -1167,11 +1172,9 @@ export function LanguageProvider({ children }) {
     [t('dashboard'),     '/parent/dashboard'],
     [t('myChild'),       '/parent/child-profile'],
     [t('vaccines'),      '/parent/vaccination'],
-    [t('growth'),        '/parent/growth'],
     [t('dietPlan'),      '/parent/diet-plan'],
     [t('schemes'),       '/parent/schemes'],
     [t('reports'),       '/parent/reports'],
-    [t('notifications'), '/parent/notifications'],
   ];
 
   return (

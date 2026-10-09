@@ -1,12 +1,16 @@
 import { useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react';
 import MediaCarousel, { MEDIA_ARRAY } from '../../components/MediaCarousel';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { notificationAPI, schemeAPI, vaccinationAPI, growthAPI, dietAPI, searchAPI } from '../../services/api';
 import useSelectedChild from '../../hooks/useSelectedChild';
 import SearchBar from '../../components/SearchBar';
+import ErrorBoundary from '../../components/ErrorBoundary';
 import { normalizePrediction } from '../../utils/predictionShape';
+import { currentMealIndex, mealItemsText } from '../../utils/mealTime';
+import { DIET_PLANS, getAgeGroup } from './DietPlan';
+import ParentNavbar from '../../components/ParentNavbar';
 
 const HospitalMap = lazy(() => import('../../components/HospitalMap'));
 
@@ -16,7 +20,7 @@ const HospitalMap = lazy(() => import('../../components/HospitalMap'));
 
 const QUICK_ACTIONS = [
   { emoji: '💉', labelKey: 'bookVaccine',    label: 'Vaccinations',    to: '/parent/vaccination' },
-  { emoji: '📈', labelKey: 'logGrowth',      label: 'Growth',          to: '/parent/growth'      },
+  { emoji: '📈', labelKey: 'logGrowth',      label: 'Growth',          to: '/parent/child-profile'      },
   { emoji: '🥗', labelKey: 'dietPlan',       label: 'Diet Plan',       to: '/parent/diet-plan'   },
   { emoji: '📥', labelKey: 'downloadReport', label: 'Reports',         to: '/parent/reports'     },
   { emoji: '🏛️', labelKey: 'schemes',        label: 'Govt Schemes',    to: '/parent/schemes'     },
@@ -93,10 +97,8 @@ function SectionHeader({ title, linkTo, linkLabel }) {
 /* ─── main component ─────────────────────────────────────────────────────── */
 
 export default function ParentDashboard() {
-  const { user, logout } = useAuth();
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { navLinks, t } = useLanguage();
+  const { user } = useAuth();
+  const { t } = useLanguage();
   const { children, selectedChild, selectedChildId, setSelectedChild, loading: childLoading } = useSelectedChild();
 
   const [vaccines,      setVaccines]      = useState([]);
@@ -146,9 +148,12 @@ export default function ParentDashboard() {
       .catch(() => setPrediction(null));
 
     if (ageMonths != null) {
+      // Server plan if it has meals, else the built-in plan the Diet Plan page also falls back to
+      const builtIn = DIET_PLANS[getAgeGroup(ageMonths)?.tag];
+      setDiet(builtIn);
       dietAPI.getByAge(ageMonths)
-        .then((res) => setDiet(res.data))
-        .catch(() => setDiet(null));
+        .then((res) => { if (res.data?.meals?.length) setDiet(res.data); })
+        .catch(() => {});
     }
   }, [selectedChild]);
 
@@ -190,7 +195,6 @@ export default function ParentDashboard() {
   }, [selectedChild, due, t]);
 
   const firstName   = user?.name?.split(' ')[0] || t('myChild');
-  const userInitial = (user?.name || 'P')[0].toUpperCase();
   const today       = new Date().toLocaleDateString('en-IN', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   });
@@ -309,71 +313,7 @@ export default function ParentDashboard() {
         }
       `}</style>
 
-      {/* ════════════════════════════════════ NAVBAR ════ */}
-      <nav style={{
-        position: 'sticky', top: 0, zIndex: 100,
-        background: '#fff',
-        height: 64,
-        borderBottom: '2px solid #cffafe',
-        boxShadow: '0 2px 16px rgba(8,145,178,.10)',
-        display: 'flex', alignItems: 'center',
-        padding: '0 24px',
-        gap: 16,
-      }}>
-        <Link className="sa-logo-box" to="/parent/dashboard">
-          <div className="sa-logo-icon">🏥</div>
-          <div>
-            <div className="sa-logo-text">Shishu Aarogya</div>
-            <div className="sa-logo-tag">National Child Health Portal</div>
-          </div>
-        </Link>
-
-        <div className="sa-navlinks" style={{
-          display: 'flex', alignItems: 'center',
-          gap: 2, flex: 1, justifyContent: 'center', flexWrap: 'nowrap', overflow: 'hidden',
-        }}>
-          {(navLinks || []).map(([label, to]) => (
-            <Link key={to} to={to} className={`sa-nav-link${location.pathname === to ? ' active' : ''}`}>
-              {label}
-            </Link>
-          ))}
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0, marginLeft: 'auto' }}>
-          <Link to="/parent/notifications" style={{ position: 'relative', textDecoration: 'none', fontSize: 20, lineHeight: 1 }}>
-            🔔
-            {unread > 0 && (
-              <span style={{
-                position: 'absolute', top: -4, right: -4,
-                background: '#ef4444', color: '#fff',
-                fontSize: 9, fontWeight: 700,
-                borderRadius: 20, padding: '1px 5px',
-                minWidth: 16, textAlign: 'center',
-              }}>{unread}</span>
-            )}
-          </Link>
-          <Link to="/parent/settings" style={{
-            width: 36, height: 36, borderRadius: '50%',
-            background: 'linear-gradient(135deg,#0891b2,#0e7490)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: '#fff', fontWeight: 700, fontSize: 15,
-            cursor: 'pointer', userSelect: 'none', textDecoration: 'none',
-            flexShrink: 0,
-          }}>{userInitial}</Link>
-          <button
-            onClick={() => { logout(); navigate('/login'); }}
-            style={{
-              background: '#fee2e2', color: '#dc2626', border: '1px solid #fecaca',
-              borderRadius: 8, padding: '6px 12px', fontSize: 13, fontWeight: 600,
-              cursor: 'pointer', transition: 'all .2s', whiteSpace: 'nowrap',
-            }}
-            onMouseOver={e => { e.currentTarget.style.background = '#ef4444'; e.currentTarget.style.color = '#fff'; }}
-            onMouseOut={e => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.color = '#dc2626'; }}
-          >
-            ⬅️ {t('logout') || 'Logout'}
-          </button>
-        </div>
-      </nav>
+      <ParentNavbar />
 
       {/* ════════════════════════════════════ HERO ════ */}
       <div style={{ position: 'relative', height: 300, overflow: 'hidden' }}>
@@ -505,12 +445,11 @@ export default function ParentDashboard() {
             <div className="sa-grid4" style={{ marginBottom: 28 }}>
               {[
                 { emoji: '💉', label: t('vaccines'),      desc: `${t('vaccines')} tracker`, to: '/parent/vaccination' },
-                { emoji: '📈', label: t('growth'),        desc: `${t('growth')} monitoring`, to: '/parent/growth' },
+                { emoji: '👶', label: t('myChild'),       desc: `${t('childInfoTitle')} & ${t('growth').toLowerCase()}`, to: '/parent/child-profile' },
                 { emoji: '🥗', label: t('dietPlan'),      desc: `${t('dietPlan')} ${t('for') || ''}`.trim(), to: '/parent/diet-plan' },
                 { emoji: '🏛️', label: t('schemes'),      desc: t('governmentSchemes'), to: '/parent/schemes' },
                 { emoji: '📋', label: t('reports'),       desc: t('downloadReport'), to: '/parent/reports' },
                 { emoji: '🔔', label: t('notifications'), desc: `${t('notifications')} & ${t('reminder') || 'alerts'}`, to: '/parent/notifications' },
-                { emoji: '👶', label: t('myChild'),       desc: t('childInfoTitle'), to: '/parent/child-profile' },
                 { emoji: '⚙️', label: t('settings'),      desc: t('langTitle'), to: '/parent/settings' },
               ].map(({ emoji, label, desc, to }) => (
                 <Link key={to} to={to} className="sa-card sa-card-hover" style={{ padding: '20px 16px', textDecoration: 'none', display: 'block' }}>
@@ -657,29 +596,38 @@ export default function ParentDashboard() {
               </div>
 
               {/* Hospital Map */}
-              <div className="sa-card" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '100%' }}>
+              <div className="sa-card" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ padding: '14px 18px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #c5e8ef', flexShrink: 0 }}>
                   <h3 style={{ fontFamily: "'Libre Baskerville', serif", fontSize: 16, fontWeight: 700, margin: 0, color: '#0c2340' }}>
-                    🏥 {t('nearbyHospitals') || 'Nearby Hospitals'}
+                    {t('nearbyHospitals')}
                   </h3>
-                  <span style={{ fontSize: 11, color: '#4a7a8a' }}>{t('realtimeGps') || 'Real-time · GPS'}</span>
+                  <span style={{ fontSize: 11, color: '#4a7a8a' }}>{t('realtimeGps')}</span>
                 </div>
+                {/* flex:1 makes the map fill whatever height the vaccines column gives the row */}
+                <div style={{ flex: 1, minHeight: 320, display: 'flex', flexDirection: 'column' }}>
+                <ErrorBoundary fallback={
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4a7a8a', fontSize: 13 }}>
+                    ⚠️ Map couldn't load. Please refresh the page.
+                  </div>
+                }>
                 <Suspense fallback={
-                  <div style={{ height: 340, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4a7a8a', fontSize: 13 }}>
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4a7a8a', fontSize: 13 }}>
                     Loading map…
                   </div>
                 }>
-                  <HospitalMap height={440} showSearchBar={true} />
+                  <HospitalMap height="100%" showSearchBar={true} />
                 </Suspense>
+                </ErrorBoundary>
+                </div>
               </div>
             </div>
 
             {/* ── Growth Monitoring ── */}
             <div className="sa-card" style={{ padding: '20px 22px', marginBottom: 24, animation: 'fadeUp .65s ease' }}>
-              <SectionHeader title="📈 Growth Monitoring" linkTo="/parent/growth" />
+              <SectionHeader title="📈 Growth Monitoring" linkTo="/parent/child-profile" />
               {growth.length === 0 ? (
                 <div style={{ color: '#4a7a8a', fontSize: 13, padding: '12px 0', textAlign: 'center' }}>
-                  No growth records yet. <Link to="/parent/growth" style={{ color: '#0891b2', fontWeight: 600 }}>Log first entry →</Link>
+                  No growth records yet. <Link to="/parent/child-profile" style={{ color: '#0891b2', fontWeight: 600 }}>Log first entry →</Link>
                 </div>
               ) : (
                 <div style={{ overflowX: 'auto' }}>
@@ -803,41 +751,41 @@ export default function ParentDashboard() {
                 <SectionHeader title="🥗 Diet Plan" linkTo="/parent/diet-plan" />
                 {!diet ? (
                   <div style={{ color: '#4a7a8a', fontSize: 13, padding: '12px 0', textAlign: 'center' }}>
-                    {selectedChild.ageInMonths != null
-                      ? 'Loading diet plan…'
-                      : 'Set child age to view diet plan.'}
+                    Set child age to view diet plan.
                   </div>
                 ) : (
                   <>
                     <div style={{ marginBottom: 12 }}>
                       <span style={{ fontSize: 12, color: '#0891b2', fontWeight: 600, background: '#e0f7fa', padding: '2px 10px', borderRadius: 20 }}>
-                        {diet.ageGroup || `${selectedChild.ageInMonths} months`}
+                        {getAgeGroup(selectedChild.ageInMonths)?.label}
                       </span>
                     </div>
-                    {(diet.meals || []).slice(0, 4).map((meal, i) => (
-                      <div key={i} style={{
-                        padding: '10px 14px', marginBottom: 8,
-                        border: '1px solid #c5e8ef', borderRadius: 10,
-                        display: 'flex', alignItems: 'center', gap: 12,
-                      }}>
-                        <span style={{ fontSize: 20 }}>
-                          {meal.type === 'breakfast' ? '🌅' : meal.type === 'lunch' ? '🍽️' : meal.type === 'dinner' ? '🌙' : meal.type === 'snack' ? '🍎' : '🥛'}
-                        </span>
-                        <div>
-                          <div style={{ fontWeight: 600, fontSize: 13, color: '#0c2340', textTransform: 'capitalize' }}>
-                            {meal.type || meal.name}
+                    {(() => {
+                      const meals = diet.meals || [];
+                      const nowIdx = currentMealIndex(meals);
+                      return meals.map((meal, i) => (
+                        <div key={i} style={{
+                          padding: '10px 14px', marginBottom: 8, borderRadius: 10,
+                          border: `1px solid ${i === nowIdx ? '#0891b2' : '#c5e8ef'}`,
+                          background: i === nowIdx ? '#f0fdff' : '#fff',
+                          display: 'flex', alignItems: 'flex-start', gap: 12,
+                        }}>
+                          <div style={{ width: 92, flexShrink: 0, fontSize: 11, fontWeight: 700, color: '#0e7490', lineHeight: 1.4 }}>
+                            {meal.time}
                           </div>
-                          <div style={{ fontSize: 11, color: '#4a7a8a', marginTop: 2 }}>
-                            {meal.items ? meal.items.join(', ') : meal.description || ''}
+                          <span style={{ fontSize: 20, lineHeight: 1 }}>{meal.icon || '🍽️'}</span>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontWeight: 600, fontSize: 13, color: '#0c2340', display: 'flex', alignItems: 'center', gap: 6 }}>
+                              {meal.name}
+                              {i === nowIdx && <span style={{ fontSize: 10, color: '#fff', background: '#0891b2', borderRadius: 10, padding: '1px 8px' }}>Now</span>}
+                            </div>
+                            <div style={{ fontSize: 11, color: '#4a7a8a', marginTop: 2 }}>
+                              {mealItemsText(meal)}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                    {diet.notes && (
-                      <div style={{ fontSize: 12, color: '#4a7a8a', background: '#f0fdff', borderRadius: 8, padding: '10px 12px', marginTop: 4 }}>
-                        💡 {diet.notes}
-                      </div>
-                    )}
+                      ));
+                    })()}
                   </>
                 )}
               </div>

@@ -1,35 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { childAPI, growthAPI } from '../../services/api';
-import MediaCarousel, { MEDIA_ARRAY } from '../../components/MediaCarousel';
+import { growthAPI } from '../../services/api';
 import GrowthLineChart from '../../components/GrowthLineChart';
 import { useLanguage } from '../../context/LanguageContext';
 import { normalizePrediction } from '../../utils/predictionShape';
 
-// navLinks moved to component body using useLanguage()
 
 const WHO_W = [3.3, 4.5, 5.6, 6.4, 7.0, 7.5, 7.9, 8.3, 8.6, 8.9, 9.2, 9.4, 9.6, 9.8, 10.0, 10.1, 10.3, 10.4, 10.6];
 const WHO_H = [49.9, 54.7, 58.4, 61.4, 63.9, 65.9, 67.6, 69.2, 70.6, 72.0, 73.3, 74.5, 75.7, 76.9, 78.0, 79.1, 80.2, 81.2, 82.3];
-
-const NAV = [
-  ['Dashboard', '/parent/dashboard'],
-  ['My Child', '/parent/child-profile'],
-  ['Vaccinations', '/parent/vaccination'],
-  ['Growth', '/parent/growth'],
-  ['Diet Plan', '/parent/diet-plan'],
-  ['Schemes', '/parent/schemes'],
-  ['Reports', '/parent/reports'],
-  ['Notifications', '/parent/notifications'],
-];
-
-const TIPS = [
-  ['🥦', 'Iron-rich foods', 'Dal, spinach, fortified cereals, and egg yolk support healthy growth.'],
-  ['🥛', 'Dairy daily', 'Milk, curd, or paneer help with calcium and bone development.'],
-  ['💧', 'Hydration', 'Offer water regularly between meals and avoid sugary drinks.'],
-  ['🌞', 'Sun exposure', 'Morning sunlight supports Vitamin D and stronger bones.'],
-  ['😴', 'Sleep', 'Consistent sleep helps growth hormone release.'],
-  ['🧠', 'Stimulation', 'Talk, play, and read to support brain development.'],
-];
 
 function fmt(d) {
   const x = new Date(d);
@@ -92,18 +69,16 @@ function BarChart({ data, who, keyName, gradientFrom, gradientTo, max, title }) 
   );
 }
 
-export default function GrowthMonitoring() {
-  const { navLinks, t } = useLanguage();
-  const [children, setChildren] = useState([]);
-  const [selected, setSelected] = useState(null);
+/* Growth section of the My Child page — `child` is the child selected there;
+   the Record Growth button lives in My Child's header, so it owns showForm. */
+export default function GrowthMonitoring({ child: selected, onSaved, showForm, setShowForm }) {
+  const { t } = useLanguage();
   const [records, setRecords] = useState([]);
   const [prediction, setPrediction] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('weight');
-  const [slide, setSlide] = useState(0);
 
   // ── Record Growth form ──
-  const [showForm,   setShowForm]   = useState(false);
   const [formData,   setFormData]   = useState({ weight: '', height: '', headCircumference: '', notes: '' });
   const [saving,     setSaving]     = useState(false);
   const [saveMsg,    setSaveMsg]    = useState('');
@@ -149,6 +124,7 @@ export default function GrowthMonitoring() {
       ]);
       setRecords(h.data);
       setPrediction(normalizePrediction(p.data));
+      onSaved?.();
       setTimeout(() => { setSaveMsg(''); setShowForm(false); }, 2000);
     } catch (err) {
       setSaveMsg(`⚠️ ${err.response?.data?.message || 'Failed to save. Please try again.'}`);
@@ -156,13 +132,6 @@ export default function GrowthMonitoring() {
       setSaving(false);
     }
   };
-
-  useEffect(() => {
-    childAPI.list().then((r) => {
-      setChildren(r.data);
-      if (r.data[0]) setSelected(r.data[0]);
-    }).catch(console.error).finally(() => setLoading(false));
-  }, []);
 
   useEffect(() => {
     if (!selected) return;
@@ -174,12 +143,7 @@ export default function GrowthMonitoring() {
       setRecords(h.data);
       setPrediction(normalizePrediction(p.data));
     }).catch(console.error).finally(() => setLoading(false));
-  }, [selected]);
-
-  useEffect(() => {
-    const t = setInterval(() => setSlide((s) => (s + 1) % MEDIA_ARRAY.length), 4000);
-    return () => clearInterval(t);
-  }, []);
+  }, [selected?._id]); // id, not object: My Child replaces the object after every save
 
   const data = useMemo(() => records.map((r) => ({ ...r, label: `${r.ageMonths}m` })), [records]);
   const latest = data[data.length - 1];
@@ -204,108 +168,33 @@ export default function GrowthMonitoring() {
   ];
 
   return (
-    <div style={{ fontFamily: "'DM Sans',sans-serif", background: '#f8fffe', minHeight: '100vh', color: '#0c2340', overflowX: 'hidden' }}>
+    <section id="growth" className="gm-root" style={{ fontFamily: "'DM Sans',sans-serif", color: '#0c2340', marginTop: 32 }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap');
-        *{box-sizing:border-box;margin:0;padding:0}
-        body{margin:0}
+        .gm-root *{box-sizing:border-box;margin:0;padding:0}
         @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
         @keyframes spin{to{transform:rotate(360deg)}}
         .sa-anim{animation:fadeUp .4s both}
         .sa-anim2{animation:fadeUp .5s .1s both}
-        .sa-anim3{animation:fadeUp .5s .2s both}
         .g2{display:grid;grid-template-columns:2fr 1fr;gap:24px}
         .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
-        .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
         .g31{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-        .navlinks{display:flex;align-items:center;gap:2px;flex:1}
         .tab-btn{flex:1;padding:13px 8px;border:none;background:transparent;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;transition:color .2s}
         .tab-btn:hover{opacity:.85}
         .p-ok{background:#ecfdf5;color:#059669;border:1px solid #6ee7b7;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700}
         .p-warn{background:#fffbeb;color:#f59e0b;border:1px solid #fcd34d;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700}
         .p-bad{background:#fef2f2;color:#ef4444;border:1px solid #fca5a5;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700}
         @media(max-width:768px){
-          .navlinks{display:none!important}
-          .g2,.g31,.g3{grid-template-columns:1fr!important}
+          .g2,.g31{grid-template-columns:1fr!important}
           .g4{grid-template-columns:1fr 1fr!important}
         }
       `}</style>
 
-      {/* NAVBAR */}
-      <nav style={{ position: 'sticky', top: 0, zIndex: 100, background: '#fff', height: 64, borderBottom: '2px solid #cffafe', boxShadow: '0 2px 16px rgba(8,145,178,.1)', display: 'flex', alignItems: 'center', gap: 14, padding: '0 28px' }}>
-        <Link to="/parent/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', flexShrink: 0 }}>
-          <div style={{ width: 38, height: 38, background: 'linear-gradient(135deg,#0891b2,#0e7490)', borderRadius: 10, display: 'grid', placeItems: 'center', fontSize: 20 }}>🏥</div>
-          <div>
-            <div style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 17, fontWeight: 700, color: '#0e7490', lineHeight: 1.1 }}>Shishu Aarogya</div>
-            <div style={{ fontSize: 10, color: '#4a7a8a', lineHeight: 1.2 }}>National Child Health Portal</div>
-          </div>
-        </Link>
-
-        <div className="navlinks">
-          {(navLinks && navLinks.length ? navLinks : NAV).map(([label, to]) => (
-            <Link key={to} to={to} style={{
-              padding: '7px 13px', borderRadius: 8, fontSize: 13, fontWeight: 500,
-              textDecoration: 'none', whiteSpace: 'nowrap', transition: 'all .18s',
-              background: to === '/parent/growth' ? '#f0fdff' : 'transparent',
-              color: to === '/parent/growth' ? '#0e7490' : '#4a7a8a',
-              fontFamily: "'DM Sans',sans-serif",
-            }}>{label}</Link>
-          ))}
-        </div>
-
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: '#4a7a8a', padding: 4 }}>🔔</button>
-          <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'linear-gradient(135deg,#0891b2,#0e7490)', display: 'grid', placeItems: 'center', fontSize: 15 }}>👤</div>
-        </div>
-      </nav>
-
-      {/* HERO CAROUSEL */}
-      <div style={{ height: 240, position: 'relative', overflow: 'hidden' }}>
-        <MediaCarousel currentSlideIndex={slide} />
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(100deg,rgba(8,145,178,.92),rgba(14,116,144,.6),rgba(8,145,178,.8))' }} />
-        <div style={{ position: 'relative', zIndex: 1, maxWidth: 1200, margin: '0 auto', padding: '0 32px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(255,255,255,.15)', border: '1px solid rgba(255,255,255,.3)', borderRadius: 100, padding: '4px 14px', fontSize: 11, fontWeight: 700, color: '#cffafe', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 14, width: 'fit-content' }}>🏥 Growth Monitoring</div>
-          <h1 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 'clamp(24px,3vw,40px)', fontWeight: 700, color: '#fff', lineHeight: 1.15, marginBottom: 10 }}>
-            Growth <span style={{ color: '#5eead4' }}>Monitoring</span>
-          </h1>
-          <p style={{ fontSize: 14, color: 'rgba(255,255,255,.8)', maxWidth: 420, lineHeight: 1.7 }}>
-            WHO z-score analysis and growth tracking for your child aged 0–24 months
-          </p>
-        </div>
-        <div style={{ position: 'absolute', bottom: 16, left: 32, display: 'flex', gap: 7, zIndex: 2 }}>
-          {MEDIA_ARRAY.map((_, i) => (
-            <button key={i} onClick={() => setSlide(i)} style={{
-              width: i === slide ? 20 : 7, height: 7, borderRadius: 4, border: 'none', cursor: 'pointer',
-              background: i === slide ? '#5eead4' : 'rgba(255,255,255,.45)', transition: 'all .3s', padding: 0,
-            }} />
-          ))}
-        </div>
-      </div>
-
-      {/* PAGE HEADER */}
-      <div style={{ background: '#fff', borderBottom: '1px solid #c5e8ef', padding: '14px 32px' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-          <div>
-            <h2 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 20, fontWeight: 700, color: '#0c2340', marginBottom: 4 }}>📈 Growth Monitoring</h2>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#4a7a8a' }}>
-              <Link to="/parent/dashboard" style={{ color: '#4a7a8a', textDecoration: 'none' }}>Dashboard</Link>
-              <span>›</span>
-              <Link to="/parent/child-profile" style={{ color: '#4a7a8a', textDecoration: 'none' }}>My Child</Link>
-              <span>›</span>
-              <span style={{ color: '#0891b2', fontWeight: 600 }}>{selected?.name || 'Growth Monitoring'}</span>
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button
-              onClick={() => setShowForm(true)}
-              style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#0891b2,#0e7490)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans',sans-serif" }}
-            >📏 Record Growth</button>
-          </div>
-        </div>
-      </div>
+      {/* SECTION HEADER */}
+      <h2 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 22, fontWeight: 700, color: '#0c2340' }}>📈 Growth Monitoring</h2>
 
       {/* STATS ROW */}
-      <div style={{ maxWidth: 1200, margin: '24px auto 0', padding: '0 32px' }}>
+      <div style={{ marginTop: 20 }}>
         <div className="g4 sa-anim">
           {[
             ['⚖️', 'Current Weight', latest?.weight != null ? `${latest.weight} kg` : '—', '#0891b2', '#f0fdff', '#c5e8ef', wGain != null ? `+${wGain} kg since last` : 'No prior record'],
@@ -324,7 +213,7 @@ export default function GrowthMonitoring() {
       </div>
 
       {/* MAIN CONTENT */}
-      <div style={{ maxWidth: 1200, margin: '24px auto 0', padding: '0 32px 60px' }}>
+      <div style={{ marginTop: 24 }}>
         <div className="g2">
           {/* LEFT */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
@@ -424,43 +313,10 @@ export default function GrowthMonitoring() {
               </div>
             </div>
 
-            {/* TIPS SECTION */}
-            <div className="sa-anim2">
-              <h3 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 16, fontWeight: 700, color: '#0c2340', marginBottom: 14 }}>Tips to Support Growth</h3>
-              <div className="g3">
-                {TIPS.map(([icon, title, desc]) => (
-                  <div key={title} style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #c5e8ef', padding: 16, boxShadow: '0 2px 8px rgba(8,145,178,.07)' }}>
-                    <div style={{ fontSize: 26, marginBottom: 10 }}>{icon}</div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#0c2340', marginBottom: 5 }}>{title}</div>
-                    <div style={{ fontSize: 12, color: '#4a7a8a', lineHeight: 1.65 }}>{desc}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
 
           {/* RIGHT SIDEBAR */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {/* Child Selector */}
-            <div className="sa-anim" style={{ background: 'linear-gradient(135deg,#0891b2,#0e7490)', borderRadius: 16, padding: 20, boxShadow: '0 6px 20px rgba(8,145,178,.25)' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.6)', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 8 }}>Selected Child</div>
-              <div style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 20, fontWeight: 700, color: '#fff', marginBottom: 4 }}>{selected?.name || 'No child selected'}</div>
-              {selected && (
-                <div style={{ fontSize: 13, color: 'rgba(255,255,255,.7)', marginBottom: children.length > 1 ? 14 : 0 }}>
-                  {selected.ageInMonths ?? 0} months old
-                </div>
-              )}
-              {children.length > 1 && (
-                <select
-                  value={selected?._id || ''}
-                  onChange={(e) => setSelected(children.find((c) => c._id === e.target.value))}
-                  style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1.5px solid rgba(255,255,255,.3)', background: 'rgba(255,255,255,.15)', color: '#fff', fontSize: 13, fontFamily: "'DM Sans',sans-serif", cursor: 'pointer', outline: 'none' }}
-                >
-                  {children.map((c) => <option key={c._id} value={c._id} style={{ color: '#0c2340' }}>{c.name}</option>)}
-                </select>
-              )}
-            </div>
-
             {/* What the numbers mean */}
             <div className="sa-anim2" style={{ background: '#fff', borderRadius: 16, border: '1.5px solid #c5e8ef', boxShadow: '0 2px 10px rgba(8,145,178,.07)', overflow: 'hidden' }}>
               <div style={{ background: '#f0fdff', padding: '12px 18px', borderBottom: '2px solid #c5e8ef' }}>
@@ -493,26 +349,6 @@ export default function GrowthMonitoring() {
               </div>
             </div>
 
-            {/* WHO Reference Table */}
-            <div className="sa-anim3" style={{ background: '#fff', borderRadius: 16, border: '1.5px solid #c5e8ef', boxShadow: '0 2px 10px rgba(8,145,178,.07)', overflow: 'hidden' }}>
-              <div style={{ background: '#f0fdff', padding: '12px 18px', borderBottom: '2px solid #c5e8ef' }}>
-                <div style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 14, fontWeight: 700, color: '#0e7490' }}>WHO Reference</div>
-                {latest?.ageMonths != null && <div style={{ fontSize: 11, color: '#4a7a8a', marginTop: 2 }}>Age: {latest.ageMonths} months</div>}
-              </div>
-              <div style={{ padding: '8px 16px 16px' }}>
-                {[
-                  ['Median Weight', `${whoW} kg`],
-                  ['Median Height', `${whoH} cm`],
-                  ['Current Weight', latest?.weight != null ? `${latest.weight} kg` : '—'],
-                  ['Current Height', latest?.height != null ? `${latest.height} cm` : '—'],
-                ].map(([label, val]) => (
-                  <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #c5e8ef' }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: '#4a7a8a' }}>{label}</div>
-                    <div style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 16, fontWeight: 700, color: '#0891b2' }}>{val}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -560,9 +396,6 @@ export default function GrowthMonitoring() {
           </div>
         </div>
       )}
-      <footer style={{ background: '#0e7490', color: 'rgba(255,255,255,.45)', textAlign: 'center', padding: 14, fontSize: 12 }}>
-        Shishu Aarogya &copy; 2024 &middot; {t('homeFooter_copyright_long') || 'National Child Health Portal · Government of India'}
-      </footer>
-    </div>
+    </section>
   );
 }

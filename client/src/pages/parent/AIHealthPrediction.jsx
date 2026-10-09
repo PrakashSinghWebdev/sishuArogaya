@@ -5,19 +5,9 @@ import MediaCarousel, { MEDIA_ARRAY } from '../../components/MediaCarousel';
 import GNNVisualization from '../../components/GNNVisualization';
 import GeminiInsights from '../../components/GeminiInsights';
 import { childAPI, growthAPI, reportAPI } from '../../services/api';
+import ParentNavbar from '../../components/ParentNavbar';
 
 
-
-const NAV = [
-  ['🏠 Dashboard', '/parent/dashboard'],
-  ['👶 My Child', '/parent/child-profile'],
-  ['💉 Vaccines', '/parent/vaccination'],
-  ['📈 Growth', '/parent/growth'],
-  ['🥗 Diet Plan', '/parent/diet-plan'],
-  ['🏛️ Schemes', '/parent/schemes'],
-  ['📋 Reports', '/parent/reports'],
-  ['🔔 Notifications', '/parent/notifications'],
-];
 
 const Z_GRADIENT = 'linear-gradient(90deg,#fca5a5,#ef4444 20%,#fcd34d 35%,#86efac 50%,#6ee7b7 65%,#fcd34d 80%,#fca5a5)';
 
@@ -49,7 +39,7 @@ function predictionMeta(p) {
 }
 
 export default function AIHealthPrediction() {
-  const { navLinks, t } = useLanguage();
+  const { t } = useLanguage();
   const [slide, setSlide] = useState(0);
   const slideRef = useRef(0);
   const [children, setChildren] = useState([]);
@@ -228,20 +218,7 @@ export default function AIHealthPrediction() {
       `}</style>
 
       {/* Navbar */}
-      <nav className="topnav">
-        <Link className="nav-brand" to="/parent/dashboard">
-          <div style={{ width: 32, height: 32, background: 'linear-gradient(135deg,#0891b2,#0e7490)', borderRadius: 8, display: 'grid', placeItems: 'center', fontSize: 16 }}>🏥</div>
-          <div style={{ marginLeft: 8 }}>
-            <div style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 15, fontWeight: 700, color: '#0e7490', lineHeight: 1.1 }}>Shishu Aarogya</div>
-            <div style={{ fontSize: 8, color: '#4a7a8a', lineHeight: 1 }}>National Child Health Portal</div>
-          </div>
-        </Link>
-        <div className="navlinks">
-          {(navLinks && navLinks.length ? navLinks : NAV).map(([label, to]) => (
-            <Link key={to} to={to} className={to === '/parent/ai-prediction' ? 'active' : ''}>{label}</Link>
-          ))}
-        </div>
-      </nav>
+      <ParentNavbar />
 
       {/* Hero */}
       <section className="hero">

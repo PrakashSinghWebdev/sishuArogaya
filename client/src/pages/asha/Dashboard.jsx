@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { ashaAPI, notificationAPI, vaccinationAPI, searchAPI } from '../../services/api';
-import { AshaCoverageMapPanel } from './AreaCoverageMap';
 import { MEDIA_ARRAY } from '../../components/MediaCarousel';
 import SearchBar from '../../components/SearchBar';
 
@@ -85,7 +84,6 @@ export default function AshaDashboard() {
     { emoji: '📈', title: t('growthRecords'),         desc: 'Weight, height, and trends',       to: '/asha/growth-records'       },
     { emoji: '🚨', title: t('malnutritionReport'),    desc: 'Moderate and severe cases',        to: '/asha/malnutrition-report'  },
     { emoji: '📋', title: t('visitHistory'),          desc: 'Past field visits',                to: '/asha/visit-history'        },
-    { emoji: '🗺️', title: 'Area Coverage Map',        desc: 'See assigned children on map',     href: '#area-coverage'           },
     { emoji: '📤', title: t('generateReport') || 'Generate Report', desc: 'Export district file', to: '/asha/generate-report'   },
     { emoji: '⚙️', title: t('settings'),              desc: 'Profile and password settings',   to: '/asha/settings'             },
   ];
@@ -218,7 +216,7 @@ export default function AshaDashboard() {
                 {profile?.block ? `${profile.block}, ${profile.district}` : t('ashaPortal')} · {children.length} {t('childrenAssignedLabel')} · {todayLabel}
               </p>
               <div style={{ fontSize: 13, color: 'rgba(255,255,255,.82)', maxWidth: 560 }}>
-                Core ASHA actions now live here in the dashboard. Use the cards below to open visits, reports, vaccination tracking, growth records, settings, and the area map.
+                Core ASHA actions now live here in the dashboard. Use the cards below to open visits, reports, vaccination tracking, growth records, and settings.
               </div>
             </div>
             <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
@@ -513,14 +511,6 @@ export default function AshaDashboard() {
                     : <Link key={to} to={to} style={{ textDecoration: 'none' }}>{cardContent}</Link>;
                 })}
               </div>
-            </div>
-
-            {/* map panel */}
-            <div id="area-coverage" className="an-card" style={{ padding: '20px 22px', marginBottom: 22, animation: 'fadeUp .62s ease' }}>
-              <h3 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 16, fontWeight: 700, margin: '0 0 14px', color: '#0c2340' }}>
-                Area Coverage Map
-              </h3>
-              <AshaCoverageMapPanel childrenData={children} loading={loading} embedded />
             </div>
 
             {/* bottom quick-action row */}

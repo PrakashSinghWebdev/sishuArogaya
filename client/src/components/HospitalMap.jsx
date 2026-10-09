@@ -23,11 +23,15 @@ const LABELS_TILE    = 'https://server.arcgisonline.com/ArcGIS/rest/services/Ref
 const NOMINATIM      = 'https://nominatim.openstreetmap.org/search';
 const OVERPASS_EPS   = [
   'https://overpass-api.de/api/interpreter',
-  'https://overpass.kumi.systems/api/interpreter',
-  'https://lz4.overpass-api.de/api/interpreter',
+  'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
 ];
 const OSRM           = 'https://router.project-osrm.org/route/v1/driving';
 const RADIUS_M       = 100_000; // 100 km in metres
+const NEAREST_N      = 10;
+/* Overpass returns results in arbitrary order, so one huge query can miss the closest
+   hospitals and takes ~15 s. Search small first, widen only until NEAREST_N hospitals are found;
+   every other service keeps its NEAREST_N closest from that same search. */
+const SEARCH_RADII_M = [10_000, 30_000, 100_000];
 
 /* ── amenity config ──────────────────────────────────── */
 const A = {
@@ -57,6 +61,8 @@ const FILTER_TABS = [
   { key:'health_post', label:'PHC / CHC', emoji:'🏠' },
   { key:'clinic',    label:'Clinics',    emoji:'🏨' },
   { key:'ambulance_station', label:'Ambulance', emoji:'🚑' },
+  { key:'pharmacy',  label:'Pharmacy',   emoji:'💊' },
+  { key:'doctors',   label:'Doctors',    emoji:'👨‍⚕️' },
 ];
 
 /* ── static fallback data ────────────────────────────── */
@@ -79,9 +85,18 @@ function distKm(lat1, lng1, lat2, lng2) {
   return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-function overpassQuery(lat, lng) {
-  return `[out:json][timeout:25];(node["amenity"~"^(hospital|clinic|pharmacy|health_post|doctors)$"](around:${RADIUS_M},${lat},${lng});way["amenity"~"^(hospital|clinic|pharmacy|health_post|doctors)$"](around:${RADIUS_M},${lat},${lng}););out center 300;`;
+function overpassQuery(lat, lng, radius) {
+  const around = `(around:${radius},${lat},${lng})`;
+  return `[out:json][timeout:25];(nwr["amenity"~"^(hospital|clinic|pharmacy|health_post|doctors)$"]${around};nwr["emergency"="ambulance_station"]${around};);out center;`;
 }
+
+/* NEAREST_N closest of each service type (hospital, clinic, ambulance…) */
+const nearestN = (list) => {
+  const count = {};
+  return [...list].sort((a,b) => a.dist - b.dist)
+    .filter(h => (count[h.type] = (count[h.type] || 0) + 1) <= NEAREST_N);
+};
+const hospitalCount = (list) => list.filter(h => h.type === 'hospital').length;
 
 /* ── icon factories ──────────────────────────────────── */
 function facilityIcon(type, highlighted = false) {
@@ -152,8 +167,6 @@ export default function HospitalMap({ height = '100%', showSearchBar = true }) {
   const [routeInfo,     setRouteInfo]     = useState(null);
   const [routeLoading,  setRouteLoading]  = useState(false);
   const [gpsError,      setGpsError]      = useState('');
-  const [isTracking,    setIsTracking]    = useState(false);
-  const [isFollowing,   setIsFollowing]   = useState(true);
 
   /* ── filtered + distance-sorted list ── */
   const filtered = useMemo(() => {
@@ -168,11 +181,14 @@ export default function HospitalMap({ height = '100%', showSearchBar = true }) {
     if (!origin) return;
     abortRef.current?.abort();
     abortRef.current = new AbortController();
+    const { signal } = abortRef.current;
     setStatus('loading');
 
-    /* Tier 1: backend DB */
+    /* Tier 1: backend DB — used directly only if it alone has NEAREST_N hospitals */
+    let dbList = [];
     try {
       const res = await hospitalAPI.nearby(origin.lat, origin.lng, RADIUS_M);
+      if (signal.aborted) return;
       if (res.data?.hospitals?.length > 0) {
         const list = res.data.hospitals.map(h => {
           const [lng, lat] = h.location.coordinates;
@@ -189,26 +205,39 @@ export default function HospitalMap({ height = '100%', showSearchBar = true }) {
             src: 'db',
           };
         });
-        setHospitals(list);
-        setStatus('done');
-        setDataSource('🗄️ Database');
-        return;
+        dbList = nearestN(list);
+        if (hospitalCount(dbList) >= NEAREST_N) {
+          setHospitals(dbList);
+          setStatus('done');
+          setDataSource('🗄️ Database');
+          return;
+        }
       }
     } catch { /* backend down — fall through */ }
 
-    /* Tier 2: OpenStreetMap Overpass */
-    const q = overpassQuery(origin.lat, origin.lng);
-    for (const ep of OVERPASS_EPS) {
-      try {
-        const r = await fetch(ep, { method:'POST', body:q, signal:abortRef.current.signal });
-        if (!r.ok) continue;
-        const json = await r.json();
-        if (json.elements?.length > 0) {
-          const list = json.elements.map(el => {
+    /* Tier 2: OpenStreetMap Overpass — query every mirror at once, first good answer wins
+       (overpass-api.de often 504s after ~10 s when overloaded); null = all failed */
+    const overpass = (radius) => {
+      const q = overpassQuery(origin.lat, origin.lng, radius);
+      return Promise.any(OVERPASS_EPS.map(ep =>
+        fetch(ep, { method:'POST', body:q, signal }).then(r => r.ok ? r.json() : Promise.reject(r.status))
+      )).then(json => json.elements || [], () => {
+        if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
+        return null;
+      });
+    };
+
+    let osmList = [];
+    try {
+      for (const radius of SEARCH_RADII_M) {
+        const elements = await overpass(radius);
+        if (!elements) break;
+        osmList = nearestN(elements.map(el => {
             const lat = el.lat ?? el.center?.lat;
             const lng = el.lon ?? el.center?.lon;
             if (!lat || !lng) return null;
-            const type = el.tags?.amenity || 'hospital';
+            const type = el.tags?.emergency === 'ambulance_station' ? 'ambulance_station'
+              : A[el.tags?.amenity] ? el.tags.amenity : 'hospital';
             return {
               id: String(el.id), lat, lng, type,
               name: el.tags?.name || `${A[type]?.label ?? 'Facility'} (unnamed)`,
@@ -219,25 +248,25 @@ export default function HospitalMap({ height = '100%', showSearchBar = true }) {
               dist: distKm(origin.lat, origin.lng, lat, lng),
               src: 'osm',
             };
-          }).filter(Boolean);
-          setHospitals(list);
-          setStatus('done');
-          setDataSource('🌐 OpenStreetMap');
-          return;
-        }
-        break;
-      } catch (err) {
-        if (err.name === 'AbortError') return;
+          }).filter(Boolean));
+        if (hospitalCount(osmList) >= NEAREST_N) break;
       }
+    } catch (err) {
+      if (err.name === 'AbortError') return; // a newer fetch took over
     }
 
-    /* Tier 3: Static fallback */
-    const list = STATIC.map(h => ({
-      ...h,
-      dist: distKm(origin.lat, origin.lng, h.lat, h.lng),
-      src: 'static',
-    })).sort((a,b) => a.dist - b.dist);
-    setHospitals(list);
+    const staticList = STATIC.map(h => ({ ...h, dist: distKm(origin.lat, origin.lng, h.lat, h.lng), src: 'static' }));
+    const live = hospitalCount(osmList) >= hospitalCount(dbList) ? osmList : dbList;
+    if (hospitalCount(live) >= NEAREST_N) {
+      setHospitals(live);
+      setStatus('done');
+      setDataSource(live === osmList ? '🌐 OpenStreetMap' : '🗄️ Database');
+      return;
+    }
+
+    /* Tier 3: live sources came up short (offline / rate-limited) — top up with known facilities.
+       ponytail: no de-dupe across sources; same hospital from DB and OSM can appear twice */
+    setHospitals(nearestN([...osmList, ...dbList, ...staticList]));
     setStatus('fallback');
     setDataSource(t('hospital_cached_source'));
     setGpsError(t('hospital_data_fallback_msg') || 'Live hospital data unavailable. Showing nearest known facilities.');
@@ -330,19 +359,14 @@ export default function HospitalMap({ height = '100%', showSearchBar = true }) {
       navigator.geolocation.clearWatch(watchRef.current);
       watchRef.current = null;
     }
-    setIsTracking(true);
     setGpsError('');
 
     const onSuccess = ({ coords }) => {
       const pos = { lat: coords.latitude, lng: coords.longitude };
       updateUserPos(pos.lat, pos.lng, followRef.current);
-      setIsTracking(true);
-      setIsFollowing(followRef.current);
     };
 
     const onError = (err) => {
-      setIsTracking(false);
-      setIsFollowing(false);
       if (!userPosRef.current) {
         if (err.code === 1) {
           setGpsError(t('hospital_gps_denied'));
@@ -377,28 +401,15 @@ export default function HospitalMap({ height = '100%', showSearchBar = true }) {
     );
   }, [fetchHospitals, updateUserPos]);
 
-  /* ── GPS button handler ── */
+  /* ── Restart GPS tracking (used by the emergency button when location is missing) ── */
   const handleLocate = useCallback(() => {
     followRef.current = true;
-    setIsFollowing(true);
     lastFetchPosRef.current = null; // Force a fresh fetch on next GPS update
     startTracking();
     if (userPosRef.current && mapRef.current) {
       mapRef.current.setView([userPosRef.current.lat, userPosRef.current.lng], 15);
     }
   }, [startTracking]);
-
-  /* ── Re-centre / Follow button ── */
-  const handleFollow = useCallback(() => {
-    followRef.current = true;
-    setIsFollowing(true);
-    if (userPosRef.current && mapRef.current) {
-      mapRef.current.setView([userPosRef.current.lat, userPosRef.current.lng], Math.max(mapRef.current.getZoom(), 14));
-      fetchHospitals(userPosRef.current);
-    } else {
-      startTracking();
-    }
-  }, [fetchHospitals, startTracking]);
 
   /* ── Emergency mode ── */
   const handleEmergency = useCallback(() => {
@@ -475,7 +486,6 @@ export default function HospitalMap({ height = '100%', showSearchBar = true }) {
     setSearching(true);
     setSearchError('');
     followRef.current = false;
-    setIsFollowing(false);
 
     /* 1. try backend name search */
     try {
@@ -537,7 +547,6 @@ export default function HospitalMap({ height = '100%', showSearchBar = true }) {
   /* ── Fly to hospital from list ── */
   const flyTo = useCallback((h) => {
     followRef.current = false;
-    setIsFollowing(false);
     mapRef.current?.setView([h.lat, h.lng], 16);
     setTimeout(() => markerMapRef.current[h.id]?.openPopup(), 300);
     setShowPanel(false);
@@ -591,8 +600,8 @@ export default function HospitalMap({ height = '100%', showSearchBar = true }) {
         map.on('unload', () => ro.disconnect());
       }
 
-      map.on('dragstart', () => { followRef.current = false; setIsFollowing(false); });
-      map.on('zoomstart', () => { followRef.current = false; setIsFollowing(false); });
+      map.on('dragstart', () => { followRef.current = false; });
+      map.on('zoomstart', () => { followRef.current = false; });
 
       /* show static data immediately so map isn't empty while GPS resolves */
       setHospitals(STATIC);
@@ -601,7 +610,7 @@ export default function HospitalMap({ height = '100%', showSearchBar = true }) {
 
       /* start live tracking right away */
       startTracking();
-    });
+    }).catch(() => { if (!dead) setStatus('error'); });
 
     return () => {
       dead = true;
@@ -690,20 +699,21 @@ export default function HospitalMap({ height = '100%', showSearchBar = true }) {
 
   /* ── Update icon of selected/deselected marker (no full rebuild) ── */
   const prevSelectedRef = useRef(null);
+  const byId = useMemo(() => new Map(filtered.map(h => [h.id, h])), [filtered]); // O(1) lookup by id
   useEffect(() => {
     if (!L) return;
     const prev = prevSelectedRef.current;
     const curr = selectedId;
     if (prev && markerMapRef.current[prev]) {
-      const h = filtered.find(x => x.id === prev);
+      const h = byId.get(prev);
       if (h) markerMapRef.current[prev].setIcon(facilityIcon(h.type, false));
     }
     if (curr && markerMapRef.current[curr]) {
-      const h = filtered.find(x => x.id === curr);
+      const h = byId.get(curr);
       if (h) markerMapRef.current[curr].setIcon(facilityIcon(h.type, true));
     }
     prevSelectedRef.current = curr;
-  }, [selectedId, filtered]);
+  }, [selectedId, byId]);
 
   /* ─────────────────────────────────────────────────── */
   const srcBadge = dataSource;
@@ -736,16 +746,6 @@ export default function HospitalMap({ height = '100%', showSearchBar = true }) {
               {searching ? '…' : '🔍'}
             </button>
           </form>
-          {/* GPS */}
-          <button onClick={handleLocate} title="Find my live location"
-            style={{ background: isTracking ? '#059669' : 'rgba(255,255,255,.15)', color:'#fff', border:'1.5px solid rgba(255,255,255,.3)', borderRadius:8, padding:'7px 10px', cursor:'pointer', fontSize:14 }}>
-            📍
-          </button>
-          {/* Follow */}
-          <button onClick={handleFollow} title="Re-centre on me"
-            style={{ background: isFollowing ? '#2563eb' : 'rgba(255,255,255,.15)', color:'#fff', border:'1.5px solid rgba(255,255,255,.3)', borderRadius:8, padding:'7px 10px', cursor:'pointer', fontSize:14 }}>
-            🎯
-          </button>
         </div>
       )}
 
@@ -825,24 +825,14 @@ export default function HospitalMap({ height = '100%', showSearchBar = true }) {
           </button>
         </div>
 
-        {/* ── Legend ── */}
-        <div style={{ position:'absolute', bottom: showPanel ? 300 : 46, left:10, background:'rgba(12,35,64,.88)', backdropFilter:'blur(6px)', borderRadius:10, padding:'8px 12px', zIndex:1000 }}>
-          {Object.entries(A).map(([key,cfg]) => (
-            <div key={key} style={{ display:'flex', alignItems:'center', gap:6, marginBottom:3, color:'#cffafe', fontSize:10 }}>
-              <span style={{ width:11, height:11, borderRadius:'50%', background:cfg.color, border:'1.5px solid rgba(255,255,255,.6)', display:'inline-block', flexShrink:0 }} />
-              {cfg.emoji} {cfg.label}
-            </div>
-          ))}
-          {srcBadge && <div style={{ marginTop:5, paddingTop:4, borderTop:'1px solid rgba(255,255,255,.15)', color:'#94a3b8', fontSize:9, fontWeight:600 }}>Data: {srcBadge}</div>}
-        </div>
 
         {/* ── Status Bar ── */}
-        <div style={{ position:'absolute', bottom: showPanel ? 300 : 8, left:'50%', transform:'translateX(-50%)', background:'rgba(12,35,64,.88)', color:'#cffafe', backdropFilter:'blur(4px)', borderRadius:20, padding:'5px 16px', fontSize:11, fontWeight:600, pointerEvents:'none', zIndex:1000, whiteSpace:'nowrap', display:'flex', alignItems:'center', gap:6 }}>
+        <div style={{ position:'absolute', bottom: showPanel ? 300 : 26, left:'50%', transform:'translateX(-50%)', background:'rgba(12,35,64,.88)', color:'#cffafe', backdropFilter:'blur(4px)', borderRadius:20, padding:'5px 16px', fontSize:11, fontWeight:600, pointerEvents:'none', zIndex:1000, whiteSpace:'nowrap', display:'flex', alignItems:'center', gap:6 }}>
           {status==='loading'  && <><span style={{ width:10, height:10, border:'2px solid #cffafe', borderTopColor:'transparent', borderRadius:'50%', display:'inline-block', animation:'spin .7s linear infinite' }} />{t('loading')}</>}
           {status==='done'     && `${filtered.length} ${t('facilities')} · 🟢 GPS`}
           {status==='fallback' && `${filtered.length} ${t('cached')} · 🟢 GPS`}
           {status==='error'    && `⚠️ ${t('error')}`}
-          {status==='idle'     && t('hospital_idle_msg') || 'Tap 📍 GPS to find hospitals near you'}
+          {status==='idle'     && t('hospital_idle_msg')}
         </div>
       </div>
 
