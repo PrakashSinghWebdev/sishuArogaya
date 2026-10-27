@@ -1,14 +1,18 @@
+const mongoose = require('mongoose');
 const Vaccination = require('../models/Vaccination');
 const Child = require('../models/Child');
 const AshaWorker = require('../models/AshaWorker');
 const Notification = require('../models/Notification');
 const { createAuditLog } = require('../utils/auditLogger');
+const { pageParams, countCached, countKey } = require('../utils/paginate');
 
+// Child ids the user may see; undefined = no restriction (admin without an area filter)
 const getAccessibleChildIds = async (user, query = {}) => {
   if (user.role === 'admin') {
     const filter = {};
     if (query.district) filter.district = query.district;
     if (query.block) filter.block = query.block;
+    if (!filter.district && !filter.block) return undefined;
     const children = await Child.find(filter).select('_id');
     return children.map((child) => child._id);
   }
@@ -28,14 +32,21 @@ const getAccessibleChildIds = async (user, query = {}) => {
   return children.map((child) => child._id);
 };
 
+// One indexed lookup instead of loading every accessible child id (an admin would load 50k+ per request)
+const canAccessChild = async (user, childId) => {
+  if (!mongoose.isValidObjectId(childId)) return false;
+  if (user.role === 'admin') return true;
+  if (user.role === 'asha') {
+    const asha = await AshaWorker.findOne({ userId: user._id }).select('_id');
+    return Boolean(asha && (await Child.exists({ _id: childId, ashaId: asha._id })));
+  }
+  return Boolean(await Child.exists({ _id: childId, parentId: user._id }));
+};
+
 // GET /api/vaccination/:childId
 const getSchedule = async (req, res) => {
   try {
-    const childIds = await getAccessibleChildIds(req.user);
-    if (req.user.role === 'asha' && childIds === null) {
-      return res.status(404).json({ message: 'ASHA profile not found' });
-    }
-    if (!childIds.some((id) => String(id) === String(req.params.childId))) {
+    if (!(await canAccessChild(req.user, req.params.childId))) {
       return res.status(403).json({ message: 'Not authorized to access this vaccination schedule' });
     }
 
@@ -58,12 +69,15 @@ const getSchedule = async (req, res) => {
 const updateVaccination = async (req, res) => {
   try {
     const { vaccineId, givenDate, notes } = req.body;
+    if (!mongoose.isValidObjectId(vaccineId)) return res.status(400).json({ message: 'Invalid vaccination record' });
+    if (givenDate && (Number.isNaN(new Date(givenDate).getTime()) || new Date(givenDate) > new Date())) {
+      return res.status(400).json({ message: 'Date given cannot be in the future' });
+    }
     const existing = await Vaccination.findById(vaccineId).select('childId');
     if (!existing) return res.status(404).json({ message: 'Vaccination record not found' });
 
     // ASHA workers may only update vaccines of children assigned to them
-    const childIds = await getAccessibleChildIds(req.user);
-    if (!childIds?.some((id) => String(id) === String(existing.childId))) {
+    if (!(await canAccessChild(req.user, existing.childId))) {
       return res.status(403).json({ message: 'Not authorized to update this vaccination' });
     }
 
@@ -110,11 +124,19 @@ const getOverdue = async (req, res) => {
     const filter = { status: { $in: ['due', 'missed'] } };
     if (childIds?.length) filter.childId = { $in: childIds };
 
-    const overdue = await Vaccination.find(filter)
-      .populate('childId', 'name dob district block')
-      .sort('dueDate');
-
-    res.json(overdue);
+    const query = Vaccination.find(filter).populate('childId', 'name dob district block').sort('dueDate');
+    // Admins see every district: page it and send the counts separately (an ASHA's list is small)
+    if (req.user.role === 'admin') {
+      const { limit, skip } = pageParams(req.query);
+      const [rows, total, due] = await Promise.all([
+        query.skip(skip).limit(limit).lean(), // the admin table only shows plain fields
+        countCached(Vaccination, filter, `overdue:${countKey(req.query)}`),
+        countCached(Vaccination, { ...filter, status: 'due' }, `overdue-due:${countKey(req.query)}`),
+      ]);
+      res.set({ 'X-Total-Count': total, 'X-Due-Count': due, 'X-Missed-Count': total - due });
+      return res.json(rows);
+    }
+    res.json(await query);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

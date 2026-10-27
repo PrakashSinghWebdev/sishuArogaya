@@ -12,9 +12,9 @@
  *
  * OSM data © OpenStreetMap contributors, ODbL. NHP data: Government Open Data License – India.
  */
-const fs = require('fs');
-const os = require('os');
-const path = require('path');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 const csv = require('csv-parser');
 const mongoose = require('mongoose');
 require('dotenv').config();
@@ -52,8 +52,17 @@ const inIndia = (lat, lng) => lat > 6 && lat < 37.6 && lng > 68 && lng < 97.5;
 const PRIMARY_RE = /\b(phc|chc|uphc|sub[\s-]?cent(re|er)|primary health|community health|health (and wellness )?cent(re|er)|health post|aanganwadi|anganwadi)\b/i;
 const CLINIC_RE = /\b(clinic|dispensary|polyclinic|poly clinic)\b/i;
 // Single-specialty / non-emergency centres: never offer these as "nearest hospital"
-const SPECIALTY_RE = /\b(eye|netralaya|nethralaya|dental|dentist|laborator(y|ies)|lab|diagnostics?|pathology|scans?|imaging|x-?ray|ivf|fertility|skin|derma\w*|physiotherapy|homoeo\w*|homeo\w*|ayurved\w*|unani|siddha|naturopathy|de-?addiction|hearing|optical|optics)\b/i;
-const GOVT_RE = /\b(govt|government|district hospital|civil hospital|sub[\s-]?district|phc|chc|uphc|aiims|esi|esic|railway|primary health|community health|general hospital|area hospital|medical college|state hospital|cantonment|military|army|navy|air force|cghs)\b/i;
+const wordsRE = (words) => new RegExp(String.raw`\b(${words.join('|')})\b`, 'i');
+const SPECIALTY_RE = wordsRE([
+  'eye', 'netralaya', 'nethralaya', 'dental', 'dentist', 'laborator(y|ies)', 'lab', 'diagnostics?', 'pathology',
+  'scans?', 'imaging', 'x-?ray', 'ivf', 'fertility', 'skin', String.raw`derma\w*`, 'physiotherapy', String.raw`homoeo\w*`,
+  String.raw`homeo\w*`, String.raw`ayurved\w*`, 'unani', 'siddha', 'naturopathy', 'de-?addiction', 'hearing', 'optical', 'optics',
+]);
+const GOVT_RE = wordsRE([
+  'govt', 'government', 'district hospital', 'civil hospital', String.raw`sub[\s-]?district`, 'phc', 'chc', 'uphc', 'aiims',
+  'esi', 'esic', 'railway', 'primary health', 'community health', 'general hospital', 'area hospital', 'medical college',
+  'state hospital', 'cantonment', 'military', 'army', 'navy', 'air force', 'cghs',
+]);
 
 function classify(name, hint = '') {
   if (PRIMARY_RE.test(name) || PRIMARY_RE.test(hint)) return 'health_post';
@@ -76,8 +85,8 @@ function fromNHP() {
     fs.createReadStream(NHP_CSV)
       .pipe(csv())
       .on('data', (d) => {
-        let [lat, lng] = String(d.Location_Coordinates || '').split(',').map((x) => parseFloat(x));
-        if (!inIndia(lat, lng) && inIndia(lng, lat)) [lat, lng] = [lng, lat]; // swapped in source
+        let [lat, lng] = String(d.Location_Coordinates || '').split(',').map(Number.parseFloat);
+        if (!inIndia(lat, lng)) [lat, lng] = [lng, lat]; // some rows are swapped in source
         if (!inIndia(lat, lng)) return;
         const name = clean(d.Hospital_Name);
         if (!name) return;
@@ -111,12 +120,20 @@ function flagApproxLocations(rows) {
   const shared = new Map();
   for (const f of rows) shared.set(key(f), (shared.get(key(f)) || 0) + 1);
   const byState = {};
-  for (const f of rows) (byState[f.state] ||= []).push(f.location.coordinates);
+  for (const f of rows) {
+    byState[f.state] ??= [];
+    byState[f.state].push(f.location.coordinates);
+  }
   const median = (a) => [...a].sort((x, y) => x - y)[a.length >> 1];
   const centre = Object.fromEntries(Object.entries(byState).map(([s, cs]) => [s, [median(cs.map((c) => c[0])), median(cs.map((c) => c[1]))]]));
   // District centres from rows that aren't obvious placeholders
   const byDistrict = {};
-  for (const f of rows) if (f.district && shared.get(key(f)) < 3) (byDistrict[`${f.state}|${f.district}`] ||= []).push(f.location.coordinates);
+  for (const f of rows) {
+    if (!f.district || shared.get(key(f)) >= 3) continue;
+    const d = `${f.state}|${f.district}`;
+    byDistrict[d] ??= [];
+    byDistrict[d].push(f.location.coordinates);
+  }
   const districtCentre = Object.fromEntries(Object.entries(byDistrict).filter(([, cs]) => cs.length >= 5)
     .map(([d, cs]) => [d, [median(cs.map((c) => c[0])), median(cs.map((c) => c[1]))]]));
   const km = ([lng1, lat1], [lng2, lat2]) => Math.hypot(lat1 - lat2, (lng1 - lng2) * Math.cos((lat1 * Math.PI) / 180)) * 111;
@@ -145,64 +162,76 @@ async function overpass(query) {
         body: `data=${encodeURIComponent(query)}`,
         signal: AbortSignal.timeout(180000),
       });
-      if (res.ok) return await res.json();
+      if (res.ok) return await res.json(); // NOSONAR: retries are sequential by design
       console.warn(`  ${url} → HTTP ${res.status}, retrying`);
     } catch (err) {
       console.warn(`  ${url} → ${err.message}, retrying`);
     }
-    await sleep(5000 * (attempt + 1));
+    await sleep(5000 * (attempt + 1)); // NOSONAR: back-off between retries
   }
   throw new Error('All Overpass servers failed');
+}
+
+// Cached Overpass result for one state, or null if the download failed
+async function loadState(state, relId) {
+  const cacheFile = path.join(OSM_CACHE, `${relId}.json`);
+  if (!args.has('--refresh') && fs.existsSync(cacheFile)) return JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
+
+  process.stdout.write(`[osm] ${state}… `);
+  try {
+    const data = await overpass(`[out:json][timeout:240];area(id:${3600000000 + relId})->.a;(
+      nwr["amenity"~"^(hospital|clinic)$"](area.a);
+      nwr["healthcare"~"^(hospital|clinic|centre)$"](area.a);
+      nwr["emergency"="ambulance_station"](area.a););out center tags;`);
+    fs.writeFileSync(cacheFile, JSON.stringify(data));
+    console.log(`${data.elements.length} elements`);
+    await sleep(2000); // be polite to the free Overpass servers
+    return data;
+  } catch (err) {
+    console.log(`FAILED (${err.message}) — continuing without this state`);
+    return null;
+  }
+}
+
+function osmType(name, kind, isAmbulance) {
+  if (isAmbulance) return 'ambulance_station';
+  if (kind === 'centre') return 'health_post';
+  return classify(name, kind);
+}
+
+function fromOSMElement(el, state) {
+  const t = el.tags || {};
+  const lat = el.lat ?? el.center?.lat;
+  const lng = el.lon ?? el.center?.lon;
+  const name = clean(t['name:en'] || t.name);
+  if (!name || !inIndia(lat, lng)) return null;
+  const isAmbulance = t.emergency === 'ambulance_station';
+  return {
+    name,
+    type: osmType(name, t.amenity || t.healthcare || '', isAmbulance),
+    address: [t['addr:housenumber'], t['addr:street'], t['addr:suburb'], t['addr:city']].filter(Boolean).join(', '),
+    phone: clean(t.phone || t['contact:phone'] || t['contact:mobile']).split(/[;,]/)[0].trim(),
+    emergencyPhone: clean(t['emergency:phone']),
+    ambulancePhone: isAmbulance ? clean(t.phone || t['contact:phone']) : '',
+    district: clean(t['addr:district'] || t['is_in:district']),
+    state,
+    pincode: clean(t['addr:postcode']),
+    isGovernment: /^(government|public)$/i.test(t['operator:type'] || '') || GOVT_RE.test(name),
+    hasEmergency: isAmbulance || t.emergency === 'yes',
+    hasICU: false,
+    source: 'osm',
+    location: { type: 'Point', coordinates: [lng, lat] },
+  };
 }
 
 async function fromOSM() {
   fs.mkdirSync(OSM_CACHE, { recursive: true });
   const out = [];
   for (const [state, relId] of Object.entries(STATES)) {
-    const cacheFile = path.join(OSM_CACHE, `${relId}.json`);
-    let data;
-    if (!args.has('--refresh') && fs.existsSync(cacheFile)) {
-      data = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
-    } else {
-      process.stdout.write(`[osm] ${state}… `);
-      try {
-        data = await overpass(`[out:json][timeout:240];area(id:${3600000000 + relId})->.a;(
-          nwr["amenity"~"^(hospital|clinic)$"](area.a);
-          nwr["healthcare"~"^(hospital|clinic|centre)$"](area.a);
-          nwr["emergency"="ambulance_station"](area.a););out center tags;`);
-        fs.writeFileSync(cacheFile, JSON.stringify(data));
-        console.log(`${data.elements.length} elements`);
-      } catch (err) {
-        console.log(`FAILED (${err.message}) — continuing without this state`);
-        continue;
-      }
-      await sleep(2000); // be polite to the free Overpass servers
-    }
-
-    for (const el of data.elements) {
-      const t = el.tags || {};
-      const lat = el.lat ?? el.center?.lat;
-      const lng = el.lon ?? el.center?.lon;
-      const name = clean(t['name:en'] || t.name);
-      if (!name || !inIndia(lat, lng)) continue;
-      const isAmbulance = t.emergency === 'ambulance_station';
-      const kind = t.amenity || t.healthcare || '';
-      out.push({
-        name,
-        type: isAmbulance ? 'ambulance_station' : kind === 'centre' ? 'health_post' : classify(name, kind),
-        address: [t['addr:housenumber'], t['addr:street'], t['addr:suburb'], t['addr:city']].filter(Boolean).join(', '),
-        phone: clean(t.phone || t['contact:phone'] || t['contact:mobile']).split(/[;,]/)[0].trim(),
-        emergencyPhone: clean(t['emergency:phone']),
-        ambulancePhone: isAmbulance ? clean(t.phone || t['contact:phone']) : '',
-        district: clean(t['addr:district'] || t['is_in:district']),
-        state,
-        pincode: clean(t['addr:postcode']),
-        isGovernment: /^(government|public)$/i.test(t['operator:type'] || '') || GOVT_RE.test(name),
-        hasEmergency: isAmbulance || t.emergency === 'yes',
-        hasICU: false,
-        source: 'osm',
-        location: { type: 'Point', coordinates: [lng, lat] },
-      });
+    const data = await loadState(state, relId); // NOSONAR: one state at a time to stay within free Overpass limits
+    for (const el of data?.elements || []) {
+      const f = fromOSMElement(el, state);
+      if (f) out.push(f);
     }
   }
   return out;
@@ -249,19 +278,23 @@ function fillDistricts(facilities) {
   let filled = 0;
   for (const f of facilities) {
     if (f.district) continue;
-    const [lng, lat] = f.location.coordinates;
-    const [cy, cx] = cellKey(lat, lng, size).split(':').map(Number);
-    let best = null; let bestD = Infinity;
-    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
-      for (const g of grid.get(`${cy + dy}:${cx + dx}`) || []) {
-        const [glng, glat] = g.location.coordinates;
-        const d = (glat - lat) ** 2 + (glng - lng) ** 2;
-        if (d < bestD) { bestD = d; best = g; }
-      }
-    }
-    if (best && bestD < 0.05) { f.district = best.district; filled++; }
+    const best = nearestInGrid(grid, size, f.location.coordinates);
+    if (best) { f.district = best.district; filled++; }
   }
   return filled;
+}
+
+// Closest facility in the 3×3 surrounding cells, within ~25 km
+function nearestInGrid(grid, size, [lng, lat]) {
+  const [cy, cx] = cellKey(lat, lng, size).split(':').map(Number);
+  const neighbours = [-1, 0, 1].flatMap((dy) => [-1, 0, 1].flatMap((dx) => grid.get(`${cy + dy}:${cx + dx}`) || []));
+  let best = null; let bestD = 0.05;
+  for (const g of neighbours) {
+    const [glng, glat] = g.location.coordinates;
+    const d = (glat - lat) ** 2 + (glng - lng) ** 2;
+    if (d < bestD) { bestD = d; best = g; }
+  }
+  return best;
 }
 
 async function main() {
@@ -277,9 +310,7 @@ async function main() {
 
   await mongoose.connect(process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://localhost:27017/sishuarogaya');
   await Hospital.deleteMany({});
-  for (let i = 0; i < facilities.length; i += 2000) {
-    await Hospital.insertMany(facilities.slice(i, i + 2000), { ordered: false });
-  }
+  await Hospital.insertMany(facilities, { ordered: false }); // driver splits into server-sized batches
   await Hospital.syncIndexes();
 
   const byType = await Hospital.aggregate([{ $group: { _id: '$type', n: { $sum: 1 } } }]);

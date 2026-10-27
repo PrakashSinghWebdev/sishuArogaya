@@ -3,16 +3,24 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useLocation as useGPSLocation } from '../context/LocationContext';
+import AshaNavbar from './AshaNavbar';
 
 const NAV_LINKS = {
   asha: [
     { to: '/asha/dashboard', icon: 'bi-house-door', labelKey: 'dashboard', fallback: 'Dashboard' },
+    { to: '/asha/families', icon: 'bi-house-heart', labelKey: 'families', fallback: 'Families' },
+    { to: '/asha/my-visits', icon: 'bi-calendar-check', labelKey: 'myVisits', fallback: 'My Visits' },
     { to: '/asha/children', icon: 'bi-people', labelKey: 'myChildren', fallback: 'My Children' },
+    { to: '/asha/maternal-care', icon: 'bi-heart-pulse', labelKey: 'maternalCare', fallback: 'Maternal Care' },
+    { to: '/asha/referrals', icon: 'bi-hospital', labelKey: 'referrals', fallback: 'Referrals' },
     { to: '/asha/log-visit', icon: 'bi-clipboard-plus', labelKey: 'logVisit', fallback: 'Log Visit' },
     { to: '/asha/vaccination-tracker', icon: 'bi-shield-check', labelKey: 'vaccinationTracker', fallback: 'Vaccination Tracker' },
     { to: '/asha/growth-records', icon: 'bi-graph-up-arrow', labelKey: 'growthRecords', fallback: 'Growth Records' },
     { to: '/asha/malnutrition-report', icon: 'bi-exclamation-triangle', labelKey: 'malnutritionReport', fallback: 'Malnutrition Report' },
     { to: '/asha/visit-history', icon: 'bi-clock-history', labelKey: 'visitHistory', fallback: 'Visit History' },
+    { to: '/asha/camps', icon: 'bi-megaphone', labelKey: 'healthCampaigns', fallback: 'Health Campaigns' },
+    { to: '/asha/incentives', icon: 'bi-currency-rupee', labelKey: 'incentiveClaims', fallback: 'Incentive Claims' },
+    { to: '/asha/messages', icon: 'bi-chat-left-text', labelKey: 'supervisorMessages', fallback: 'Messages' },
     { to: '/asha/generate-report', icon: 'bi-file-earmark-bar-graph', labelKey: 'generateReport', fallback: 'Generate Report' },
     { to: '/asha/settings', icon: 'bi-gear', labelKey: 'settings', fallback: 'Settings' },
   ],
@@ -22,12 +30,16 @@ const NAV_LINKS = {
     { to: '/admin/analytics', icon: 'bi-bar-chart-line', labelKey: 'analyticsReports', fallback: 'Analytics Reports' },
     { to: '/admin/children', icon: 'bi-people-fill', labelKey: 'childrenRegistry', fallback: 'Children Registry' },
     { to: '/admin/asha-workers', icon: 'bi-person-badge-fill', labelKey: 'ashaWorkers', fallback: 'ASHA Workers' },
+    { to: '/admin/referrals', icon: 'bi-hospital', labelKey: 'referrals', fallback: 'Referrals' },
+    { to: '/admin/mothers', icon: 'bi-heart-pulse', labelKey: 'highRiskMothers', fallback: 'High-risk Mothers' },
+    { to: '/admin/claims', icon: 'bi-currency-rupee', labelKey: 'incentiveClaims', fallback: 'Incentive Claims' },
     { to: '/admin/health-centres', icon: 'bi-hospital', labelKey: 'healthCentreDirectory', fallback: 'Health Centres' },
     { to: '/admin/vaccination-data', icon: 'bi-shield-plus', labelKey: 'vaccinationData', fallback: 'Vaccination Data' },
     { to: '/admin/malnutrition', icon: 'bi-exclamation-octagon', labelKey: 'malnutritionCasesAdmin', fallback: 'Malnutrition Cases' },
     { to: '/admin/schemes', icon: 'bi-bank', labelKey: 'governmentSchemes', fallback: 'Government Schemes' },
     { to: '/admin/block-reports', icon: 'bi-file-earmark-excel', labelKey: 'blockwiseReports', fallback: 'Blockwise Reports' },
     { to: '/admin/notifications', icon: 'bi-broadcast', labelKey: 'notificationsPanel', fallback: 'Notifications' },
+    { to: '/admin/messages', icon: 'bi-chat-left-text', labelKey: 'supervisorMessages', fallback: 'Messages' },
     { to: '/admin/users', icon: 'bi-person-gear', labelKey: 'userManagement', fallback: 'User Management' },
     { to: '/admin/audit-logs', icon: 'bi-journal-text', labelKey: 'auditLogs', fallback: 'Audit Logs' },
     { to: '/admin/settings', icon: 'bi-sliders', labelKey: 'settingsConfig', fallback: 'Settings' },
@@ -160,8 +172,8 @@ const Layout = ({ children, role }) => {
           }
         `}</style>
 
+        <AshaNavbar />
         <div className="asha-shell-header" style={{
-          position: 'sticky', top: 0, zIndex: 100,
           background: 'rgba(240,253,255,.94)',
           backdropFilter: 'blur(12px)',
           borderBottom: '1px solid #d8eef4',
@@ -203,38 +215,6 @@ const Layout = ({ children, role }) => {
                   : gpsLoading ? (t('locationLoading') || 'Detecting…')
                   : (t('locationDenied') || 'No GPS')}
               </div>
-              <Link to="/asha/notifications" className="asha-shell-secondary">
-                {t('notifications') || 'Notifications'}
-              </Link>
-              <Link
-                to="/asha/settings"
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 10,
-                  padding: '6px 10px', borderRadius: '999px',
-                  background: '#fff', border: '1px solid #d8eef4',
-                  textDecoration: 'none',
-                }}
-              >
-                <span style={{
-                  width: 32, height: 32, borderRadius: '50%',
-                  background: 'linear-gradient(135deg,#0891b2,#0e7490)',
-                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                  color: '#fff', fontWeight: 700, fontSize: 13,
-                }}>{userInitial}</span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: '#0c2340' }}>{user?.name || 'ASHA User'}</span>
-              </Link>
-              <button
-                onClick={() => { logout(); navigate('/login'); }}
-                style={{
-                  background: '#fee2e2', color: '#dc2626', border: '1px solid #fecaca',
-                  borderRadius: 8, padding: '6px 12px', fontSize: 11, fontWeight: 700,
-                  cursor: 'pointer', transition: 'all .2s',
-                }}
-                onMouseOver={e => { e.currentTarget.style.background = '#ef4444'; e.currentTarget.style.color = '#fff'; }}
-                onMouseOut={e => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.color = '#dc2626'; }}
-              >
-                {t('logout') || 'Logout'}
-              </button>
             </div>
           </div>
 
@@ -246,6 +226,8 @@ const Layout = ({ children, role }) => {
 
         <footer style={{ background: '#0e7490', color: 'rgba(255,255,255,.5)', textAlign: 'center', padding: '18px 24px', fontSize: 12, letterSpacing: 0.3 }}>
         Shishu Aarogya &copy; 2024 &middot; {t('homeFooter_copyright_long') || 'National Child Health Portal · Government of India'}
+        {' · '}<Link to="/privacy" style={{ color: 'inherit' }}>Privacy</Link>
+        {' · '}<Link to="/terms" style={{ color: 'inherit' }}>Terms</Link>
       </footer>
       </div>
     );

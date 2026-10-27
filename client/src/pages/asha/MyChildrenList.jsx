@@ -249,8 +249,8 @@ export default function MyChildrenList() {
                     )}
 
                     <div style={{ display: 'flex', gap: 8, padding: '10px 14px', borderTop: `1px solid ${s.border}`, background: s.bg }}>
-                      <Link to="/asha/log-visit" style={{ flex: 1, padding: 9, borderRadius: 9, background: 'linear-gradient(135deg,#0891b2,#0e7490)', color: '#fff', fontSize: 11, fontWeight: 700, textDecoration: 'none', textAlign: 'center' }}>📝 {t('logVisit')}</Link>
-                      <Link to="/asha/growth-records" style={{ padding: '9px 12px', borderRadius: 9, border: `1px solid ${s.border}`, background: '#fff', fontSize: 11, fontWeight: 700, color: '#4a7a8a', textDecoration: 'none' }}>📈</Link>
+                      <Link to={`/asha/log-visit?childId=${child._id}`} style={{ flex: 1, padding: 9, borderRadius: 9, background: 'linear-gradient(135deg,#0891b2,#0e7490)', color: '#fff', fontSize: 11, fontWeight: 700, textDecoration: 'none', textAlign: 'center' }}>📝 {t('logVisit')}</Link>
+                      <Link to={`/asha/growth-records?childId=${child._id}`} style={{ padding: '9px 12px', borderRadius: 9, border: `1px solid ${s.border}`, background: '#fff', fontSize: 11, fontWeight: 700, color: '#4a7a8a', textDecoration: 'none' }}>📈</Link>
                       <Link to={`/asha/child/${child._id}`} style={{ padding: '9px 12px', borderRadius: 9, border: '1px solid #c5e8ef', background: '#f0fdff', fontSize: 11, fontWeight: 700, color: '#0891b2', textDecoration: 'none' }}>👁️</Link>
                     </div>
                   </div>
@@ -286,7 +286,7 @@ export default function MyChildrenList() {
                           </td>
                           <td style={{ padding: '9px 12px' }}>
                             <div style={{ display: 'flex', gap: 5 }}>
-                              <Link to="/asha/log-visit" style={{ padding: '4px 10px', borderRadius: 7, background: 'linear-gradient(135deg,#0891b2,#0e7490)', color: '#fff', fontSize: 10, fontWeight: 700, textDecoration: 'none' }}>📝 {t('logVisit')}</Link>
+                              <Link to={`/asha/log-visit?childId=${child._id}`} style={{ padding: '4px 10px', borderRadius: 7, background: 'linear-gradient(135deg,#0891b2,#0e7490)', color: '#fff', fontSize: 10, fontWeight: 700, textDecoration: 'none' }}>📝 {t('logVisit')}</Link>
                               <Link to={`/asha/child/${child._id}`} style={{ padding: '4px 8px', borderRadius: 7, border: '1px solid #c5e8ef', background: '#f0fdff', color: '#0891b2', fontSize: 10, fontWeight: 700, textDecoration: 'none' }}>👁️</Link>
                             </div>
                           </td>

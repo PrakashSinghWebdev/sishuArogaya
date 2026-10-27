@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { ashaAPI, notificationAPI, vaccinationAPI, searchAPI } from '../../services/api';
+import { ashaAPI, vaccinationAPI, searchAPI } from '../../services/api';
 import { MEDIA_ARRAY } from '../../components/MediaCarousel';
 import SearchBar from '../../components/SearchBar';
+import AshaNavbar from '../../components/AshaNavbar';
 
 const slideUrls = MEDIA_ARRAY.map(m => m.url);
 
@@ -21,17 +22,63 @@ function childAgeLabel(dob) {
   return totalMonths < 24 ? `${totalMonths} mo` : `${Math.floor(totalMonths / 12)} yr`;
 }
 
+const VISIT_STATUS = {
+  completed: { labelKey: 'refCompleted', bg: '#dcfce7', color: '#15803d' },
+  pending:   { labelKey: 'refPending',   bg: '#fef3c7', color: '#a16207' },
+  overdue:   { labelKey: 'visitsOverdue', bg: '#fee2e2', color: '#b91c1c' },
+  missed:    { labelKey: 'visitMissed',  bg: '#f1f5f9', color: '#475569' },
+};
+
+const ALERT_STYLE = {
+  vaccine:   { emoji: '💉', bg: '#fee2e2' },
+  nutrition: { emoji: '📊', bg: '#fef3c7' },
+  anc:       { emoji: '🤰', bg: '#fce7f3' },
+  pnc:       { emoji: '🏠', bg: '#fce7f3' },
+  mother:    { emoji: '❤️‍🩹', bg: '#fee2e2' },
+  referral:  { emoji: '🏥', bg: '#dbeafe' },
+  camp:      { emoji: '⛺', bg: '#dcfce7' },
+  message:   { emoji: '✉️', bg: '#ede9fe' },
+};
+
+const QUICK_ACTIONS = [
+  { to: '/asha/register-child',        emoji: '👶', labelKey: 'registerChild',     bg: '#eff6ff' },
+  { to: '/asha/maternal-care?new=1',   emoji: '🤰', labelKey: 'registerPregnancy', bg: '#fdf2f8' },
+  { to: '/asha/log-visit',             emoji: '🏠', labelKey: 'logVisit',          bg: '#f0fdf4' },
+  { to: '/asha/vaccination-tracker',   emoji: '💉', labelKey: 'updateVaccination', bg: '#fffbeb' },
+  { to: '/asha/growth-records',        emoji: '🩺', labelKey: 'healthScreening',   bg: '#f5f3ff' },
+  { to: '/asha/referrals?new=1',       emoji: '🏥', labelKey: 'newReferral',       bg: '#fff7ed' },
+  { to: '/asha/generate-report',       emoji: '📄', labelKey: 'viewReports',       bg: '#f0fdf4' },
+  { to: '/asha/incentives',            emoji: '₹',  labelKey: 'incentiveClaims',   bg: '#eff6ff' },
+  { to: '/asha/camps',                 emoji: '👥', labelKey: 'healthCampaigns',   bg: '#fdf2f8' },
+];
+
+const initials = (name) => String(name || '?').split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
+const timeOf = (d) => new Date(d).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+
+function relativeDay(d, t) {
+  if (!d) return t('visitsToday');
+  const days = Math.round((new Date(d).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0)) / 864e5);
+  if (days === 0) return t('visitsToday');
+  if (days === 1) return t('tomorrow');
+  if (days === -1) return t('yesterday');
+  return days < 0 ? `${-days} ${t('daysAgo')}` : formatDate(d);
+}
+
+function Change({ pct, t }) {
+  if (pct == null) return <span>{t('noLastMonthData')}</span>;
+  return <span style={{ color: pct >= 0 ? '#16a34a' : '#dc2626', fontWeight: 600 }}>{pct >= 0 ? '↑' : '↓'} {Math.abs(pct)}% <span style={{ color: '#4a7a8a', fontWeight: 400 }}>{t('fromLastMonth')}</span></span>;
+}
+
 export default function AshaDashboard() {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth();
   const { t }    = useLanguage();
 
   const [profile, setProfile]             = useState(null);
   const [children, setChildren]           = useState([]);
   const [visits, setVisits]               = useState([]);
   const [overdueVaccines, setOverdueVaccines] = useState([]);
-  const [notifications, setNotifications] = useState([]);
   const [loading, setLoading]             = useState(true);
+  const [dash, setDash]                   = useState(null); // /asha/dashboard: stats, today's schedule, alerts
   const [slideIndex, setSlideIndex]       = useState(0);
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -44,15 +91,15 @@ export default function AshaDashboard() {
       ashaAPI.getMyChildren().catch(() => ({ data: [] })),
       ashaAPI.getVisits().catch(() => ({ data: [] })),
       vaccinationAPI.getOverdue().catch(() => ({ data: [] })),
-      notificationAPI.list().catch(() => ({ data: [] })),
+      ashaAPI.getDashboard().catch(() => ({ data: null })),
     ])
-      .then(([profileRes, childrenRes, visitsRes, overdueRes, notifRes]) => {
+      .then(([profileRes, childrenRes, visitsRes, overdueRes, dashRes]) => {
+        setDash(dashRes.data);
         setProfile(profileRes.data);
         setChildren(childrenRes.data || []);
-        setVisits((visitsRes.data || []).slice(0, 8));
+        // newest first; the full list is needed for "visits this month"
+        setVisits([...(visitsRes.data || [])].sort((a, b) => new Date(b.visitDate || b.createdAt) - new Date(a.visitDate || a.createdAt)));
         setOverdueVaccines((overdueRes.data || []).slice(0, 5));
-        // only unread notifications, max 3
-        setNotifications((notifRes.data || []).filter(n => !n.isRead).slice(0, 3));
       })
       .finally(() => setLoading(false));
   }, []);
@@ -84,7 +131,7 @@ export default function AshaDashboard() {
     { emoji: '📈', title: t('growthRecords'),         desc: 'Weight, height, and trends',       to: '/asha/growth-records'       },
     { emoji: '🚨', title: t('malnutritionReport'),    desc: 'Moderate and severe cases',        to: '/asha/malnutrition-report'  },
     { emoji: '📋', title: t('visitHistory'),          desc: 'Past field visits',                to: '/asha/visit-history'        },
-    { emoji: '📤', title: t('generateReport') || 'Generate Report', desc: 'Export district file', to: '/asha/generate-report'   },
+    { emoji: '📤', title: t('generateReport') || 'Generate Report', desc: 'Monthly report & Excel', to: '/asha/generate-report'   },
     { emoji: '⚙️', title: t('settings'),              desc: 'Profile and password settings',   to: '/asha/settings'             },
   ];
 
@@ -100,11 +147,13 @@ export default function AshaDashboard() {
 
   const todayLabel = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   const firstName  = user?.name?.split(' ')[0] || 'ASHA';
-  const userInitial = (user?.name || 'A').charAt(0).toUpperCase();
-  const unreadCount = notifications.length;
 
-  const thisMonth   = new Date().getMonth();
-  const monthVisits = visits.filter(v => new Date(v.visitDate || v.createdAt).getMonth() === thisMonth);
+  const monthStart  = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  const monthVisits = visits.filter(v => v.status !== 'missed' && new Date(v.visitDate || v.createdAt) >= monthStart);
+  const recentVisits = visits.slice(0, 8);
+  const st = dash?.stats;
+  const work = st?.workload || { due: 0, overdue: 0, referrals: 0, emergencies: 0, mothersDue: 0, highRiskMothers: 0 };
+  const visitPct = st && st.todaysVisits.planned ? Math.round((st.todaysVisits.done / st.todaysVisits.planned) * 100) : 0;
 
   return (
     <div style={{ fontFamily: "'DM Sans', sans-serif", background: '#f0fdff', minHeight: '100vh', color: '#0c2340' }}>
@@ -120,76 +169,23 @@ export default function AshaDashboard() {
         .an-g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
         .an-g2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
         .an-g3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+        .an-g6{display:grid;grid-template-columns:repeat(6,1fr);gap:14px}
+        .an-row{display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid #e0f7fa;text-decoration:none;color:#0c2340}
+        .an-row:hover{background:#f0fdff}
+        .an-qa{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px;min-height:88px;padding:10px 6px;border-radius:12px;text-decoration:none;font-size:12px;font-weight:600;color:#0c2340;transition:transform .15s}
+        .an-qa:hover{transform:translateY(-2px)}
         .an-badge-ok,.an-badge-warn,.an-badge-bad{border-radius:20px;padding:2px 10px;font-size:11px;font-weight:600}
         .an-badge-ok{background:#d1fae5;color:#065f46}
         .an-badge-warn{background:#fef3c7;color:#92400e}
         .an-badge-bad{background:#fee2e2;color:#991b1b}
+        @media(max-width:1280px){.an-g6{grid-template-columns:repeat(3,1fr)}}
         @media(max-width:1024px){.an-g4{grid-template-columns:repeat(2,1fr)}.an-g3{grid-template-columns:repeat(2,1fr)}}
+        @media(max-width:600px){.an-g6{grid-template-columns:repeat(2,1fr)}}
         @media(max-width:768px){.an-g4{grid-template-columns:repeat(2,1fr)}.an-g2{grid-template-columns:1fr}.an-hero-row{flex-direction:column!important}}
         @media(max-width:480px){.an-g4{grid-template-columns:1fr}.an-g3{grid-template-columns:1fr}}
       `}</style>
 
-      <nav style={{
-        position: 'sticky', top: 0, zIndex: 100,
-        background: '#fff', height: 64,
-        borderBottom: '2px solid #cffafe',
-        boxShadow: '0 2px 16px rgba(8,145,178,.10)',
-        display: 'flex', alignItems: 'center', padding: '0 24px', gap: 14,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-          <div style={{
-            width: 38, height: 38, borderRadius: 10,
-            background: 'linear-gradient(135deg,#0891b2,#0e7490)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
-          }}>
-            🏥
-          </div>
-          <div>
-            <div style={{ fontFamily: "'Libre Baskerville',serif", fontWeight: 700, fontSize: 15, color: '#0e7490', lineHeight: 1.1 }}>
-              Shishu Aarogya
-            </div>
-            <div style={{ fontSize: 10, color: '#4a7a8a' }}>National Child Health Portal</div>
-          </div>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 8, color: '#4a7a8a', fontSize: 12, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase' }}>
-          Dashboard Workspace
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0, marginLeft: 'auto' }}>
-          <Link to="/asha/notifications" style={{ position: 'relative', textDecoration: 'none', fontSize: 20, lineHeight: 1 }}>
-            🔔
-            {unreadCount > 0 && (
-              <span style={{
-                position: 'absolute', top: -4, right: -4,
-                background: '#ef4444', color: '#fff',
-                fontSize: 9, fontWeight: 700, borderRadius: 20,
-                padding: '1px 5px', minWidth: 16, textAlign: 'center',
-              }}>
-                {unreadCount}
-              </span>
-            )}
-          </Link>
-          <Link to="/asha/settings" style={{
-            width: 36, height: 36, borderRadius: '50%',
-            background: 'linear-gradient(135deg,#0891b2,#0e7490)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: '#fff', fontWeight: 700, fontSize: 15, textDecoration: 'none',
-          }}>
-            {userInitial}
-          </Link>
-          <button
-            onClick={() => { logout(); navigate('/login'); }}
-            style={{
-              background: '#fee2e2', color: '#dc2626', border: '1px solid #fecaca',
-              borderRadius: 8, padding: '6px 12px', fontSize: 12, fontWeight: 700,
-              cursor: 'pointer', transition: 'all .2s', marginLeft: 4,
-            }}
-            onMouseOver={e => { e.currentTarget.style.background = '#ef4444'; e.currentTarget.style.color = '#fff'; }}
-            onMouseOut={e => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.color = '#dc2626'; }}
-          >
-            {t('logout') || 'Logout'}
-          </button>
-        </div>
-      </nav>
+      <AshaNavbar />
 
       {/* hero banner with slideshow */}
       <div style={{ position: 'relative', height: 280, overflow: 'hidden' }}>
@@ -312,11 +308,38 @@ export default function AshaDashboard() {
               )}
             </div>
 
-            <div className="an-g4" style={{ marginBottom: 22, animation: 'fadeUp .4s ease' }}>
-              <DashStatCard emoji="👶" accent="#0891b2"  label={t('totalChildren')}   value={children.length}        sub={t('assignedChildren')} />
-              <DashStatCard emoji="✅" accent="#059669"  label={t('visitsThisMonth')} value={monthVisits.length}     sub={t('logVisit')} />
-              <DashStatCard emoji="⏰" accent="#f59e0b"  label={t('overdueVaccines')} value={overdueVaccines.length} sub={overdueVaccines.length > 0 ? t('followUpNeeded') : t('allUpToDate')} subColor={overdueVaccines.length > 0 ? '#f59e0b' : undefined} />
-              <DashStatCard emoji="🚨" accent="#ef4444"  label={t('severeCases')}     value={severeCount}            sub={t('phcReferralNeeded')} subColor={severeCount > 0 ? '#ef4444' : undefined} />
+            {st && (
+              <div className="an-g6" style={{ marginBottom: 22, animation: 'fadeUp .4s ease' }}>
+                <DashStatCard emoji="👨‍👩‍👧" accent="#16a34a" label={t('assignedFamilies')} value={st.families.value} sub={<Change pct={st.families.changePct} t={t} />} />
+                <DashStatCard emoji="👶" accent="#0891b2" label={t('registeredChildren')} value={st.children.value} sub={<Change pct={st.children.changePct} t={t} />} />
+                <DashStatCard emoji="🤰" accent="#db2777" label={t('pregnantWomen')} value={st.pregnant.value} sub={`↑ ${st.pregnant.newThisMonth} ${t('newThisMonth')}`} subColor={st.pregnant.newThisMonth ? '#db2777' : undefined} />
+                <DashStatCard emoji="💉" accent="#f59e0b" label={t('vaccinesDueWeek')} value={st.vaccinesDueThisWeek.value} sub={<Link to="/asha/vaccination-tracker" style={{ color: 'inherit', textDecoration: 'none' }}>⏱ {st.vaccinesDueThisWeek.overdue} {t('visitsOverdue')}</Link>} subColor={st.vaccinesDueThisWeek.overdue ? '#dc2626' : undefined} />
+                <DashStatCard emoji="📅" accent="#7c3aed" label={t('todaysVisits')} value={`${st.todaysVisits.done}/${st.todaysVisits.planned}`} sub={
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ flex: 1, height: 6, background: '#e2f4f8', borderRadius: 4, overflow: 'hidden' }}><span style={{ display: 'block', height: '100%', width: `${visitPct}%`, background: '#16a34a' }} /></span>
+                    {visitPct}%
+                  </span>
+                } />
+                <DashStatCard emoji="⚠️" accent="#ef4444" label={t('highRiskCases')} value={st.highRisk.value} sub={<Link to={st.highRisk.mothers && !st.highRisk.children ? '/asha/maternal-care' : '/asha/malnutrition-report'} style={{ color: '#dc2626' }}>{t('viewDetails')} →</Link>} />
+              </div>
+            )}
+
+            {/* Today's field work: links into the planner, referrals, families and registration */}
+            <div className="an-g4" style={{ marginBottom: 22, animation: 'fadeUp .45s ease' }}>
+              {[
+                { to: '/asha/my-visits', emoji: '📅', label: t('myVisits'), value: work.due, sub: work.overdue ? `${work.overdue} ${t('visitsOverdue')}` : t('visitsDueNow'), alert: work.overdue > 0 },
+                { to: '/asha/referrals', emoji: '🏥', label: t('referrals'), value: work.referrals, sub: work.emergencies ? `${work.emergencies} ${t('urgencyEmergency')}` : t('refPending'), alert: work.emergencies > 0 },
+                { to: '/asha/families', emoji: '🏠', label: t('families'), value: '→', sub: t('familySearch') },
+                { to: '/asha/maternal-care', emoji: '🤰', label: t('maternalCare'), value: work.mothersDue, sub: work.highRiskMothers ? `${work.highRiskMothers} ${t('highRisk')}` : t('checkupsDue'), alert: work.highRiskMothers > 0 },
+              ].map(c => (
+                <Link key={c.to} to={c.to} className="an-card an-card-hover" style={{ padding: '16px 18px', borderColor: c.alert ? '#fca5a5' : undefined }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: '#4a7a8a' }}>{c.emoji} {c.label}</span>
+                    <span style={{ fontSize: 24, fontWeight: 700, color: c.alert ? '#dc2626' : '#0e7490' }}>{c.value}</span>
+                  </div>
+                  <div style={{ fontSize: 12, marginTop: 4, color: c.alert ? '#dc2626' : '#4a7a8a', fontWeight: c.alert ? 600 : 400 }}>{c.sub}</div>
+                </Link>
+              ))}
             </div>
 
             {severeCount > 0 && (
@@ -347,6 +370,72 @@ export default function AshaDashboard() {
                 <Link to="/asha/malnutrition-report" style={{ padding: '10px 20px', borderRadius: 10, background: '#fff', color: '#dc2626', fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>
                   View Cases →
                 </Link>
+              </div>
+            )}
+
+            {dash && (
+              <div className="an-g3" style={{ marginBottom: 22, animation: 'fadeUp .48s ease', alignItems: 'stretch' }}>
+                {/* today's visit schedule */}
+                <div className="an-card" style={{ padding: '18px 20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <h3 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 16, fontWeight: 700, margin: 0 }}>🗓️ {t('todaysSchedule')}</h3>
+                    <Link to="/asha/my-visits" style={{ fontSize: 12, color: '#0891b2', fontWeight: 600, textDecoration: 'none' }}>{t('viewAll')} →</Link>
+                  </div>
+                  {dash.schedule.length === 0 ? (
+                    <div style={{ color: '#059669', fontSize: 13, fontWeight: 600, textAlign: 'center', padding: '20px 0' }}>✅ {t('visitsNoneDue')}</div>
+                  ) : dash.schedule.map(v => {
+                    const s = VISIT_STATUS[v.status];
+                    const done = v.status === 'completed' || v.status === 'missed';
+                    return (
+                      <Link key={`${v.child._id}-${v.status}`} to={done ? `/asha/child/${v.child._id}` : `/asha/log-visit?childId=${v.child._id}`} className="an-row">
+                        <span style={{ fontSize: 11, color: '#4a7a8a', width: 58, flexShrink: 0 }}>{done ? timeOf(v.at) : v.status === 'overdue' ? formatDate(v.at).slice(0, 6) : t('visitsToday')}</span>
+                        <span style={{ width: 36, height: 36, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, background: v.child.gender === 'female' ? '#fce7f3' : '#dbeafe', color: v.child.gender === 'female' ? '#be185d' : '#1d4ed8' }}>{initials(v.child.name)}</span>
+                        <span style={{ flex: 1, minWidth: 0 }}>
+                          <span style={{ display: 'block', fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.child.name} <span style={{ fontWeight: 400, color: '#4a7a8a', fontSize: 11 }}>({childAgeLabel(v.child.dob)})</span></span>
+                          <span style={{ display: 'block', fontSize: 11, color: '#4a7a8a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.child.village ? `${t('village')}: ${v.child.village}` : v.reasons?.join(', ')}</span>
+                        </span>
+                        <span style={{ borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 600, background: s.bg, color: s.color, whiteSpace: 'nowrap' }}>{t(s.labelKey)}</span>
+                      </Link>
+                    );
+                  })}
+                  {dash.scheduleTotal > dash.schedule.length && <div style={{ fontSize: 11, color: '#4a7a8a', textAlign: 'center', marginTop: 8 }}>+{dash.scheduleTotal - dash.schedule.length} {t('more')}</div>}
+                </div>
+
+                {/* important alerts */}
+                <div className="an-card" style={{ padding: '18px 20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <h3 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 16, fontWeight: 700, margin: 0 }}>🔔 {t('importantAlerts')}</h3>
+                    <Link to="/asha/notifications" style={{ fontSize: 12, color: '#0891b2', fontWeight: 600, textDecoration: 'none' }}>{t('viewAll')} →</Link>
+                  </div>
+                  {dash.alerts.length === 0 ? (
+                    <div style={{ color: '#059669', fontSize: 13, fontWeight: 600, textAlign: 'center', padding: '20px 0' }}>✅ {t('noAlerts')}</div>
+                  ) : dash.alerts.map(a => {
+                    const s = ALERT_STYLE[a.kind] || ALERT_STYLE.message;
+                    return (
+                      <Link key={`${a.kind}-${a.title}`} to={a.link} className="an-row">
+                        <span style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, background: s.bg }}>{s.emoji}</span>
+                        <span style={{ flex: 1, minWidth: 0 }}>
+                          <span style={{ display: 'block', fontSize: 13, fontWeight: 700, color: a.severity === 'high' ? '#b91c1c' : '#0c2340' }}>{a.title}</span>
+                          <span style={{ display: 'block', fontSize: 11, color: '#4a7a8a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.subtitle}</span>
+                        </span>
+                        <span style={{ fontSize: 11, color: '#4a7a8a', whiteSpace: 'nowrap' }}>{relativeDay(a.at, t)} ›</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+
+                {/* quick actions */}
+                <div className="an-card" style={{ padding: '18px 20px' }}>
+                  <h3 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 16, fontWeight: 700, margin: '0 0 12px' }}>⚡ {t('quickActions')}</h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 }}>
+                    {QUICK_ACTIONS.map(q => (
+                      <Link key={q.to} to={q.to} className="an-qa" style={{ background: q.bg }}>
+                        <span style={{ fontSize: 24 }}>{q.emoji}</span>
+                        <span style={{ lineHeight: 1.2 }}>{t(q.labelKey)}</span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
 
@@ -448,7 +537,7 @@ export default function AshaDashboard() {
                 <h3 style={{ fontFamily: "'Libre Baskerville',serif", fontSize: 16, fontWeight: 700, margin: 0, color: '#0c2340' }}>📋 {t('recentVisitLog')}</h3>
                 <Link to="/asha/visit-history" style={{ fontSize: 12, color: '#0891b2', fontWeight: 600, textDecoration: 'none' }}>{t('fullHistory')} →</Link>
               </div>
-              {visits.length === 0 ? (
+              {recentVisits.length === 0 ? (
                 <div style={{ color: '#4a7a8a', fontSize: 13, textAlign: 'center', padding: '20px 0' }}>{t('noVisitsYet')}.</div>
               ) : (
                 <div style={{ overflowX: 'auto' }}>
@@ -463,7 +552,7 @@ export default function AshaDashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {visits.map((visit, i) => (
+                      {recentVisits.map((visit, i) => (
                         <tr key={visit._id || i} style={{ background: i % 2 ? '#f0fdff' : '#fff', borderBottom: '1px solid #e0f7fa' }}>
                           <td style={{ padding: '9px 12px', fontWeight: 700, color: '#0c2340' }}>👶 {visit.childId?.name || '-'}</td>
                           <td style={{ padding: '9px 12px', color: '#4a7a8a', fontSize: 12 }}>{formatDate(visit.visitDate || visit.createdAt)}</td>
@@ -482,7 +571,7 @@ export default function AshaDashboard() {
                               : visit.outcome || '-'}
                             </span>
                           </td>
-                          <td style={{ padding: '9px 12px', fontSize: 12, color: '#4a7a8a', maxWidth: 180 }}>{visit.notes?.slice(0, 60) || '-'}</td>
+                          <td style={{ padding: '9px 12px', fontSize: 12, color: '#4a7a8a', maxWidth: 180 }}>{(visit.observations || visit.notes)?.slice(0, 60) || '-'}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -513,21 +602,6 @@ export default function AshaDashboard() {
               </div>
             </div>
 
-            {/* bottom quick-action row */}
-            <div className="an-g4" style={{ animation: 'fadeUp .6s ease' }}>
-              {[
-                { emoji: '📝', title: t('logNewVisit'),       desc: t('logVisit'),          to: '/asha/log-visit'           },
-                { emoji: '👶', title: t('myChildren'),         desc: `${t('viewAll')} ${children.length}`, to: '/asha/children' },
-                { emoji: '💉', title: t('vaccinationTracker'), desc: t('overdueVaccines'),   to: '/asha/vaccination-tracker' },
-                { emoji: '📊', title: t('growthRecords'),      desc: t('growthEntry'),       to: '/asha/growth-records'      },
-              ].map(({ emoji, title, desc, to }) => (
-                <Link key={to} to={to} className="an-card an-card-hover" style={{ padding: '20px 16px', textAlign: 'center' }}>
-                  <div style={{ fontSize: 30, marginBottom: 9 }}>{emoji}</div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: '#0c2340', marginBottom: 4 }}>{title}</div>
-                  <div style={{ fontSize: 11, color: '#4a7a8a' }}>{desc}</div>
-                </Link>
-              ))}
-            </div>
           </>
         )}
       </div>

@@ -2,10 +2,14 @@ const Notification = require('../models/Notification');
 const User = require('../models/User');
 const { createAuditLog } = require('../utils/auditLogger');
 
-// GET /api/notifications — current user's notifications
+// Notification types the user switched off in Settings (emergency health alerts always show)
+const mutedTypes = (user) => Object.entries(user.notificationPrefs?.toObject?.() || user.notificationPrefs || {})
+  .filter(([type, on]) => on === false && type !== 'health_alert').map(([type]) => type);
+
+// GET /api/notifications — current user's notifications (minus muted types)
 const getNotifications = async (req, res) => {
   try {
-    const notifications = await Notification.find({ userId: req.user._id })
+    const notifications = await Notification.find({ userId: req.user._id, type: { $nin: mutedTypes(req.user) } })
       .sort('-createdAt')
       .limit(50);
     res.json(notifications);

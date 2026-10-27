@@ -1,11 +1,10 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const AshaWorker = require('../models/AshaWorker');
 
 const { createAuditLog } = require('../utils/auditLogger');
 const { generateOTP, getOTPExpiry, sendOTPEmail } = require('../utils/otp');
 
-const MIN_PASSWORD_LENGTH = 6;
+const MIN_PASSWORD_LENGTH = 8;
 const isValidPassword = (pw) => typeof pw === 'string' && pw.length >= MIN_PASSWORD_LENGTH;
 const PASSWORD_ERROR = `Password must be at least ${MIN_PASSWORD_LENGTH} characters`;
 
@@ -27,11 +26,9 @@ const register = async (req, res) => {
       email,
       phone,
       mobile,
-      aadhar,
       dob,
       password,
       role,
-      ashaId,
       state,
       district,
       block,
@@ -46,20 +43,13 @@ const register = async (req, res) => {
 
     if (!isValidPassword(password)) return res.status(400).json({ message: PASSWORD_ERROR });
 
-    if (!['parent', 'asha'].includes(role)) {
-      return res.status(400).json({ message: 'Invalid role selected. Admin registration is not allowed.' });
-    }
-
-    if (role === 'asha' && (!ashaId?.trim() || !district?.trim() || !block?.trim())) {
-      return res.status(400).json({ message: 'ASHA ID, district, and block are required for ASHA registration' });
+    // ASHA and admin accounts are created by an admin, never self-registered
+    if (role !== 'parent') {
+      return res.status(400).json({ message: 'Only parents can register. ASHA workers get login details from their admin.' });
     }
 
     const existing = await User.findOne({ $or: [{ email: normalizedEmail }, { phone: normalizedPhone }] });
     if (existing) return res.status(400).json({ message: 'Email or phone already registered' });
-
-    if (role === 'asha' && (await AshaWorker.exists({ ashaId: ashaId.trim() }))) {
-      return res.status(400).json({ message: 'ASHA ID already registered' });
-    }
 
     const user = await User.create({
       name: fullName,
@@ -67,7 +57,6 @@ const register = async (req, res) => {
       lastName: lastName?.trim(),
       email: normalizedEmail,
       phone: normalizedPhone,
-      aadhar: aadhar?.trim(),
       dob: dob || undefined,
       state: state?.trim(),
       district: district?.trim(),
@@ -75,22 +64,6 @@ const register = async (req, res) => {
       password,
       role,
     });
-
-    if (role === 'asha') {
-      try {
-        await AshaWorker.create({
-          userId: user._id,
-          ashaId: ashaId.trim(),
-          state: state?.trim(),
-          district: district.trim(),
-          block: block.trim(),
-        });
-      } catch (ashaErr) {
-        // Don't leave a half-registered ASHA user that can neither log in usefully nor re-register
-        await User.deleteOne({ _id: user._id });
-        throw ashaErr;
-      }
-    }
 
     await createAuditLog({
       req,
@@ -104,7 +77,7 @@ const register = async (req, res) => {
 
     res.status(201).json({ message: 'Registered successfully. Please login.' });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(err.status || 500).json({ message: err.message });
   }
 };
 
@@ -118,10 +91,10 @@ const login = async (req, res) => {
 
     const query = identifier.includes('@')
       ? { email: normalizedEmail }
-      : { $or: [{ phone: identifier }, { email: normalizedEmail }] };
+      : { $or: [{ phone: identifier }, { email: normalizedEmail }, { username: identifier.toUpperCase() }] };
 
     const user = await User.findOne(query).select('+password +sessionVersion');
-    if (!user || !(await user.matchPassword(password))) {
+    if (!user || !(await user.matchPassword(password, req))) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
     if (!user.isActive) return res.status(403).json({ message: 'Account deactivated' });
@@ -136,6 +109,7 @@ const login = async (req, res) => {
 
     user.otp = undefined;
     user.otpExpiry = undefined;
+    if (user.needsRehash()) user.password = password; // pre-save hook rehashes at the current cost
     await user.save({ validateBeforeSave: false });
 
     // Session cookie (no maxAge): gone when the browser closes; the JWT expiry caps it otherwise
@@ -153,10 +127,10 @@ const login = async (req, res) => {
 
     res.json({
       message: 'Login successful',
-      user: { id: user._id, name: user.name, email: user.email, role: user.role },
+      user: { id: user._id, name: user.name, email: user.email, role: user.role, district: user.district, mustChangePassword: Boolean(user.mustChangePassword) },
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(err.status || 500).json({ message: err.message });
   }
 };
 
@@ -172,7 +146,7 @@ const logout = async (req, res) => {
     res.clearCookie(COOKIE_NAME, cookieOptions);
     res.json({ message: 'Logged out' });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(err.status || 500).json({ message: err.message });
   }
 };
 
@@ -182,10 +156,12 @@ const changePassword = async (req, res) => {
     const { currentPassword, newPassword } = req.body;
     if (!isValidPassword(newPassword)) return res.status(400).json({ message: PASSWORD_ERROR });
     const user = await User.findById(req.user._id).select('+password +sessionVersion');
-    if (!currentPassword || !(await user.matchPassword(currentPassword))) {
+    if (!currentPassword || !(await user.matchPassword(currentPassword, req))) {
       return res.status(400).json({ message: 'Current password is incorrect' });
     }
+    if (newPassword === currentPassword) return res.status(400).json({ message: 'Choose a password different from the current one' });
     user.password = newPassword;
+    user.mustChangePassword = false;
     user.sessionVersion = (user.sessionVersion || 0) + 1; // sign out every other device
     await user.save();
     res.cookie(COOKIE_NAME, signToken(user), cookieOptions);
@@ -198,9 +174,9 @@ const changePassword = async (req, res) => {
       targetUserId: user._id,
       details: `${user.name} changed password`,
     });
-    res.json({ message: 'Password updated successfully' });
+    res.json({ message: 'Password updated successfully', user: { id: user._id, name: user.name, email: user.email, role: user.role, mustChangePassword: false } });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(err.status || 500).json({ message: err.message });
   }
 };
 
@@ -242,7 +218,7 @@ const forgotPassword = async (req, res) => {
 
     res.json({ message: 'Password reset OTP sent to your email', userId: user._id });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(err.status || 500).json({ message: err.message });
   }
 };
 
@@ -261,6 +237,7 @@ const resetPassword = async (req, res) => {
     if (!user.otpExpiry || user.otpExpiry < new Date()) return res.status(400).json({ message: 'OTP expired' });
 
     user.password = newPassword;
+    user.mustChangePassword = false; // they chose this one themselves
     user.otp = undefined;
     user.otpExpiry = undefined;
     user.sessionVersion = (user.sessionVersion || 0) + 1; // revoke any hijacked sessions
@@ -277,8 +254,42 @@ const resetPassword = async (req, res) => {
 
     res.json({ message: 'Password reset successful. Please login.' });
   } catch (err) {
+    res.status(err.status || 500).json({ message: err.message });
+  }
+};
+
+// PUT /api/auth/profile — the signed-in user edits their own name and phone (email / role / area are managed by admin)
+const updateProfile = async (req, res) => {
+  try {
+    const name = req.body.name === undefined ? undefined : String(req.body.name).trim();
+    const phone = req.body.phone === undefined ? undefined : String(req.body.phone).replace(/\D/g, '');
+    if (name !== undefined && (name.length < 2 || name.length > 100)) return res.status(400).json({ message: 'Enter your full name' });
+    if (phone !== undefined && phone.length !== 10) return res.status(400).json({ message: 'Phone must be 10 digits' });
+    if (phone && await User.exists({ phone, _id: { $ne: req.user._id } })) return res.status(400).json({ message: 'This phone number is already registered' });
+    const update = {};
+    if (name !== undefined) update.name = name;
+    if (phone !== undefined) update.phone = phone;
+    const user = await User.findByIdAndUpdate(req.user._id, update, { new: true });
+    await createAuditLog({ req, action: 'PROFILE_UPDATED', entityType: 'User', entityId: user._id, targetUserId: user._id, details: `${user.name} updated their profile`, metadata: { fields: Object.keys(update) } });
+    res.json({ user });
+  } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
-module.exports = { register, login, getMe, logout, changePassword, forgotPassword, resetPassword };
+// PUT /api/auth/preferences — { notificationPrefs: { vaccine_reminder, visit_reminder, scheme_update, system } }
+const updatePreferences = async (req, res) => {
+  try {
+    const prefs = req.body.notificationPrefs || {};
+    const update = {};
+    for (const key of ['vaccine_reminder', 'visit_reminder', 'scheme_update', 'system']) {
+      if (typeof prefs[key] === 'boolean') update[`notificationPrefs.${key}`] = prefs[key];
+    }
+    const user = await User.findByIdAndUpdate(req.user._id, { $set: update }, { new: true });
+    res.json({ notificationPrefs: user.notificationPrefs });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+module.exports = { updateProfile, updatePreferences, register, login, getMe, logout, changePassword, forgotPassword, resetPassword };

@@ -5,17 +5,20 @@ import { LanguageProvider } from './context/LanguageContext';
 import { LocationProvider } from './context/LocationContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import MobileTabBar from './components/MobileTabBar';
-import ChatBot from './components/ChatBot';
 import ErrorBoundary from './components/ErrorBoundary';
 
 // Public pages — loaded eagerly since they're the entry point
 import Home from './pages/public/Home';
 import About from './pages/public/About';
+import { PrivacyPolicy, TermsOfUse } from './pages/public/Legal';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import Shop from './pages/public/Shop';
 import ProductDetail from './pages/public/ProductDetail';
 import { Products, Cart, Checkout, Orders, OrderDetail, Wishlist } from './pages/public/ShopPages';
+
+// Floating chat widget (+ its offline knowledge base): loaded after the page, not in the first download
+const ChatBot = lazy(() => import('./components/ChatBot'));
 
 // Parent portal pages — lazy so they don't bloat the initial bundle
 const ParentDashboard       = lazy(() => import('./pages/parent/Dashboard'));
@@ -26,7 +29,6 @@ const AIHealthPrediction    = lazy(() => import('./pages/parent/AIHealthPredicti
 const ParentSchemes         = lazy(() => import('./pages/parent/GovernmentSchemes'));
 const HealthReports         = lazy(() => import('./pages/parent/HealthReports'));
 const ParentNotifications   = lazy(() => import('./pages/parent/Notifications'));
-const ParentSettings        = lazy(() => import('./pages/parent/Settings'));
 
 // ASHA worker portal pages
 const AshaDashboard         = lazy(() => import('./pages/asha/Dashboard'));
@@ -39,7 +41,20 @@ const MalnutritionReport    = lazy(() => import('./pages/asha/MalnutritionReport
 const VisitHistoryLog       = lazy(() => import('./pages/asha/VisitHistoryLog'));
 const AshaNotifications     = lazy(() => import('./pages/asha/NotificationsAlerts'));
 const GenerateReport        = lazy(() => import('./pages/asha/GenerateReport'));
-const AshaProfileSettings   = lazy(() => import('./pages/asha/ProfileSettings'));
+const AshaFamilies          = lazy(() => import('./pages/asha/Families'));
+const AshaMyVisits          = lazy(() => import('./pages/asha/MyVisits'));
+const AshaReferrals         = lazy(() => import('./pages/asha/Referrals'));
+const AshaRegisterChild     = lazy(() => import('./pages/asha/RegisterChild'));
+const AshaMaternalCare      = lazy(() => import('./pages/asha/MaternalCare'));
+const AshaPregnancyDetail   = lazy(() => import('./pages/asha/PregnancyDetail'));
+const Messages              = lazy(() => import('./pages/shared/Messages'));
+const ChangePassword        = lazy(() => import('./pages/auth/ChangePassword'));
+const AccountSettings       = lazy(() => import('./pages/shared/AccountSettings'));
+const Camps                 = lazy(() => import('./pages/shared/Camps'));
+const AshaIncentives        = lazy(() => import('./pages/asha/Incentives'));
+const AdminClaims           = lazy(() => import('./pages/admin/Claims'));
+const AdminReferrals        = lazy(() => import('./pages/admin/Referrals'));
+const AdminMothers          = lazy(() => import('./pages/admin/HighRiskMothers'));
 
 // Admin portal pages
 const AdminDashboard        = lazy(() => import('./pages/admin/Dashboard'));
@@ -47,6 +62,7 @@ const DistrictHeatmap       = lazy(() => import('./pages/admin/DistrictHeatmap')
 const AnalyticsReports      = lazy(() => import('./pages/admin/AnalyticsReports'));
 const ChildrenRegistry      = lazy(() => import('./pages/admin/ChildrenRegistry'));
 const AshaWorkerManagement  = lazy(() => import('./pages/admin/AshaWorkerManagement'));
+const AddAshaWorker         = lazy(() => import('./pages/admin/AddAshaWorker'));
 const HealthCentreDirectory = lazy(() => import('./pages/admin/HealthCentreDirectory'));
 const VaccinationData       = lazy(() => import('./pages/admin/VaccinationData'));
 const MalnutritionCases     = lazy(() => import('./pages/admin/MalnutritionCases'));
@@ -55,7 +71,6 @@ const BlockwiseReports      = lazy(() => import('./pages/admin/BlockwiseReports'
 const NotificationsPanel    = lazy(() => import('./pages/admin/NotificationsPanel'));
 const UserManagement        = lazy(() => import('./pages/admin/UserManagement'));
 const AuditLogs             = lazy(() => import('./pages/admin/AuditLogs'));
-const AdminSettings         = lazy(() => import('./pages/admin/SettingsConfiguration'));
 
 function PageLoader() {
   return (
@@ -85,6 +100,8 @@ function AppRoutes() {
           {/* Public routes */}
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfUse />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/shop" element={<Shop />} />
@@ -107,7 +124,8 @@ function AppRoutes() {
             <Route path="/parent/schemes"       element={<ParentSchemes />} />
             <Route path="/parent/reports"       element={<HealthReports />} />
             <Route path="/parent/notifications" element={<ParentNotifications />} />
-            <Route path="/parent/settings"      element={<ParentSettings />} />
+            <Route path="/parent/settings"      element={<AccountSettings />} />
+            <Route path="/parent/messages"      element={<Messages />} />
           </Route>
 
           {/* ASHA worker portal */}
@@ -123,16 +141,33 @@ function AppRoutes() {
             <Route path="/asha/area-map"             element={<Navigate to="/asha/dashboard" replace />} />
             <Route path="/asha/notifications"        element={<AshaNotifications />} />
             <Route path="/asha/generate-report"      element={<GenerateReport />} />
-            <Route path="/asha/settings"             element={<AshaProfileSettings />} />
+            <Route path="/asha/settings"             element={<AccountSettings />} />
+            <Route path="/asha/families"             element={<AshaFamilies />} />
+            <Route path="/asha/my-visits"            element={<AshaMyVisits />} />
+            <Route path="/asha/referrals"            element={<AshaReferrals />} />
+            <Route path="/asha/register-child"       element={<AshaRegisterChild />} />
+            <Route path="/asha/maternal-care"        element={<AshaMaternalCare />} />
+            <Route path="/asha/pregnancy/:id"        element={<AshaPregnancyDetail />} />
+            <Route path="/asha/messages"             element={<Messages />} />
+            <Route path="/asha/camps"                element={<Camps />} />
+            <Route path="/asha/incentives"           element={<AshaIncentives />} />
           </Route>
 
           {/* Admin portal */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/change-password"         element={<ChangePassword />} />
+          </Route>
+
           <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
             <Route path="/admin/dashboard"       element={<AdminDashboard />} />
             <Route path="/admin/heatmap"         element={<DistrictHeatmap />} />
             <Route path="/admin/analytics"       element={<AnalyticsReports />} />
             <Route path="/admin/children"        element={<ChildrenRegistry />} />
             <Route path="/admin/asha-workers"    element={<AshaWorkerManagement />} />
+            <Route path="/admin/asha-workers/new" element={<AddAshaWorker />} />
+            <Route path="/admin/referrals"       element={<AdminReferrals />} />
+            <Route path="/admin/mothers"         element={<AdminMothers />} />
+            <Route path="/admin/claims"          element={<AdminClaims />} />
             <Route path="/admin/health-centres"  element={<HealthCentreDirectory />} />
             <Route path="/admin/vaccination-data" element={<VaccinationData />} />
             <Route path="/admin/malnutrition"    element={<MalnutritionCases />} />
@@ -141,7 +176,8 @@ function AppRoutes() {
             <Route path="/admin/notifications"   element={<NotificationsPanel />} />
             <Route path="/admin/users"           element={<UserManagement />} />
             <Route path="/admin/audit-logs"      element={<AuditLogs />} />
-            <Route path="/admin/settings"        element={<AdminSettings />} />
+            <Route path="/admin/settings"        element={<AccountSettings />} />
+            <Route path="/admin/messages"        element={<Messages />} />
           </Route>
 
           {/* Catch-all — send unknown paths to login */}
@@ -153,7 +189,7 @@ function AppRoutes() {
         Health assistant is mounted on every route — including /login and /register —
         so visitors can ask child-health questions before they even sign in.
       */}
-      <ChatBot />
+      <Suspense fallback={null}><ChatBot /></Suspense>
       <MobileTabBar />
     </>
   );

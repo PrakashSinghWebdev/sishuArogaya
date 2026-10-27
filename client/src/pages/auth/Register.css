@@ -58,6 +58,9 @@
 .login-card__input-icon { position: absolute; left: 13px; font-size: 12px; font-weight: 700; opacity: .55; pointer-events: none; }
 .login-card__input, .register-form__select { width: 100%; padding: 12px 13px 12px 39px; border-radius: 10px; border: 1.5px solid #c5e8ef; background: #f0fdff; color: #0c2340; font-family: 'DM Sans', sans-serif; font-size: 14px; outline: none; transition: border-color .2s, box-shadow .2s, background .2s; }
 .login-card__input--password { padding-right: 56px; }
+.login-card__input--action { padding-right: 84px; }
+.login-card__input-wrap .login-card__input--action ~ .login-card__toggle { color: #0891b2; }
+.login-card__toggle:disabled { opacity: .5; cursor: default; }
 .login-card__input:focus, .register-form__select:focus { border-color: #0891b2; box-shadow: 0 0 0 3px rgba(8,145,178,.12); }
 .login-card__input.has-error, .register-form__select.has-error { border-color: #e05252; background: #fff5f5; }
 .login-card__toggle { position: absolute; right: 12px; border: none; background: none; color: #4a7a8a; cursor: pointer; font-size: 12px; font-weight: 700; padding: 0; }
@@ -87,14 +90,6 @@
 @media (max-width: 1024px) { .login-shell { grid-template-columns: 1fr; } .login-shell__left { min-height: 420px; } .login-shell__right { min-height: auto; padding: 28px 20px 40px; } }
 @media (max-width: 768px) { .login-shell__left { display: none; } .login-shell__right { padding: 18px; } .login-card { max-width: 100%; max-height: none; padding: 32px 22px; border-radius: 18px; } .login-card__roles { gap: 4px; } .login-card__role { font-size: 11px; } .register-form__grid { grid-template-columns: 1fr; } .register-form__full { grid-column: auto; } }
 
-/* Aadhaar Verification UI */
-.aadhar-verify-status { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 12px; border-radius: 8px; padding: 8px 10px; }
-.aadhar-verify-status.is-checking { color: #0e7490; background: #cffafe; border: 1px solid #a5f3fc; }
-.aadhar-verify-status.is-valid { color: #166534; background: #dcfce7; border: 1px solid #bbf7d0; }
-.aadhar-verify-status.is-invalid { color: #991b1b; background: #fee2e2; border: 1px solid #fecaca; }
-.aadhar-verify-spinner { width: 14px; height: 14px; border: 2px solid rgba(14, 116, 144, 0.3); border-top-color: #0e7490; border-radius: 50%; animation: spin 0.7s linear infinite; }
-.aadhar-verify-icon { font-weight: bold; font-size: 14px; }
-.aadhar-verify-data { margin-top: 4px; font-size: 11px; color: #166534; font-weight: 500; }
 .shake-animation { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
 @keyframes shake {
   10%, 90% { transform: translate3d(-1px, 0, 0); }

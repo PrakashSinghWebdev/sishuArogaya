@@ -189,7 +189,7 @@ const GrowthRecords = () => {
   const [selectedChildId, setSelectedChildId] = useState(null);
   const [growthRecords, setGrowthRecords]     = useState([]);
   const [formOpen, setFormOpen]               = useState(false);
-  const [formData, setFormData]               = useState({ weight: '', height: '', hc: '', date: new Date().toISOString().slice(0, 10) });
+  const [formData, setFormData]               = useState({ weight: '', height: '', hc: '', date: new Date().toLocaleDateString('en-CA') });
   const [saving, setSaving]                   = useState(false);
   const [pageLoading, setPageLoading]         = useState(true);
   const [growthLoading, setGrowthLoading]     = useState(false);
@@ -204,8 +204,11 @@ const GrowthRecords = () => {
         const list = r.data || [];
         setChildren(list);
         if (list.length) {
-          setSelectedChildIndex(0);
-          setSelectedChildId(list[0]._id);
+          // open on the child named in the link (?childId=…), else the first one
+          const wanted = new URLSearchParams(window.location.search).get('childId');
+          const idx = Math.max(0, list.findIndex(c => c._id === wanted));
+          setSelectedChildIndex(idx);
+          setSelectedChildId(list[idx]._id);
         }
       })
       .catch(() => setPageError('Failed to load children.'))
@@ -248,7 +251,7 @@ const GrowthRecords = () => {
       });
       await loadGrowthHistory(selectedChildId);
       setFormOpen(false);
-      setFormData({ weight: '', height: '', hc: '', date: new Date().toISOString().slice(0, 10) });
+      setFormData({ weight: '', height: '', hc: '', date: new Date().toLocaleDateString('en-CA') });
     } catch (err) {
       setFormError(err?.response?.data?.message || 'Failed to save measurement.');
     } finally {
@@ -353,6 +356,7 @@ const GrowthRecords = () => {
                 <input
                   className="gr-input"
                   type="date"
+                  max={new Date().toLocaleDateString('en-CA')}
                   value={formData.date}
                   onChange={e => setFormData(prev => ({ ...prev, date: e.target.value }))}
                 />

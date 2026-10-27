@@ -29,10 +29,14 @@ async function assignChild(child, asha) {
 // ponytail: first ASHA in a block to open the dashboard takes the backlog; admins can rebalance via /asha/assign.
 async function claimUnassignedInArea(asha) {
   if (!asha?.district || !asha?.block) return 0;
+  // Runs on every ASHA list load: start from the (usually tiny) set of unassigned children via the
+  // ashaId index, instead of regex-scanning every parent in the block each time
+  const unassigned = await Child.find({ ashaId: null }).select('_id parentId').lean();
+  if (!unassigned.length) return 0;
   const area = { district: same(asha.district), block: same(asha.block), ...stateClause(asha.state) };
-  const parentIds = await User.find({ role: 'parent', ...area }).distinct('_id');
+  const parentIds = await User.find({ _id: { $in: unassigned.map((c) => c.parentId).filter(Boolean) }, role: 'parent', ...area }).distinct('_id');
   const children = await Child.find({
-    ashaId: { $in: [null, undefined] },
+    _id: { $in: unassigned.map((c) => c._id) },
     $or: [area, { district: { $in: [null, ''] }, parentId: { $in: parentIds } }],
   }).select('_id district state');
   if (!children.length) return 0;
@@ -44,4 +48,4 @@ async function claimUnassignedInArea(asha) {
   return ids.length;
 }
 
-module.exports = { findAshaForArea, assignChild, claimUnassignedInArea };
+module.exports = { findAshaForArea, assignChild, claimUnassignedInArea, same };

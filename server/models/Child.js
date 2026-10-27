@@ -62,4 +62,11 @@ childSchema.virtual('ageInMonths').get(function () {
 childSchema.set('toJSON', { virtuals: true });
 childSchema.set('toObject', { virtuals: true });
 
+// Parent's children, ASHA's caseload, area filters/heatmap, malnutrition list
+childSchema.index({ parentId: 1 });
+childSchema.index({ createdAt: -1 }); // admin registry, newest first, paged
+childSchema.index({ ashaId: 1, createdAt: -1 });
+childSchema.index({ district: 1, block: 1 });
+childSchema.index({ nutritionStatus: 1, updatedAt: -1 });
+
 module.exports = mongoose.model('Child', childSchema);

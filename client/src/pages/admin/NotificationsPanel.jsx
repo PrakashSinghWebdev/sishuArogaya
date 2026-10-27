@@ -13,7 +13,15 @@ const NotificationsPanel = () => {
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
 
-  useEffect(() => { adminAPI.listUsers().then(r=>setUsers(r.data)).catch(console.error); }, []);
+  const [userSearch, setUserSearch] = useState('');
+
+  // Search users on the server instead of loading every account into the dropdown
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      adminAPI.listUsers(undefined, { q: userSearch || undefined, limit: 50 }).then(r=>setUsers(r.data)).catch(console.error);
+    }, userSearch ? 300 : 0);
+    return () => clearTimeout(timer);
+  }, [userSearch]);
 
   const handleSend = async (e) => {
     e.preventDefault(); setSending(true); setSuccess(''); setError('');
@@ -33,6 +41,7 @@ const NotificationsPanel = () => {
           <form onSubmit={handleSend}>
             <div className="mb-3">
               <label className="form-label small">Target User *</label>
+              <input className="form-control mb-2" placeholder="Search by name, email or phone" value={userSearch} onChange={e=>setUserSearch(e.target.value)} />
               <select className="form-select" required value={form.userId} onChange={e=>setForm({...form,userId:e.target.value})}>
                 <option value="">— Select User —</option>
                 {users.map(u=><option key={u._id} value={u._id}>{u.name} ({u.role})</option>)}

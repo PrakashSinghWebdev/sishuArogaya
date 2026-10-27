@@ -32,3 +32,7 @@ scratch_refactor.js
 
 # Local testing
 server/test-gemini.js
+
+# WhatsApp linked-device session
+.wwebjs_auth/
+.wwebjs_cache/

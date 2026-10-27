@@ -14,4 +14,7 @@ const vaccinationSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+vaccinationSchema.index({ childId: 1, dueDate: 1 });
+vaccinationSchema.index({ status: 1, dueDate: 1 }); // overdue list + dashboard count
+
 module.exports = mongoose.model('Vaccination', vaccinationSchema);

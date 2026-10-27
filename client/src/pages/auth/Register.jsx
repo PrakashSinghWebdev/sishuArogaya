@@ -16,44 +16,6 @@ const CAPTIONS = [
 
 
 
-const ROLES = [
-  { value: 'parent', icon: 'PA', label: 'Parent' },
-  { value: 'asha', icon: 'AS', label: 'ASHA Worker' },
-];
-
-// Verhoeff algorithm for Aadhaar validation
-const verhoeffD = [
-  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-  [1, 2, 3, 4, 0, 6, 7, 8, 9, 5],
-  [2, 3, 4, 0, 1, 7, 8, 9, 5, 6],
-  [3, 4, 0, 1, 2, 8, 9, 5, 6, 7],
-  [4, 0, 1, 2, 3, 9, 5, 6, 7, 8],
-  [5, 9, 8, 7, 6, 0, 4, 3, 2, 1],
-  [6, 5, 9, 8, 7, 1, 0, 4, 3, 2],
-  [7, 6, 5, 9, 8, 2, 1, 0, 4, 3],
-  [8, 7, 6, 5, 9, 3, 2, 1, 0, 4],
-  [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
-];
-const verhoeffP = [
-  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-  [1, 5, 7, 6, 2, 8, 3, 0, 9, 4],
-  [5, 8, 0, 3, 7, 9, 6, 1, 4, 2],
-  [8, 9, 1, 6, 0, 4, 3, 5, 2, 7],
-  [9, 4, 5, 3, 1, 2, 6, 8, 7, 0],
-  [4, 2, 8, 6, 5, 7, 3, 9, 0, 1],
-  [2, 7, 9, 3, 8, 0, 6, 4, 1, 5],
-  [7, 0, 4, 6, 9, 1, 3, 2, 5, 8]
-];
-
-function validateVerhoeff(aadhaar) {
-  if (aadhaar.length !== 12 || !/^\d+$/.test(aadhaar)) return false;
-  let c = 0;
-  let invertedArray = aadhaar.split('').map(Number).reverse();
-  for (let i = 0; i < invertedArray.length; i++) {
-    c = verhoeffD[c][verhoeffP[i % 8][invertedArray[i]]];
-  }
-  return c === 0;
-}
 
 function getStrength(password) {
   let score = 0;
@@ -70,8 +32,7 @@ export default function Register() {
   const navigate = useNavigate();
   const timerRef = useRef(null);
   const [cur, setCur] = useState(0);
-  const [role, setRole] = useState('parent');
-  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', mobile: '', aadhar: '', dob: '', state: '', district: '', block: '', ashaId: '', password: '', confirm: '' });
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', mobile: '', dob: '', state: '', district: '', block: '', password: '', confirm: '' });
   const [showPw, setShowPw] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [agreed, setAgreed] = useState(false);
@@ -79,49 +40,11 @@ export default function Register() {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
-  const [aadharStatus, setAadharStatus] = useState(null); // 'checking', 'valid', 'invalid', null
-  const [aadharData, setAadharData] = useState(null); // { state, ageBand }
 
   useEffect(() => {
     timerRef.current = setInterval(() => setCur((prev) => (prev + 1) % MEDIA_ARRAY.length), 4500);
     return () => clearInterval(timerRef.current);
   }, []);
-
-  useEffect(() => {
-    const aadhaar = form.aadhar.replace(/\D/g, '');
-    if (aadhaar.length === 12) {
-      verifyAadhaar(aadhaar);
-    } else {
-      setAadharStatus(null);
-      setAadharData(null);
-    }
-  }, [form.aadhar]);
-
-  const verifyAadhaar = async (aadhaar) => {
-    setAadharStatus('checking');
-    setAadharData(null);
-    
-    // 1. Local checksum validation
-    if (!validateVerhoeff(aadhaar)) {
-      setAadharStatus('invalid');
-      return;
-    }
-    
-    // 2. Simulated API Integration
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      if (aadhaar === '000000000000') {
-        setAadharStatus('invalid');
-        return;
-      }
-
-      setAadharData({ ageBand: '25-35' });
-      setAadharStatus('valid');
-    } catch (error) {
-      setAadharStatus('invalid');
-    }
-  };
 
   const update = (key) => (e) => {
     const value = e.target.value;
@@ -143,8 +66,6 @@ export default function Register() {
     if (!form.state) nextErrors.state = 'Select a state.';
     if (!form.district) nextErrors.district = 'Select a district.';
     if (!form.block.trim()) nextErrors.block = 'Enter your block or PHC.';
-    if (role === 'asha' && !form.ashaId.trim()) nextErrors.ashaId = 'ASHA ID is required.';
-    if (form.aadhar && aadharStatus === 'invalid') nextErrors.aadhar = 'Please provide a valid Aadhaar number.';
     if (form.password.length < 8) nextErrors.password = 'Password must be at least 8 characters.';
     if (form.password !== form.confirm) nextErrors.confirm = 'Passwords do not match.';
     if (!agreed) nextErrors.agreed = 'Please accept the Terms of Use and Privacy Policy.';
@@ -166,14 +87,12 @@ export default function Register() {
         email: form.email.trim().toLowerCase(),
         phone: form.mobile.replace(/\D/g, ''),
         mobile: form.mobile.replace(/\D/g, ''),
-        aadhar: form.aadhar.replace(/\D/g, ''),
         dob: form.dob,
         state: form.state,
         district: form.district,
         block: form.block.trim(),
         password: form.password,
-        role,
-        ashaId: role === 'asha' ? form.ashaId.trim() : undefined,
+        role: 'parent', // ASHA accounts are created by admins
       };
       const { data } = await authAPI.register(payload);
       setSuccess(data.message || 'Registered successfully. Redirecting to login...');
@@ -230,7 +149,6 @@ export default function Register() {
           </div>
           <div className="login-card__title">Create your account</div>
           <div className="login-card__subtitle">Register for secure access to the child health portal</div>
-          <div className="login-card__roles">{ROLES.map((item) => <button key={item.value} type="button" className={`login-card__role ${role === item.value ? 'is-active' : ''}`} onClick={() => setRole(item.value)}><span className="login-card__role-icon">{item.icon}</span>{item.label}</button>)}</div>
           <form onSubmit={handleSubmit} noValidate>
             {error ? <div className="login-card__alert login-card__alert--error">{error}</div> : null}
             {success ? <div className="login-card__alert login-card__alert--info">{success}</div> : null}
@@ -239,53 +157,17 @@ export default function Register() {
               <div className="login-card__field"><label className="login-card__label">Last Name</label><div className="login-card__input-wrap"><span className="login-card__input-icon">ID</span><input type="text" value={form.lastName} onChange={update('lastName')} placeholder="Sharma" className={`login-card__input ${fieldErrors.lastName ? 'has-error' : ''}`} /></div>{fieldErrors.lastName ? <div className="login-card__error">{fieldErrors.lastName}</div> : null}</div>
               <div className="login-card__field register-form__full"><label className="login-card__label">Email Address</label><div className="login-card__input-wrap"><span className="login-card__input-icon">@</span><input type="email" value={form.email} onChange={update('email')} placeholder="you@example.com" className={`login-card__input ${fieldErrors.email ? 'has-error' : ''}`} /></div>{fieldErrors.email ? <div className="login-card__error">{fieldErrors.email}</div> : null}</div>
               <div className="login-card__field"><label className="login-card__label">Mobile Number</label><div className="login-card__input-wrap"><span className="login-card__input-icon">+91</span><input type="tel" value={form.mobile} onChange={update('mobile')} placeholder="9876543210" className={`login-card__input ${fieldErrors.mobile ? 'has-error' : ''}`} /></div>{fieldErrors.mobile ? <div className="login-card__error">{fieldErrors.mobile}</div> : null}</div>
-              <div className="login-card__field">
-                <label className="login-card__label">Aadhar / ID No.</label>
-                <div className="login-card__input-wrap">
-                  <span className="login-card__input-icon">ID</span>
-                  <input 
-                    type="text" 
-                    value={form.aadhar} 
-                    onChange={update('aadhar')} 
-                    placeholder="XXXX XXXX XXXX" 
-                    className={`login-card__input ${aadharStatus === 'invalid' ? 'has-error shake-animation' : ''}`}
-                    maxLength={14}
-                  />
-                </div>
-                {aadharStatus === 'checking' && (
-                  <div className="aadhar-verify-status is-checking">
-                    <span className="aadhar-verify-spinner"></span> Checking database...
-                  </div>
-                )}
-                {aadharStatus === 'valid' && (
-                  <div className="aadhar-verify-status is-valid">
-                    <span className="aadhar-verify-icon">✓</span> Valid Aadhaar
-                  </div>
-                )}
-                {aadharStatus === 'valid' && aadharData && (
-                  <div className="aadhar-verify-data">
-                    Age Band: {aadharData.ageBand}
-                  </div>
-                )}
-                {aadharStatus === 'invalid' && (
-                  <div className="aadhar-verify-status is-invalid">
-                    <span className="aadhar-verify-icon">✕</span> Invalid Aadhaar Number
-                  </div>
-                )}
-                {fieldErrors.aadhar ? <div className="login-card__error">{fieldErrors.aadhar}</div> : null}
-              </div>
-              <div className="login-card__field"><label className="login-card__label">Date of Birth</label><div className="login-card__input-wrap"><span className="login-card__input-icon">DT</span><input type="date" value={form.dob} onChange={update('dob')} className={`login-card__input ${fieldErrors.dob ? 'has-error' : ''}`} /></div>{fieldErrors.dob ? <div className="login-card__error">{fieldErrors.dob}</div> : null}</div>
+              <div className="login-card__field"><label className="login-card__label">Date of Birth</label><div className="login-card__input-wrap"><span className="login-card__input-icon">DT</span><input type="date" max={new Date().toLocaleDateString('en-CA')} value={form.dob} onChange={update('dob')} className={`login-card__input ${fieldErrors.dob ? 'has-error' : ''}`} /></div>{fieldErrors.dob ? <div className="login-card__error">{fieldErrors.dob}</div> : null}</div>
               <div className="login-card__field"><label className="login-card__label">State / UT</label><div className="login-card__input-wrap"><select value={form.state} onChange={update('state')} className={`register-form__select ${fieldErrors.state ? 'has-error' : ''}`}><option value="">Select state</option>{INDIA_STATES.map((state) => <option key={state} value={state}>{state}</option>)}</select></div>{fieldErrors.state ? <div className="login-card__error">{fieldErrors.state}</div> : null}</div>
               <div className="login-card__field"><label className="login-card__label">District</label><div className="login-card__input-wrap"><select value={form.district} onChange={update('district')} disabled={!form.state} className={`register-form__select ${fieldErrors.district ? 'has-error' : ''}`}><option value="">{form.state ? 'Select district' : 'Select state first'}</option>{(INDIA_DISTRICTS[form.state] || []).map((district) => <option key={district} value={district}>{district}</option>)}</select></div>{fieldErrors.district ? <div className="login-card__error">{fieldErrors.district}</div> : null}</div>
               <div className="login-card__field"><label className="login-card__label">Block / PHC</label><div className="login-card__input-wrap"><span className="login-card__input-icon">BL</span><input type="text" value={form.block} onChange={update('block')} placeholder="Enter your block" className={`login-card__input ${fieldErrors.block ? 'has-error' : ''}`} /></div>{fieldErrors.block ? <div className="login-card__error">{fieldErrors.block}</div> : null}</div>
-              {role === 'asha' ? <div className="login-card__field register-form__full"><label className="login-card__label">ASHA ID</label><div className="login-card__input-wrap"><span className="login-card__input-icon">AS</span><input type="text" value={form.ashaId} onChange={update('ashaId')} placeholder="ASHA-UK-001" className={`login-card__input ${fieldErrors.ashaId ? 'has-error' : ''}`} /></div>{fieldErrors.ashaId ? <div className="login-card__error">{fieldErrors.ashaId}</div> : null}</div> : null}
               <div className="login-card__field"><label className="login-card__label">Password</label><div className="login-card__input-wrap"><span className="login-card__input-icon">#</span><input type={showPw ? 'text' : 'password'} value={form.password} onChange={update('password')} placeholder="Minimum 8 characters" className={`login-card__input login-card__input--password ${fieldErrors.password ? 'has-error' : ''}`} /><button type="button" className="login-card__toggle" onClick={() => setShowPw((prev) => !prev)}>{showPw ? 'Hide' : 'Show'}</button></div>{form.password ? <div className="register-form__strength"><div className="register-form__strength-bar"><div className="register-form__strength-fill" style={{ width: strength.width, background: strength.color }} /></div><div className="register-form__strength-label" style={{ color: strength.color || '#4a7a8a' }}>{strength.label || 'Add a stronger password'}</div></div> : null}{fieldErrors.password ? <div className="login-card__error">{fieldErrors.password}</div> : null}</div>
               <div className="login-card__field"><label className="login-card__label">Confirm Password</label><div className="login-card__input-wrap"><span className="login-card__input-icon">#</span><input type={showConfirm ? 'text' : 'password'} value={form.confirm} onChange={update('confirm')} placeholder="Re-enter password" className={`login-card__input login-card__input--password ${fieldErrors.confirm ? 'has-error' : ''}`} /><button type="button" className="login-card__toggle" onClick={() => setShowConfirm((prev) => !prev)}>{showConfirm ? 'Hide' : 'Show'}</button></div>{fieldErrors.confirm ? <div className="login-card__error">{fieldErrors.confirm}</div> : null}</div>
             </div>
-            <div className="register-form__terms"><label className="login-card__checkbox register-form__checkbox"><input type="checkbox" checked={agreed} onChange={(e) => { setAgreed(e.target.checked); setFieldErrors((prev) => ({ ...prev, agreed: '' })); }} /><span>I agree to the Terms of Use and Privacy Policy</span></label>{fieldErrors.agreed ? <div className="login-card__error">{fieldErrors.agreed}</div> : null}</div>
+            <div className="register-form__terms"><label className="login-card__checkbox register-form__checkbox"><input type="checkbox" checked={agreed} onChange={(e) => { setAgreed(e.target.checked); setFieldErrors((prev) => ({ ...prev, agreed: '' })); }} /><span>I agree to the <Link to="/terms" target="_blank">Terms of Use</Link> and <Link to="/privacy" target="_blank">Privacy Policy</Link>, and I am the parent or lawful guardian of any child I register</span></label>{fieldErrors.agreed ? <div className="login-card__error">{fieldErrors.agreed}</div> : null}</div>
             <button type="submit" disabled={loading} className="login-card__submit">{loading ? <span className="login-card__spinner" /> : 'Create Account'}</button>
           </form>
-          <div className="login-card__footer">Already have an account? <Link to="/login" className="login-card__footer-link">Sign In</Link><br /><br /><span className="login-card__footer-link">Terms of Use</span>{' | '}<span className="login-card__footer-link">Privacy Policy</span></div>
+          <div className="login-card__footer">Already have an account? <Link to="/login" className="login-card__footer-link">Sign In</Link><br /><br /><Link to="/terms" className="login-card__footer-link">Terms of Use</Link>{' | '}<Link to="/privacy" className="login-card__footer-link">Privacy Policy</Link></div>
         </div>
       </div>
     </div>

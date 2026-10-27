@@ -297,6 +297,8 @@ const Home = () => {
             </div>
             <div className="text-center pt-4 border-top border-secondary home-footer-text small">
               &copy; {new Date().getFullYear()} {t('homeFooter_copyright')}
+              {' · '}<Link to="/privacy" className="text-white-50">Privacy Policy</Link>
+              {' · '}<Link to="/terms" className="text-white-50">Terms of Use</Link>
             </div>
           </div>
         </footer>

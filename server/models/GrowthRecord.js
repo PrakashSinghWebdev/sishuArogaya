@@ -19,4 +19,6 @@ const growthRecordSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+growthRecordSchema.index({ childId: 1, recordedDate: 1 });
+
 module.exports = mongoose.model('GrowthRecord', growthRecordSchema);

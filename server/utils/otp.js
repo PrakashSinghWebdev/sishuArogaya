@@ -23,7 +23,7 @@ function buildOTPHtml(otp, name, purpose = 'login') {
   `;
 }
 
-async function sendViaSendGrid(email, otp, name, purpose) {
+async function sendViaSendGrid(email, subject, html) {
   if (!process.env.SENDGRID_API_KEY || !process.env.SENDGRID_FROM_EMAIL) {
     throw new Error('SendGrid is not configured');
   }
@@ -36,12 +36,12 @@ async function sendViaSendGrid(email, otp, name, purpose) {
       email: process.env.SENDGRID_FROM_EMAIL,
       name: 'Sishu Arogaya',
     },
-    subject: 'Your Sishu Arogaya OTP',
-    html: buildOTPHtml(otp, name, purpose),
+    subject,
+    html,
   });
 }
 
-async function sendViaSMTP(email, otp, name, purpose) {
+async function sendViaSMTP(email, subject, html) {
   const host = process.env.EMAIL_HOST;
   const port = Number(process.env.EMAIL_PORT || 587);
   const user = process.env.EMAIL_USER;
@@ -61,30 +61,33 @@ async function sendViaSMTP(email, otp, name, purpose) {
   await transporter.sendMail({
     from: `"Sishu Arogaya" <${user}>`,
     to: email,
-    subject: 'Your Sishu Arogaya OTP',
-    html: buildOTPHtml(otp, name, purpose),
+    subject,
+    html,
   });
 }
 
-// Send OTP via email using SMTP first, then SendGrid fallback
-const sendOTPEmail = async (email, otp, name, purpose = 'login') => {
+// Send email using SMTP first, then SendGrid fallback
+const sendEmail = async (email, subject, html) => {
   const errors = [];
 
   try {
-    await sendViaSMTP(email, otp, name, purpose);
+    await sendViaSMTP(email, subject, html);
     return { provider: 'smtp' };
   } catch (err) {
     errors.push(`SMTP: ${err.message}`);
   }
 
   try {
-    await sendViaSendGrid(email, otp, name, purpose);
+    await sendViaSendGrid(email, subject, html);
     return { provider: 'sendgrid' };
   } catch (err) {
     errors.push(`SendGrid: ${err.message}`);
   }
 
-  throw new Error(errors.join(' | ') || 'Email OTP service is not configured');
+  throw new Error(errors.join(' | ') || 'Email service is not configured');
 };
 
-module.exports = { generateOTP, getOTPExpiry, sendOTPEmail };
+const sendOTPEmail = (email, otp, name, purpose = 'login') =>
+  sendEmail(email, 'Your Sishu Arogaya OTP', buildOTPHtml(otp, name, purpose));
+
+module.exports = { generateOTP, getOTPExpiry, sendOTPEmail, sendEmail };

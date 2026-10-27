@@ -2,20 +2,31 @@ import React, { useEffect, useState } from 'react';
 import Layout from '../../components/Layout';
 import { adminAPI } from '../../services/api';
 import { useLanguage } from '../../context/LanguageContext';
+import Pager, { totalOf } from '../../components/Pager';
+
+const LIMIT = 100;
 
 const MalnutritionCases = () => {
   const { t } = useLanguage();
   const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
 
-  const load = (f) => { setLoading(true); adminAPI.getMalnutrition(f==='all'?undefined:f).then(r=>setCases(r.data)).catch(console.error).finally(()=>setLoading(false)); };
-  useEffect(()=>{ load(filter); },[filter]);
+  useEffect(() => { setPage(1); }, [filter]);
+  useEffect(() => {
+    setLoading(true);
+    adminAPI.getMalnutrition(filter === 'all' ? undefined : filter, { page, limit: LIMIT })
+      .then(r => { setCases(r.data); setTotal(totalOf(r)); })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [filter, page]);
 
   return (
     <Layout role="admin">
       <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-        <h4 className="fw-bold mb-0"><i className="bi bi-exclamation-octagon me-2 text-danger"></i>{t('malnutritionCases')}</h4>
+        <h4 className="fw-bold mb-0"><i className="bi bi-exclamation-octagon me-2 text-danger"></i>{t('malnutritionCases')} ({total.toLocaleString('en-IN')})</h4>
         <div className="d-flex gap-2">
           {['all','moderate','severe'].map(s=>(
             <button key={s} onClick={()=>setFilter(s)} className={`btn btn-sm ${filter===s?'btn-danger':'btn-outline-danger'}`}>{s==='all'?'All':t(s)}</button>
@@ -39,6 +50,7 @@ const MalnutritionCases = () => {
               </tbody>
             </table>
           </div>
+          <Pager page={page} limit={LIMIT} total={total} onPage={setPage} />
         </div>
       )}
     </Layout>

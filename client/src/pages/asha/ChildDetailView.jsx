@@ -45,6 +45,8 @@ const ChildDetailView = () => {
             <div className="mt-3 d-grid gap-2">
               <Link to={`/asha/log-visit?childId=${child._id}`} className="btn btn-sa-primary btn-sm"><i className="bi bi-clipboard-plus me-2"></i>Log Visit</Link>
               <Link to={`/asha/growth-records?childId=${child._id}`} className="btn btn-outline-primary btn-sm"><i className="bi bi-graph-up me-2"></i>Add Growth Data</Link>
+              <Link to="/asha/vaccination-tracker" className="btn btn-outline-warning btn-sm"><i className="bi bi-eyedropper me-2"></i>Record Vaccine</Link>
+              <Link to={`/asha/referrals?childId=${child._id}`} className="btn btn-outline-danger btn-sm"><i className="bi bi-hospital me-2"></i>Refer to Health Centre</Link>
             </div>
           </div>
         </div>

@@ -1,8 +1,11 @@
+const mongoose = require('mongoose');
+const { completedMonths } = require('../utils/zScore');
 const Child = require('../models/Child');
 const Vaccination = require('../models/Vaccination');
 const AshaWorker = require('../models/AshaWorker');
 const { createAuditLog } = require('../utils/auditLogger');
 const escapeRegex = require('../utils/escapeRegex');
+const { pageParams, countCached, countKey } = require('../utils/paginate');
 const { findAshaForArea, assignChild, claimUnassignedInArea } = require('../utils/ashaAssignment');
 
 // Fields a client may set on a child; ownership/status fields are server-controlled
@@ -71,14 +74,27 @@ const addMonthsToDate = (date, months) => {
   return d;
 };
 
+// Full national schedule for a newly registered child (also used when an ASHA records a delivery)
+const createVaccinationSchedule = (child) => Vaccination.insertMany(VACCINE_SCHEDULE.map((v) => ({
+  childId: child._id,
+  vaccineName: v.name,
+  ageMonths: v.ageMonths,
+  dueDate: addMonthsToDate(child.dob, v.ageMonths),
+  status: 'upcoming',
+})));
+
 // POST /api/child/add
 const addChild = async (req, res) => {
   try {
     const payload = pickEditable(req.body, req.user.role);
     let ashaProfile = null;
+    if (payload.dob && new Date(payload.dob) > new Date()) {
+      return res.status(400).json({ message: 'Date of birth cannot be in the future' });
+    }
 
     if (req.user.role === 'parent') {
       payload.parentId = req.user._id;
+      payload.fatherName = req.user.name; // the parent account holder is the father
       // The child lives where the parent registered unless the form says otherwise
       payload.state = payload.state || req.user.state;
       payload.district = payload.district || req.user.district;
@@ -102,15 +118,7 @@ const addChild = async (req, res) => {
       if (asha) await assignChild(child, asha);
     }
 
-    // Auto-generate vaccination schedule
-    const vaccines = VACCINE_SCHEDULE.map((v) => ({
-      childId: child._id,
-      vaccineName: v.name,
-      ageMonths: v.ageMonths,
-      dueDate: addMonthsToDate(child.dob, v.ageMonths),
-      status: 'upcoming',
-    }));
-    await Vaccination.insertMany(vaccines);
+    await createVaccinationSchedule(child);
 
     if (ashaProfile) {
       await AshaWorker.findByIdAndUpdate(ashaProfile._id, {
@@ -177,11 +185,28 @@ const listChildren = async (req, res) => {
     if (req.query.district) filter.district = req.query.district;
     if (req.query.block) filter.block = req.query.block;
 
-    const children = await Child.find(filter)
+    const query = () => Child.find(filter)
       .populate('parentId', 'name phone')
       .populate({ path: 'ashaId', select: 'ashaId district block village', populate: { path: 'userId', select: 'name phone' } })
       .sort('-createdAt');
-    res.json(children);
+    if (req.user.role !== 'admin') return res.json(await query()); // a family / one ASHA's caseload is small
+
+    // Admin: every child in the system, so search, filter and page on the server
+    const { q, status, ashaWorker, unassigned } = req.query;
+    if (status) filter.nutritionStatus = String(status);
+    if (unassigned === 'true') filter.ashaId = null; // matches missing too
+    else if (ashaWorker) {
+      if (!mongoose.isValidObjectId(ashaWorker)) return res.status(400).json({ message: 'Invalid ASHA worker id' });
+      filter.ashaId = ashaWorker;
+    }
+    if (q) {
+      const rx = new RegExp(escapeRegex(String(q).trim()), 'i');
+      filter.$or = [{ name: rx }, { childId: rx }, { district: rx }, { block: rx }, { village: rx }];
+    }
+    const { limit, skip } = pageParams(req.query);
+    // lean: plain objects are far cheaper than full documents at admin scale; re-add the computed fields
+    const [rows, total] = await Promise.all([query().skip(skip).limit(limit).lean(), countCached(Child, filter, countKey(req.query))]);
+    res.set('X-Total-Count', total).json(rows.map((c) => ({ ...c, id: String(c._id), ageInMonths: completedMonths(c.dob) })));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -284,4 +309,4 @@ const searchByChildId = async (req, res) => {
   }
 };
 
-module.exports = { addChild, getChild, listChildren, updateChild, searchChildren, searchByChildId };
+module.exports = { createVaccinationSchedule, addChild, getChild, listChildren, updateChild, searchChildren, searchByChildId };

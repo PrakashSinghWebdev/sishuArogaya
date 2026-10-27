@@ -49,6 +49,11 @@ const ProtectedRoute = ({ allowedRoles = [] }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  // Admin-issued one-time password: set your own before anything else (the API enforces this too)
+  if (user.mustChangePassword && location.pathname !== '/change-password') {
+    return <Navigate to="/change-password" replace />;
+  }
+
   if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
     const dashboards = {
       parent: '/parent/dashboard',

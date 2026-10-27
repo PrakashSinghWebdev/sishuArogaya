@@ -48,6 +48,9 @@ const addGrowthRecord = async (req, res) => {
     }
 
     const normalizedRecordedDate = recordedDate || date || new Date();
+    if (new Date(normalizedRecordedDate) > new Date()) {
+      return res.status(400).json({ message: 'Growth record date cannot be in the future' });
+    }
     const normalizedAgeMonths =
       ageMonths != null && ageMonths !== ''
         ? Number(ageMonths)

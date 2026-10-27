@@ -1,10 +1,11 @@
 const GovtScheme = require('../models/GovtScheme');
 const { createAuditLog } = require('../utils/auditLogger');
+const { cached, invalidate } = require('../utils/cache');
 
 // GET /api/schemes
 const getSchemes = async (req, res) => {
   try {
-    const schemes = await GovtScheme.find({ isActive: true });
+    const schemes = await cached('schemes', 10 * 60_000, () => GovtScheme.find({ isActive: true }).lean());
     res.json(schemes);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -15,6 +16,7 @@ const getSchemes = async (req, res) => {
 const createScheme = async (req, res) => {
   try {
     const scheme = await GovtScheme.create(req.body);
+    invalidate('schemes');
     await createAuditLog({
       req,
       action: 'SCHEME_CREATED',
@@ -33,6 +35,7 @@ const updateScheme = async (req, res) => {
   try {
     const scheme = await GovtScheme.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!scheme) return res.status(404).json({ message: 'Scheme not found' });
+    invalidate('schemes');
     await createAuditLog({
       req,
       action: 'SCHEME_UPDATED',

@@ -1,5 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import Layout from '../../components/Layout';
+import { totalOf } from '../../components/Pager';
 import { ashaAPI, childAPI } from '../../services/api';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -59,7 +61,10 @@ const tdCell = {
 const AshaWorkerManagement = () => {
   const { t } = useLanguage();
   const [workers, setWorkers] = useState([]);
-  const [children, setChildren] = useState([]);
+  const [assignedChildren, setAssignedChildren] = useState([]);
+  const [availableChildren, setAvailableChildren] = useState([]);
+  const [availableTotal, setAvailableTotal] = useState(0);
+  const [modalReload, setModalReload] = useState(0);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [selectedWorker, setSelectedWorker] = useState(null);
@@ -70,12 +75,8 @@ const AshaWorkerManagement = () => {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [workersRes, childrenRes] = await Promise.all([
-        ashaAPI.listWorkers(),
-        childAPI.list(),
-      ]);
+      const workersRes = await ashaAPI.listWorkers();
       setWorkers(workersRes.data);
-      setChildren(childrenRes.data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -84,6 +85,20 @@ const AshaWorkerManagement = () => {
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  // The modal asks the server for just this worker's children and a searchable page of unassigned
+  // ones — loading every child in the system to filter here doesn't scale (50k children = 34 MB)
+  const workerId = selectedWorker?._id;
+  useEffect(() => {
+    if (!workerId) return undefined;
+    childAPI.list({ ashaWorker: workerId, limit: 500 }).then(r => setAssignedChildren(r.data)).catch(console.error);
+    const timer = setTimeout(() => {
+      childAPI.list({ unassigned: 'true', q: childSearch || undefined, limit: 50 })
+        .then(r => { setAvailableChildren(r.data); setAvailableTotal(totalOf(r)); })
+        .catch(console.error);
+    }, childSearch ? 300 : 0);
+    return () => clearTimeout(timer);
+  }, [workerId, childSearch, modalReload]);
 
   function flashToast(msg, type = 'success') {
     setToast({ msg, type });
@@ -101,9 +116,9 @@ const AshaWorkerManagement = () => {
     try {
       await ashaAPI.assignChild({ childId, ashaWorkerId: selectedWorker._id });
       flashToast('Child assigned successfully');
-      const [wRes, cRes] = await Promise.all([ashaAPI.listWorkers(), childAPI.list()]);
+      const wRes = await ashaAPI.listWorkers();
       setWorkers(wRes.data);
-      setChildren(cRes.data);
+      setModalReload(n => n + 1);
       setSelectedWorker(wRes.data.find(w => w._id === selectedWorker._id) || selectedWorker);
     } catch (err) {
       flashToast(err.response?.data?.message || 'Failed to assign', 'danger');
@@ -117,9 +132,9 @@ const AshaWorkerManagement = () => {
     try {
       await ashaAPI.unassignChild({ childId });
       flashToast('Child unassigned successfully');
-      const [wRes, cRes] = await Promise.all([ashaAPI.listWorkers(), childAPI.list()]);
+      const wRes = await ashaAPI.listWorkers();
       setWorkers(wRes.data);
-      setChildren(cRes.data);
+      setModalReload(n => n + 1);
       setSelectedWorker(wRes.data.find(w => w._id === selectedWorker._id) || selectedWorker);
     } catch (err) {
       flashToast(err.response?.data?.message || 'Failed to unassign', 'danger');
@@ -127,26 +142,6 @@ const AshaWorkerManagement = () => {
       setAssigningId(null);
     }
   }
-
-  // children currently linked to the open worker
-  const assignedChildren = selectedWorker
-    ? children.filter(c => {
-        const workerRef = c.ashaId?._id || c.ashaId;
-        return workerRef && String(workerRef) === String(selectedWorker._id);
-      })
-    : [];
-
-  // unassigned children matching the search box
-  const availableChildren = children.filter(c => {
-    if (c.ashaId) return false;
-    if (!childSearch) return true;
-    const q = childSearch.toLowerCase();
-    return (
-      (c.name || '').toLowerCase().includes(q) ||
-      (c.village || '').toLowerCase().includes(q) ||
-      (c.block || '').toLowerCase().includes(q)
-    );
-  });
 
   return (
     <Layout role="admin">
@@ -171,6 +166,12 @@ const AshaWorkerManagement = () => {
           marginBottom: 24, display: 'flex', alignItems: 'center', gap: 10,
         }}>
           <span style={{ fontSize: 28 }}>👩‍⚕️</span> ASHA Worker Management
+          <Link
+            to="/admin/asha-workers/new"
+            style={{ ...btnBase, ...btnVariants.green, marginLeft: 'auto', textDecoration: 'none', fontFamily: "'DM Sans', sans-serif" }}
+          >
+            + Add ASHA Worker
+          </Link>
         </h3>
 
         {loading ? (
@@ -216,6 +217,9 @@ const AshaWorkerManagement = () => {
                         <code style={{ background: '#f1f5f9', color: '#475569', padding: '4px 8px', borderRadius: 6 }}>
                           {worker.ashaId}
                         </code>
+                        {worker.userId?.username && worker.userId.username !== worker.ashaId && (
+                          <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>Login: {worker.userId.username}</div>
+                        )}
                       </td>
                       <td style={tdCell}>
                         <span style={{ color: '#0f172a', fontWeight: 600 }}>{worker.district}</span>
@@ -223,7 +227,7 @@ const AshaWorkerManagement = () => {
                       </td>
                       <td style={tdCell}>
                         <span style={{ background: '#fef3c7', color: '#b45309', padding: '4px 12px', borderRadius: 20, fontSize: 13, fontWeight: 700 }}>
-                          {worker.assignedChildren?.length || 0}
+                          {worker.assignedCount ?? worker.assignedChildren?.length ?? 0}
                         </span>
                       </td>
                       <td style={tdCell}>
@@ -409,9 +413,9 @@ const AshaWorkerManagement = () => {
                           })}
                         </tbody>
                       </table>
-                      {availableChildren.length > 50 && (
+                      {availableTotal > availableChildren.length && (
                         <div style={{ background: '#f8fafc', padding: 12, textAlign: 'center', fontSize: 12, color: '#64748b', borderTop: '1px solid #e2e8f0' }}>
-                          Showing 50 of {availableChildren.length}. Use the search bar to narrow down.
+                          Showing {availableChildren.length} of {availableTotal.toLocaleString('en-IN')}. Use the search bar to narrow down.
                         </div>
                       )}
                     </div>

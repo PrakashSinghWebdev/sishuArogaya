@@ -1,4 +1,8 @@
 const DietPlan = require('../models/DietPlan');
+const { cached } = require('../utils/cache');
+
+// Diet plans are seeded reference data (a handful of docs): load them all once, pick in memory
+const allPlans = () => cached('diet:all', 60 * 60_000, () => DietPlan.find({}).sort({ minMonths: 1 }).lean());
 
 const hasRenderableDietPlan = (plan) =>
   !!plan &&
@@ -10,12 +14,13 @@ const hasRenderableDietPlan = (plan) =>
 const getDietPlan = async (req, res) => {
   try {
     const { ageGroup } = req.params;
-    const plan = await DietPlan.findOne({ ageGroup });
+    const plans = await allPlans();
+    const plan = plans.find((p) => p.ageGroup === ageGroup);
 
     if (!hasRenderableDietPlan(plan)) {
       return res.status(404).json({
         message: 'Diet plan not found or incomplete for this age group',
-        available: await DietPlan.find({}, 'ageGroup label minMonths maxMonths'),
+        available: plans.map(({ _id, ageGroup: group, label, minMonths, maxMonths }) => ({ _id, ageGroup: group, label, minMonths, maxMonths })),
       });
     }
 
@@ -35,15 +40,13 @@ const getDietPlanByAge = async (req, res) => {
 
     const ageMonths = Number(months);
 
-    const plan = await DietPlan.findOne({
-      minMonths: { $lte: ageMonths },
-      maxMonths: { $gte: ageMonths },
-    });
+    const plans = await allPlans();
+    const plan = plans.find((p) => p.minMonths <= ageMonths && p.maxMonths >= ageMonths);
 
     if (!hasRenderableDietPlan(plan)) {
       return res.status(404).json({
         message: 'No complete diet plan found for this age',
-        closest: await DietPlan.find({}).sort({ minMonths: 1 }).limit(2),
+        closest: plans.slice(0, 2),
       });
     }
 

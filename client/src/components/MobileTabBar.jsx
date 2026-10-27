@@ -69,10 +69,40 @@ const LINKS = {
       label: "Home",
     },
     {
+      to: "/asha/families",
+      icon: "bi-house-heart",
+      key: "families",
+      label: "Families",
+    },
+    {
+      to: "/asha/my-visits",
+      icon: "bi-calendar-check",
+      key: "myVisits",
+      label: "My Visits",
+    },
+    {
       to: "/asha/children",
       icon: "bi-people",
       key: "myChildren",
       label: "Children",
+    },
+    {
+      to: "/asha/maternal-care",
+      icon: "bi-heart-pulse",
+      key: "maternalCare",
+      label: "Maternal Care",
+    },
+    {
+      to: "/asha/referrals",
+      icon: "bi-hospital",
+      key: "referrals",
+      label: "Referrals",
+    },
+    {
+      to: "/asha/register-child",
+      icon: "bi-person-plus",
+      key: "registerChild",
+      label: "Register Child",
     },
     {
       to: "/asha/log-visit",
@@ -109,6 +139,24 @@ const LINKS = {
       icon: "bi-file-earmark-bar-graph",
       key: "generateReport",
       label: "Reports",
+    },
+    {
+      to: "/asha/camps",
+      icon: "bi-megaphone",
+      key: "healthCampaigns",
+      label: "Camps",
+    },
+    {
+      to: "/asha/incentives",
+      icon: "bi-currency-rupee",
+      key: "incentiveClaims",
+      label: "Incentives",
+    },
+    {
+      to: "/asha/messages",
+      icon: "bi-chat-left-text",
+      key: "supervisorMessages",
+      label: "Messages",
     },
     {
       to: "/asha/notifications",

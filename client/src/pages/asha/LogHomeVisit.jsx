@@ -51,6 +51,9 @@ const blankForm = {
   notes:            '',
   outcome:          'healthy',
   referralRequired: false,
+  referralUrgency:  'urgent',
+  facility:         '',
+  followUpDate:     '',
 };
 
 // rough WAZ estimate — not a real WHO lookup, just a quick field flag
@@ -229,6 +232,9 @@ const LogHomeVisit = () => {
         notes:            formData.notes,
         outcome:          formData.outcome,
         referralRequired: formData.referralRequired,
+        referralUrgency:  formData.referralUrgency,
+        facility:         formData.facility || undefined,
+        followUpDate:     formData.followUpDate || undefined,
       });
       setSubmitted(true);
       setTimeout(() => {
@@ -628,6 +634,34 @@ const LogHomeVisit = () => {
                         Check if this child needs to be referred to Primary Health Centre
                       </div>
                     </div>
+                  </div>
+
+                  {/* Referral details: saved as a tracked referral (see Referrals page) */}
+                  {formData.referralRequired && (
+                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: -12, marginBottom: 24 }}>
+                      <div style={{ flex: '1 1 180px' }}>
+                        <label htmlFor="visit-urgency" style={{ fontSize: 12, fontWeight: 600, color: palette.muted, display: 'block', marginBottom: 4 }}>Urgency</label>
+                        <select id="visit-urgency" className="form-select" value={formData.referralUrgency} onChange={e => updateField('referralUrgency', e.target.value)}>
+                          <option value="routine">Routine</option>
+                          <option value="urgent">Urgent</option>
+                          <option value="emergency">Emergency — call 108</option>
+                        </select>
+                      </div>
+                      <div style={{ flex: '2 1 240px' }}>
+                        <label htmlFor="visit-facility" style={{ fontSize: 12, fontWeight: 600, color: palette.muted, display: 'block', marginBottom: 4 }}>Refer to (facility)</label>
+                        <input id="visit-facility" className="form-control" maxLength={200} placeholder="PHC / CHC / District Hospital" value={formData.facility} onChange={e => updateField('facility', e.target.value)} />
+                      </div>
+                    </div>
+                  )}
+
+                  <div style={{ marginBottom: 24 }}>
+                    <label htmlFor="visit-followup" style={{ fontSize: 12, fontWeight: 600, color: palette.muted, display: 'block', marginBottom: 4 }}>
+                      📅 Next visit / follow-up date (optional)
+                    </label>
+                    <input id="visit-followup" type="date" className="form-control" style={{ maxWidth: 220 }}
+                      min={new Date().toISOString().slice(0, 10)} value={formData.followUpDate}
+                      onChange={e => updateField('followUpDate', e.target.value)} />
+                    <div style={{ fontSize: 11, color: palette.muted, marginTop: 4 }}>The child will appear in My Visits on this date.</div>
                   </div>
                 </div>
               )}

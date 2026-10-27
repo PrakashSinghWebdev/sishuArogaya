@@ -17,13 +17,14 @@ const CAPTIONS = [
 
 const ROLES = [
   { icon: 'PA', label: 'Parent', ph: 'parent@sishu.gov.in', value: 'parent' },
-  { icon: 'AS', label: 'ASHA Worker', ph: 'asha@sishu.gov.in', value: 'asha' },
+  { icon: 'AS', label: 'ASHA Worker', ph: 'ASHA-123456', value: 'asha' },
   { icon: 'AD', label: 'Admin', ph: 'admin@sishu.gov.in', value: 'admin' },
 ];
 
 const ROTATE_MS = 4500;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^\d{10}$/;
+const USERNAME_REGEX = /^asha-\d+$/i;
 
 export default function SishuLogin() {
   const { login, getDashboardPath } = useAuth();
@@ -94,7 +95,7 @@ export default function SishuLogin() {
 
   const isValidLoginIdentifier = (value) => {
     const input = value.trim();
-    return EMAIL_REGEX.test(input) || PHONE_REGEX.test(input);
+    return EMAIL_REGEX.test(input) || PHONE_REGEX.test(input) || USERNAME_REGEX.test(input);
   };
 
   const handleLogin = async (e) => {
@@ -121,7 +122,7 @@ export default function SishuLogin() {
       const selectedRole = ROLES[role].value;
       const userData = await login(email, password, selectedRole);
       setInfo('Login successful. Redirecting...');
-      setTimeout(() => navigate(getDashboardPath(userData.role)), 500);
+      setTimeout(() => navigate(userData.mustChangePassword ? '/change-password' : getDashboardPath(userData.role)), 500);
     } catch (err) {
       const msg = err.response?.data?.message || 'Login failed. Please try again.';
       setError(msg);
@@ -166,7 +167,7 @@ export default function SishuLogin() {
       return;
     }
 
-    if (!newPassword || newPassword.length < 6) {
+    if (!newPassword || newPassword.length < 8) {
       setPassErr(true);
       return;
     }
@@ -322,12 +323,11 @@ export default function SishuLogin() {
                   {error ? <div className="login-card__alert login-card__alert--error">{error}</div> : null}
                   {info ? <div className="login-card__alert login-card__alert--info">{info}</div> : null}
                   <div className="login-card__alert login-card__alert--info">
-                    Demo login:
-                    {role === 0 ? ' parent@sishu.gov.in / Parent@123' : role === 1 ? ' asha@sishu.gov.in / Asha@123' : ' admin@sishu.gov.in / Admin@123'}
+                    {{ parent: 'Demo login: parent@sishu.gov.in / Parent@123', asha: 'Demo login: asha@sishu.gov.in / Asha@123', admin: 'Demo login: admin@sishu.gov.in / Admin@123' }[ROLES[role].value]}
                   </div>
 
                   <div className="login-card__field">
-                    <label className="login-card__label">{t('email')}</label>
+                    <label className="login-card__label">{ROLES[role].value === 'asha' ? 'Username / Email / Phone' : t('email')}</label>
                     <div className="login-card__input-wrap">
                       <span className="login-card__input-icon">@</span>
                       <input
@@ -338,7 +338,7 @@ export default function SishuLogin() {
                         className={`login-card__input ${emailErr ? 'has-error' : ''}`}
                       />
                     </div>
-                    {emailErr ? <div className="login-card__error">Please enter a valid email address or 10-digit phone number.</div> : null}
+                    {emailErr ? <div className="login-card__error">Please enter a valid email, 10-digit phone number or ASHA username.</div> : null}
                   </div>
 
                   <div className="login-card__field">
@@ -450,7 +450,7 @@ export default function SishuLogin() {
                       {showPw ? 'Hide' : 'Show'}
                     </button>
                   </div>
-                  {passErr ? <div className="login-card__error">Password must be at least 6 characters.</div> : null}
+                  {passErr ? <div className="login-card__error">Password must be at least 8 characters.</div> : null}
                 </div>
 
                 <button type="submit" disabled={loading} className="login-card__submit">
@@ -464,7 +464,9 @@ export default function SishuLogin() {
             )}
 
             <div className="login-card__footer">
-              {isLoginStep ? (
+              {isLoginStep && ROLES[role].value === 'asha' ? (
+                <>Login details are provided by your admin via SMS, WhatsApp or email.</>
+              ) : isLoginStep ? (
                 <>
                   {t('noAccount')}{' '}
                   <Link to="/register" className="login-card__footer-link">
@@ -476,9 +478,9 @@ export default function SishuLogin() {
               )}
               <br />
               <br />
-              <span className="login-card__footer-link">Terms of Use</span>
+              <Link to="/terms" className="login-card__footer-link">Terms of Use</Link>
               {' | '}
-              <span className="login-card__footer-link">Privacy Policy</span>
+              <Link to="/privacy" className="login-card__footer-link">Privacy Policy</Link>
             </div>
           </div>
         </div>

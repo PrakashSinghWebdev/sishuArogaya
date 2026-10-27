@@ -451,7 +451,7 @@ export default function DietPlan() {
   const [checkLoading, setCheckLoading] = useState(false);
   const [checkSaving, setCheckSaving] = useState(false);
 
-  const todayStr = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const todayStr = useMemo(() => new Date().toLocaleDateString('en-CA'), []);
 
   const handleSaveCustomDiet = () => {
     console.log('Saving custom diet:', customMeal);

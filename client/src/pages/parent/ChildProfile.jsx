@@ -212,16 +212,15 @@ export default function ChildProfile() {
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 14 }}>
                     {[
                       { label: 'Child Name', field: 'name', type: 'text', placeholder: 'Full name', required: true },
-                      { label: 'Date of Birth', field: 'dob', type: 'date', required: true },
+                      { label: 'Date of Birth', field: 'dob', type: 'date', required: true, max: new Date().toLocaleDateString('en-CA') },
                       { label: 'Birth Weight (kg)', field: 'birthWeight', type: 'number', placeholder: '3.2', step: '0.1' },
                       { label: 'Birth Height (cm)', field: 'birthHeight', type: 'number', placeholder: '50', step: '0.1' },
                       { label: "Mother's Name", field: 'motherName', type: 'text', placeholder: "Mother's full name" },
-                      { label: "Father's Name", field: 'fatherName', type: 'text', placeholder: "Father's full name" },
                       { label: 'Contact Phone', field: 'contactPhone', type: 'tel', placeholder: '10-digit mobile' },
-                    ].map(({ label, field, type, placeholder, required, step }) => (
+                    ].map(({ label, field, type, placeholder, required, step, max }) => (
                       <div key={field}>
                         <label style={{ fontSize: 12, fontWeight: 600, color: themeColors.muted, display: 'block', marginBottom: 5 }}>{label}</label>
-                        <input type={type} placeholder={placeholder} required={required} step={step} value={form[field]}
+                        <input type={type} placeholder={placeholder} required={required} step={step} max={max} value={form[field]}
                           onChange={(e) => setForm({ ...form, [field]: e.target.value })}
                           style={{ width: '100%', padding: '9px 12px', border: `1.5px solid ${themeColors.border}`, borderRadius: 9, fontSize: 13, fontFamily: 'inherit', outline: 'none', color: themeColors.text }} />
                       </div>
@@ -283,7 +282,7 @@ export default function ChildProfile() {
                     <InfoRow icon="🩸" label={t('bloodGroup')} value={selectedChild.bloodGroup} />
                     <InfoRow icon="📍" label={t('address')} value={selectedChild.location || selectedChild.village || '—'} />
                     <InfoRow icon="👩" label="Mother's Name" value={selectedChild.motherName || '—'} />
-                    <InfoRow icon="👨" label="Father's Name" value={selectedChild.fatherName || '—'} />
+                    <InfoRow icon="👨" label="Father's Name" value={selectedChild.parentId?.name || selectedChild.fatherName || '—'} />
                     <InfoRow icon="📞" label="Contact" value={selectedChild.contactPhone || '—'} />
                   </div>
 

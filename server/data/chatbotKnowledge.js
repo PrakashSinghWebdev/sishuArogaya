@@ -248,7 +248,7 @@ A Z-Score tells us how your child's measurements compare to healthy children of 
 
   {
     intent: 'malnutrition_explained',
-    patterns: ['malnutrition', 'undernutrition', 'malnourished', 'stunting', 'wasting', 'underweight', 'कुपोषण', 'what is malnutrition'],
+    patterns: ['malnutrition', 'undernutrition', 'malnourished', 'stunting', 'wasting', 'underweight', 'कुपोषण', 'what is malnutrition', 'what is sam', 'what is mam', 'severe acute malnutrition', 'moderate acute malnutrition', 'kuposhan'],
     response: `**Understanding Malnutrition in Children**
 
 Malnutrition means a child is not getting enough nutrients to grow and stay healthy.
@@ -1471,7 +1471,7 @@ Japanese Encephalitis — a viral brain infection spread by mosquito bites. Can 
 ✅ Blood tests (hemoglobin, blood group, blood sugar, HIV)
 ✅ Urine tests
 ✅ Ultrasound (at least 1 during pregnancy)
-✅ TT injection (Tetanus Toxoid) — 2 doses or booster
+✅ Td injection (Tetanus-diphtheria) — 2 doses or booster
 ✅ Iron-Folic Acid tablets (180 tablets, start from 1st trimester)
 ✅ Calcium tablets
 
@@ -1841,7 +1841,7 @@ Regular weighing detects malnutrition early, before it becomes severe.
 
 **Getting Started:**
 • Parents: Register with your mobile number
-• ASHA workers: Use credentials given by your supervisor
+• ASHA workers: Use credentials given by your administrator
 • Admin: Separate admin login
 
 **Need help?**
@@ -1915,6 +1915,508 @@ Breast milk alone is not enough after 6 months. Baby needs extra energy and nutr
 • Cow's milk as drink is okay after 12 months
 
 🚨 Do NOT give honey before 1 year — risk of infant botulism.`
+  },
+
+  // ══════════════════════ PREGNANCY (ANC / JANANI programmes) ══════════════════════
+  {
+    intent: 'pregnancy_registration',
+    patterns: ['pregnancy registration', 'register pregnancy', 'mcp card', 'mother child protection card', 'rch id', 'rch number', 'anmol', 'janani app', 'janani', 'first pregnancy visit', 'garbhavastha panjikaran', 'pregnant ho gayi', 'i am pregnant', 'just found pregnant'],
+    response: `**Register Your Pregnancy Early — within 12 weeks (3 months):**
+
+**How:**
+1. Tell your **ASHA didi** or go to the Sub-centre / Ayushman Arogya Mandir / PHC
+2. The ANM registers you and gives you a **RCH ID** (pregnancy number)
+3. You get a free **MCP card** (Mother & Child Protection card) — keep it safe and bring it to every visit
+
+**Why register early:**
+✅ Free check-ups, blood tests and ultrasound
+✅ Free IFA (iron) and calcium tablets, Td injection
+✅ Money under **JSY** and **PMMVY** (the RCH ID is needed)
+✅ High-risk problems are found early
+✅ Free delivery and free 102 transport (JSSK)
+
+**Carry:** Aadhaar (or other ID), bank passbook, mobile number.
+
+📞 Your ASHA visits you at home during pregnancy and after delivery.`
+  },
+  {
+    intent: 'pregnancy_danger_signs',
+    patterns: ['pregnancy danger signs', 'danger signs in pregnancy', 'bleeding in pregnancy', 'bleeding during pregnancy', 'baby not moving', 'baby movement less', 'fits in pregnancy', 'swelling in pregnancy', 'headache in pregnancy', 'water broke', 'water leaking pregnancy', 'pregnancy emergency', 'garbhavastha mein khoon'],
+    response: `🚨 **Pregnancy Danger Signs — Go to hospital NOW, call 108 or 102:**
+
+• **Bleeding** from the vagina (any amount)
+• **Fits** (convulsions) or fainting
+• **Severe headache**, blurred vision, or swelling of face and hands
+• **High fever**
+• **Severe pain** in the belly
+• **Water leaking** before labour pains start
+• **Baby moving less** or not moving (after 5 months)
+• **Labour pain for more than 12 hours**
+• Breathlessness, very pale, very tired
+
+**After delivery, also go immediately for:**
+• Heavy bleeding (soaking a pad in less than an hour)
+• Fever or bad-smelling discharge
+
+📞 **102** — free mother & child transport · **108** — ambulance
+Do not wait at home. Take the MCP card with you.`
+  },
+  {
+    intent: 'high_risk_pregnancy',
+    patterns: ['high risk pregnancy', 'hrp', 'risky pregnancy', 'pregnancy risk', 'pmsma', 'red sticker', 'surakshit matritva', 'previous caesarean', 'twins pregnancy', 'pregnancy after 35', 'teenage pregnancy'],
+    response: `**High-Risk Pregnancy (HRP) — needs extra care and delivery in a big hospital:**
+
+**A pregnancy is high-risk if the mother has:**
+• Age **below 18** or **above 35**
+• **Severe anaemia** (Hb below 7 g/dL)
+• **High BP** (140/90 or more) or diabetes
+• Earlier **caesarean**, stillbirth, or repeated miscarriage
+• **Twins**, or baby lying in a wrong position late in pregnancy
+• Height under 145 cm, HIV, syphilis, heart/kidney/thyroid disease
+• Bleeding during this pregnancy
+
+**What to do:**
+1. Go for check-up under **PMSMA** — free doctor check-up on the **9th of every month** at PHC/CHC/District Hospital (HRP mothers get a **red sticker** on the MCP card)
+2. Plan delivery at a **CHC / District Hospital** (FRU) where operation and blood are available — never at home
+3. ASHA keeps extra follow-up visits
+
+📞 102 for free transport to the hospital.`
+  },
+  {
+    intent: 'pregnancy_nutrition',
+    patterns: ['diet in pregnancy', 'food during pregnancy', 'what to eat in pregnancy', 'pregnancy food', 'iron tablet pregnancy', 'ifa tablet', 'calcium tablet pregnancy', 'folic acid', 'pregnancy vitamins', 'garbhavastha mein khana', 'pregnant khana'],
+    response: `**Food & Tablets During Pregnancy:**
+
+**Eat:**
+• **One extra meal** every day, plus a snack
+• Dal, chana, rajma, egg, milk, curd, paneer (protein)
+• Green leafy vegetables, jaggery, ragi/bajra (iron)
+• Seasonal fruits; use **iodised salt**
+• Take **Take-Home Ration / hot meal** from the anganwadi — it is free
+
+**Free tablets from ASHA / PHC:**
+• **Folic acid** — in first 3 months
+• **IFA (iron) tablet** — 1 daily from 4th month, for at least **180 days**; take after food, not with tea/milk
+• **Calcium** — 2 tablets daily (not at the same time as iron), from 4th month, for 180 days
+• **Albendazole** (deworming) — one tablet after the first 3 months
+
+**Avoid:** tobacco, gutka, alcohol, medicines without doctor's advice.
+Rest 2 hours in the day, sleep on your **left side** in late pregnancy.
+
+ℹ️ Black stools with iron tablets are normal.`
+  },
+  {
+    intent: 'anemia_pregnancy',
+    patterns: ['anemia in pregnancy', 'anaemia pregnancy', 'low hemoglobin pregnancy', 'low hb pregnancy', 'khoon ki kami garbhavastha', 'pregnant weakness', 'iron injection pregnancy', 'anemia mukt bharat'],
+    response: `**Anaemia (Low Blood) in Pregnancy:**
+
+**Hb levels:**
+• 11 g/dL or more — normal
+• 10–10.9 — mild
+• 7–9.9 — moderate
+• Below 7 — **severe (high-risk, needs hospital)**
+
+**Signs:** tiredness, pale tongue/nails/eyes, breathlessness, dizziness, fast heartbeat.
+
+**Treatment (free under Anemia Mukt Bharat):**
+1. Take **IFA tablets daily** — the doctor may advise 2 a day if Hb is low
+2. If tablets do not help or Hb is low later in pregnancy, the doctor can give **iron through a drip (IV iron)** at PHC/CHC
+3. Severe anaemia may need blood transfusion — deliver in a big hospital
+4. Eat iron foods: green leaves, jaggery, chana, dal, egg, meat; add lemon/amla for better absorption
+5. Get Hb checked at every ANC visit
+
+📞 Breathless at rest or very pale → hospital now, call 108.`
+  },
+  {
+    intent: 'pregnancy_bp_sugar',
+    patterns: ['bp in pregnancy', 'high bp pregnancy', 'pre eclampsia', 'preeclampsia', 'eclampsia', 'sugar in pregnancy', 'diabetes in pregnancy', 'gestational diabetes', 'gdm', 'ogtt', 'glucose test pregnancy'],
+    response: `**High BP and Sugar in Pregnancy:**
+
+**High BP (140/90 or more):**
+• Can lead to **pre-eclampsia / eclampsia** (fits) — dangerous for mother and baby
+• Warning signs: severe headache, blurred vision, swelling of face/hands, upper belly pain
+• Get BP checked at **every** ANC visit; take BP medicine only as the doctor says
+• Deliver in a CHC / District Hospital
+
+**Sugar (Gestational Diabetes):**
+• Every pregnant woman gets a free **sugar test (75 g glucose, check after 2 hours)** at first visit and again at **24–28 weeks**
+• 2-hour value **140 mg/dL or more** = gestational diabetes
+• Treatment: diet control, walking, and medicine/insulin if the doctor advises
+• Deliver in a hospital; baby's sugar is checked after birth
+
+🚨 Fits, severe headache or blurred vision → call **108** now.`
+  },
+  {
+    intent: 'td_vaccine_pregnancy',
+    patterns: ['tt injection', 'td injection', 'tetanus injection pregnancy', 'td vaccine', 'tetanus vaccine pregnancy', 'injection in pregnancy', 'pregnancy vaccine'],
+    response: `**Td (Tetanus-diphtheria) Vaccine in Pregnancy — free:**
+
+• **Td-1** — as early as possible after pregnancy is registered
+• **Td-2** — 4 weeks after Td-1
+• **Td-Booster** (one dose) — if you got 2 doses in a pregnancy within the last 3 years
+
+Protects mother and newborn from tetanus. Td has replaced the old TT injection.
+Mild pain or swelling at the injection site is normal.`
+  },
+  {
+    intent: 'birth_preparedness',
+    patterns: ['delivery preparation', 'birth preparedness', 'prepare for delivery', 'delivery plan', 'what to take to hospital', 'delivery bag', 'institutional delivery', 'home delivery', 'free delivery', 'jssk', 'labour signs', 'labour pain'],
+    response: `**Get Ready for Delivery (Birth Plan):**
+
+**Decide early:**
+1. **Where** — always a hospital (PHC/CHC/District Hospital); high-risk mothers → CHC/District Hospital
+2. **Transport** — save **102** (free) and ASHA's number
+3. **Money** for emergencies; **blood donor** in the family
+4. A **birth companion** (a woman from family) to stay with you
+
+**Bag:** MCP card, ID, bank details, clean clothes, sanitary pads, baby clothes, wrap, cap, socks.
+
+**Free under JSSK:** delivery (normal or caesarean), medicines, tests, blood, food, and transport home → no money should be asked.
+**JSY:** cash after hospital delivery.
+
+**Go to hospital when:** regular labour pains, water breaks, or bleeding.`
+  },
+  {
+    intent: 'asha_home_visits',
+    patterns: ['hbnc', 'home based newborn care', 'hbyc', 'asha home visit', 'asha visit after delivery', 'when will asha visit', 'newborn home visit', 'postnatal visit'],
+    response: `**ASHA Home Visits After Birth (free):**
+
+**HBNC — Home-Based Newborn Care:**
+• Hospital delivery: visits on **day 3, 7, 14, 21, 28 and 42**
+• Home delivery: also on **day 1**
+• ASHA checks the baby's weight, temperature, breathing, cord, feeding, jaundice and the mother's bleeding, fever and BP; refers if danger signs
+
+**HBYC — Home-Based Young Child Care:**
+• Visits at **3, 6, 9, 12 and 15 months**
+• Checks growth, vaccines, feeding (ORS/zinc, IFA syrup), play and development
+
+Low-birth-weight or sick babies get extra visits.`
+  },
+
+  // ══════════════════════ DIET PLANS — PREGNANCY, MOTHER, CHILD 0–5 ══════════════════════
+  {
+    intent: 'pregnancy_diet_plan',
+    patterns: ['pregnancy diet plan', 'diet chart pregnancy', 'pregnancy diet chart', 'daily diet pregnant', 'meal plan pregnancy', 'pregnant lady diet', 'pregnant woman diet plan', 'garbhvati ka khana', 'garbhavastha diet chart', 'weight gain in pregnancy', 'trimester diet'],
+    response: `**Simple Daily Diet Plan for a Pregnant Woman:**
+
+**Early morning:** 1 glass milk + 4–5 soaked almonds or a handful of roasted chana
+**Breakfast:** 2 roti / paratha with sabzi, or poha/upma/daliya with vegetables + 1 egg or 1 katori curd
+**Mid-morning:** 1 seasonal fruit (banana, guava, orange, papaya — well ripe)
+**Lunch:** 2–3 roti or 1 plate rice + 1 katori dal + 1 katori green leafy sabzi + salad + curd
+**Evening:** roasted chana/groundnut + jaggery, or sprouts chaat, or anganwadi Take-Home Ration
+**Dinner:** 2 roti / rice + dal or rajma/chana or egg/fish/chicken + sabzi
+**Bedtime:** 1 glass milk
+
+**By trimester:**
+• **First 3 months:** small frequent meals if nausea; folic acid daily
+• **4–6 months:** add **one extra meal** a day; start IFA + calcium tablets
+• **7–9 months:** extra meal continues; smaller meals more often if heartburn
+
+**Daily must-haves:** green leaves, dal/pulses, milk or curd, a fruit, iodised salt, 8–10 glasses of clean water.
+**Healthy weight gain:** about **10–12 kg** in the whole pregnancy (ANM checks it every visit).
+
+**Avoid:** raw/half-cooked egg or meat, unpasteurised milk, too much tea/coffee, tobacco, alcohol, junk food.`
+  },
+  {
+    intent: 'pregnancy_common_problems',
+    patterns: ['vomiting in pregnancy', 'morning sickness', 'nausea pregnancy', 'constipation pregnancy', 'acidity pregnancy', 'heartburn pregnancy', 'leg cramps pregnancy', 'back pain pregnancy', 'ulti garbhavastha', 'pregnancy problems'],
+    response: `**Common Pregnancy Problems — Home Care:**
+
+**Nausea / vomiting (first 3 months):**
+• Eat a dry snack (biscuit, toast, roasted chana) before getting up
+• Small meals every 2–3 hours; avoid oily, spicy food
+• Sip water, lemon water, coconut water
+🚨 Cannot keep anything down / passing very little urine → hospital
+
+**Acidity / heartburn:**
+• Small meals; don't lie down for 2 hours after eating
+• Sleep with head slightly raised; cold milk can help
+
+**Constipation:**
+• More water, fruits, green vegetables, whole grains (daliya, roti with chokar)
+• Walk daily. IFA tablets can cause it — do not stop them, tell the ANM
+
+**Leg cramps:** take calcium tablets regularly, stretch the leg, milk/curd daily
+**Back pain:** rest on the left side, avoid lifting heavy loads, wear flat footwear
+**Swollen feet:** raise legs while resting. Swelling of **face/hands** or headache → check BP at once`
+  },
+  {
+    intent: 'lactating_mother_diet',
+    patterns: ['diet after delivery', 'breastfeeding mother diet', 'lactating mother diet', 'food after delivery', 'diet for new mother', 'increase breast milk', 'low breast milk', 'milk not coming', 'doodh nahi aa raha', 'prasav ke baad khana'],
+    response: `**Diet for a Breastfeeding Mother:**
+
+**Eat more than in pregnancy** — **2 extra meals/snacks** a day:
+• Roti/rice + dal + green sabzi at every meal
+• Milk/curd 2–3 times a day; egg, fish, chicken if you eat them
+• Traditional foods like gond/methi/ajwain laddoo, daliya, panjiri are fine in moderation
+• Drink a glass of water every time you feed the baby
+
+**Continue:** IFA and calcium tablets for 6 months after delivery.
+
+**To increase breast milk:**
+1. Feed **often — 8–12 times a day and at night**; more suckling = more milk
+2. Correct latch: baby's mouth covers most of the dark area
+3. Empty one breast, then offer the other
+4. Rest, eat well, stay calm — family should help with housework
+5. Don't give the baby water, ghutti, honey or formula — it reduces milk
+
+📞 Breast pain with fever or a hard red lump → see ANM/doctor (keep feeding).`
+  },
+  {
+    intent: 'baby_diet_plan_6_12',
+    patterns: ['diet plan for 6 month baby', 'diet chart 7 month baby', 'diet chart 8 month baby', '9 month baby food', '10 month baby food', '11 month baby diet', 'baby diet chart', 'how much food baby', 'baby food quantity', 'baby meal plan', 'bachche ka diet chart'],
+    response: `**Food Plan for Babies 6–12 Months (keep breastfeeding on demand):**
+
+**6–8 months:** 2–3 meals a day
+• Start 2–3 spoons, slowly increase to **½ katori** per meal
+• Thick mashed khichdi, dal-rice, mashed banana/potato/sweet potato, suji/ragi kheer
+**Sample day:** breastfeed → morning ragi/suji porridge → breastfeed → lunch mashed dal-rice + veg + ghee → breastfeed → evening mashed banana → breastfeed through night
+
+**9–11 months:** 3–4 meals + 1–2 snacks
+• **½ katori** per meal, mashed or finely chopped
+• Add egg, curd, paneer, soft-cooked fish/chicken, mashed vegetables, soft roti soaked in dal
+**Sample day:** porridge or egg + roti → khichdi with veg → snack (fruit/curd) → dal-rice/roti-sabzi → breastfeed
+
+**Every meal:** thick, not watery; add **½–1 tsp ghee/oil**; one food from each colour where possible (yellow dal, green leaves, orange fruit).
+**Feed patiently** with a separate bowl; wash hands first.
+**No:** salt/sugar added, honey, biscuits, chips, packaged juice, tea.`
+  },
+  {
+    intent: 'toddler_diet_plan',
+    patterns: ['1 year baby diet', '1 year baby food', 'diet chart 1 year', '18 month baby food', '2 year baby diet', 'toddler diet', 'toddler food', 'one year old food', 'diet plan 1 to 2 years'],
+    response: `**Food Plan for Children 1–2 Years:**
+
+• **3–4 meals + 1–2 snacks** a day, **¾ to 1 katori** each meal
+• Eats normal family food — less spicy, cut small
+• **Continue breastfeeding** till 2 years or beyond (or 2 glasses milk if not breastfed)
+
+**Sample day:**
+• **Morning:** milk/breastfeed + vegetable upma/poha or egg with ½ roti
+• **Mid-morning:** fruit (banana, papaya, guava)
+• **Lunch:** rice/roti + dal + sabzi + curd, with ghee
+• **Evening:** sprouts/chana, peanut chikki (crushed), boiled potato, or kheer
+• **Dinner:** khichdi / roti-dal / egg curry-rice
+• **Night:** breastfeed or ½ glass milk
+
+**Tips:** let the child eat with hands, sit together for meals, no TV/phone while eating; offer a refused food again later.
+**Avoid:** whole nuts/grapes (choking), packaged snacks, cold drinks, tea, too much sugar.
+**Free:** anganwadi Take-Home Ration, Vitamin A and deworming at the right age.`
+  },
+  {
+    intent: 'child_diet_plan_2_5',
+    patterns: ['diet plan 3 year child', 'diet for 2 year child', '4 year child diet', '5 year child food', 'preschool child diet', 'child not eating', 'fussy eater', 'picky eater', 'child diet chart', 'healthy food for kids', 'bachcha khana nahi khata'],
+    response: `**Food Plan for Children 2–5 Years:**
+
+• **3 meals + 2 snacks** a day; about **half of an adult's** portion
+• **2 glasses milk/curd** daily
+
+**Sample day:**
+• **Breakfast:** milk + stuffed paratha / idli-sambar / poha / egg
+• **Mid-morning:** seasonal fruit
+• **Lunch:** roti/rice + dal + green sabzi + curd + salad
+• **Evening:** roasted chana, groundnut-jaggery, sprouts, boiled corn, homemade laddoo
+• **Dinner:** khichdi / roti-sabzi / rice with egg, fish or paneer
+
+**If the child doesn't eat well:**
+1. Fixed meal times; no snacks or milk just before meals
+2. Small portions; praise when they eat; never force or scold
+3. Make food colourful; let them help in the kitchen
+4. No phone/TV during meals
+5. Check weight at anganwadi — if not gaining, ask ASHA (deworming and anaemia check)
+
+**Limit:** chips, biscuits, chocolates, instant noodles, cold drinks, fried snacks — they fill the stomach without nutrition.`
+  },
+
+  // ══════════════════════ PREGNANCY — MORE PROBLEMS, FOOD & DAILY LIFE ══════════════════════
+  {
+    intent: 'pregnancy_month_by_month',
+    patterns: ['pregnancy month by month', 'pregnancy week by week', 'first trimester', 'second trimester', 'third trimester', 'pregnancy month wise care', 'due date', 'delivery date', 'edd', 'how many months pregnant', 'pregnancy ke mahine', '9 month pregnancy'],
+    response: `**Pregnancy Month by Month — what to do:**
+
+**Due date:** first day of last period + 9 months + 7 days (about 40 weeks).
+
+**Months 1–3 (1st trimester):**
+• Register with ASHA/ANM, get the **MCP card**; 1st check-up
+• **Folic acid** daily; **Td-1** injection
+• Nausea and tiredness are common — eat small, frequent meals
+
+**Months 4–6 (2nd trimester):**
+• Start **IFA + calcium**; one **albendazole** tablet
+• **Ultrasound at 18–20 weeks** to check baby's organs
+• Baby's **movements** start at about 4½–5 months
+• **Sugar test at 24–28 weeks**; eat **one extra meal** daily
+
+**Months 7–9 (3rd trimester):**
+• Check-ups at **28–34** and **36+ weeks** — BP, Hb, baby's position
+• **Count baby's movements** every day
+• Make your **birth plan**: hospital, 102 transport, money, blood donor
+• Watch for swelling of face, headache, bleeding, water leaking
+
+**Labour signs:** regular pains that get stronger, water breaking, or a "show" (mucus with a little blood) → go to hospital.`
+  },
+  {
+    intent: 'baby_movement_pregnancy',
+    patterns: ['baby kicks', 'kick count', 'fetal movement', 'baby movement in womb', 'baby not kicking', 'baby moving less', 'bachcha hil nahi raha', 'pet mein bachcha', 'count baby movements'],
+    response: `**Baby's Movements (Kick Count):**
+
+• First movements are felt at about **4½–5 months** (earlier in a 2nd pregnancy)
+• From **7 months (28 weeks)**, count every day
+
+**How to count:**
+1. Lie on your **left side** after a meal
+2. Count every kick, roll or flutter
+3. You should feel **at least 10 movements in 12 hours** (most babies do it in 1–2 hours)
+
+🚨 **Fewer than 10 in 12 hours, or movements suddenly much less — go to the hospital the same day.** Do not wait till the next morning. Call 102/108.
+
+ℹ️ Babies sleep 20–40 minutes at a time, so short quiet periods are normal.`
+  },
+  {
+    intent: 'pregnancy_infections',
+    patterns: ['urine infection pregnancy', 'burning urine pregnancy', 'uti pregnancy', 'white discharge pregnancy', 'itching pregnancy', 'fever in pregnancy', 'cold cough pregnancy', 'malaria in pregnancy', 'infection during pregnancy', 'peshab mein jalan', 'safed paani'],
+    response: `**Infections During Pregnancy:**
+
+**Urine infection** — burning, passing urine often, pain in lower belly:
+• Drink 8–10 glasses of clean water; don't hold urine
+• **See the ANM/doctor** — a free urine test and pregnancy-safe medicine are needed. Untreated infection can cause early delivery.
+
+**White discharge:**
+• A little thin, white, odourless discharge is **normal**
+• **Itching, bad smell, yellow/green or curdy** discharge → check-up needed
+• Wear clean cotton underwear; wash with plain water (no soap inside)
+
+**Fever:**
+• **Paracetamol** is safe; drink fluids; sponge with normal water
+• Get a **malaria test** at the PHC if malaria is common in your area
+• Fever above 2 days, or with chills, rash, burning urine → doctor
+
+**Cold/cough:** steam, warm water, rest; no cough syrups without a doctor.
+
+**Prevent:** wash hands, eat fresh well-cooked food, sleep under a mosquito net, test for HIV/syphilis/hepatitis B at first visit (free).`
+  },
+  {
+    intent: 'medicines_in_pregnancy',
+    patterns: ['medicine in pregnancy', 'safe medicine pregnancy', 'paracetamol in pregnancy', 'is paracetamol safe', 'which medicine safe in pregnancy', 'antibiotic in pregnancy', 'painkiller pregnancy', 'tablet during pregnancy', 'x ray pregnancy', 'ultrasound safe', 'is ultrasound safe', 'sex determination', 'boy or girl test', 'ladka ya ladki', 'desi dawa pregnancy'],
+    response: `**Medicines and Tests in Pregnancy:**
+
+**Safe and needed (free):** folic acid, IFA, calcium, albendazole (after 3 months), Td injection.
+**Safe for pain/fever:** paracetamol, in the normal dose.
+
+**Avoid unless a doctor prescribes:**
+• Painkillers like ibuprofen, diclofenac, aspirin
+• Any antibiotics, hormone tablets, "weakness" tonics, herbal/desi pills
+• Medicines or "dawa" said to give a boy — they are fake and can harm the baby
+
+**Ultrasound** is safe. **X-ray** only if the doctor says it is needed (tell them you are pregnant).
+
+🚫 **Finding the baby's sex is illegal in India** (PCPNDT Act). A girl and a boy are equal blessings.
+
+Always tell any doctor or chemist that you are pregnant before taking a medicine.`
+  },
+  {
+    intent: 'pregnancy_food_myths',
+    patterns: ['papaya in pregnancy', 'pineapple pregnancy', 'foods to avoid in pregnancy', 'what not to eat in pregnancy', 'pregnancy myths', 'saffron for fair baby', 'ghee for easy delivery', 'eat less small baby', 'garam cheez pregnancy', 'kesar doodh', 'pregnancy mein kya nahi khana'],
+    response: `**Food Myths and Facts in Pregnancy:**
+
+❌ **Myth:** Eat less so the baby stays small and delivery is easy.
+✅ **Fact:** This causes a weak, low-weight baby and anaemia in the mother. Eat **more**.
+
+❌ **Myth:** Kesar (saffron) or coconut makes the baby fair.
+✅ **Fact:** Skin colour comes from parents' genes, not food.
+
+❌ **Myth:** Lots of ghee in the 9th month makes delivery easy.
+✅ **Fact:** It only adds weight. Normal amounts of ghee are fine.
+
+❌ **Myth:** "Hot" foods like egg, papaya or dates cause miscarriage.
+✅ **Fact:** Egg, dates and **ripe papaya** are healthy. Avoid only **raw/green papaya**.
+
+❌ **Myth:** Iron tablets make the baby big or dark.
+✅ **Fact:** Iron prevents anaemia and makes delivery safer.
+
+**Really avoid:** raw/green papaya, raw or half-cooked egg/meat/fish, unboiled milk, stale food, alcohol, tobacco, gutka, more than 2 cups of tea/coffee a day.`
+  },
+  {
+    intent: 'pregnancy_daily_life',
+    patterns: ['exercise in pregnancy', 'yoga in pregnancy', 'walking in pregnancy', 'work during pregnancy', 'travel in pregnancy', 'sleeping position pregnancy', 'sex during pregnancy', 'rest in pregnancy', 'lifting weight pregnancy', 'pregnancy mein kaam'],
+    response: `**Daily Life in Pregnancy:**
+
+**Rest & sleep:** 8 hours at night + **2 hours rest** in the day. From 5 months, sleep on your **left side**.
+
+**Exercise:** a **30-minute walk** daily is good. Simple stretching or pregnancy yoga is fine if there are no problems. Stop if you feel pain, dizziness or bleeding.
+
+**Work:** normal housework is fine. **Avoid** lifting heavy loads (water pots, sacks), climbing, long standing, and spraying pesticides.
+
+**Travel:** avoid long, bumpy rides, especially in the first 3 and last 1–2 months. Carry the MCP card.
+
+**Sex:** usually safe in a normal pregnancy. Avoid if there is bleeding, water leaking, low-lying placenta, or past miscarriages — ask the ANM/doctor.
+
+**Hygiene:** daily bath, clean teeth (gums bleed easily), clean cotton clothes, loose comfortable dress, flat footwear.
+
+**Family's role:** share the work, give her extra food and rest, take her for check-ups.`
+  },
+  {
+    intent: 'pregnancy_recipes',
+    patterns: ['pregnancy recipes', 'healthy recipes pregnancy', 'iron rich recipes', 'snacks for pregnant women', 'pregnancy snacks', 'healthy snacks pregnancy', 'sattu drink', 'ragi porridge', 'what to cook for pregnant', 'iron rich food', 'calcium rich food', 'protein food pregnancy'],
+    response: `**Easy, Cheap Recipes for Pregnant & Breastfeeding Mothers:**
+
+**1. Sattu sharbat (protein, energy):** 2 big spoons sattu in a glass of water + lemon + a pinch of salt or a little jaggery.
+
+**2. Ragi / bajra porridge (calcium, iron):** 2 spoons ragi flour cooked in 1 glass milk or water; add jaggery.
+
+**3. Sprouts chaat (protein, iron):** sprouted moong/chana + onion, tomato, lemon. Steam lightly.
+
+**4. Palak/methi dal (iron, folate):** cook dal with a handful of chopped palak, methi or **drumstick (moringa) leaves**.
+
+**5. Til-gud laddoo (calcium, iron):** roasted til + groundnut + jaggery — 1 a day.
+
+**6. Vegetable daliya/khichdi:** daliya or rice + dal + mixed vegetables + 1 tsp ghee.
+
+**Iron foods:** green leaves, jaggery, chana, rajma, til, dates, egg, meat. Add **lemon or amla** — vitamin C helps iron absorb. Don't take tea within 1 hour of meals.
+**Calcium foods:** milk, curd, paneer, ragi, til.
+**Protein foods:** dal, chana, soybean, groundnut, milk, egg, fish, chicken.`
+  },
+  {
+    intent: 'maternal_mental_health',
+    patterns: ['stress in pregnancy', 'anxiety pregnancy', 'sad after delivery', 'postpartum depression', 'baby blues', 'crying after delivery', 'mother depressed', 'feeling low pregnancy', 'udaas', 'tension in pregnancy', 'mental health mother'],
+    response: `**Mother's Mind Matters — in Pregnancy and After Delivery:**
+
+**Baby blues (very common):** crying easily, mood changes, worry in the **first 2 weeks** after delivery. It goes away with rest and family support.
+
+**Depression — needs help** if for **more than 2 weeks**:
+• Sad or empty most of the day; no interest in anything
+• Not sleeping or sleeping too much; not eating
+• Feeling worthless, guilty, or unable to care for the baby
+
+🚨 **Thoughts of harming herself or the baby — get help immediately.** Call **Tele-MANAS 14416** (free, 24×7) or go to the hospital.
+
+**What helps:**
+1. Talk about feelings with husband, family, ASHA or ANM
+2. Family shares baby care and housework so she can sleep
+3. Good food, short walks, sunlight
+4. Never blame her for a girl child, a caesarean, or less milk
+
+Depression is an illness, not weakness — it can be treated.`
+  },
+  {
+    intent: 'breastfeeding_problems',
+    patterns: ['cracked nipple', 'sore nipple', 'nipple pain', 'breast pain feeding', 'breast swelling', 'engorgement', 'breast hard', 'mastitis', 'breast lump feeding', 'flat nipple', 'inverted nipple', 'stan mein dard'],
+    response: `**Breastfeeding Problems — Home Care:**
+
+**Sore / cracked nipples:**
+• Usually from a **wrong latch** — baby's mouth should cover most of the dark area, lips turned out, chin touching the breast
+• After feeding, apply a few drops of **your own milk** and let it air-dry
+• Don't use soap on nipples; keep feeding
+
+**Swollen, hard, painful breasts (engorgement):**
+• Feed **more often** (every 2–3 hours, day and night)
+• Warm cloth **before** feeding, cold cloth **after**
+• Express a little milk by hand to soften the breast so the baby can latch
+
+**Painful lump / blocked duct:** feed from that side first, gently massage the lump towards the nipple.
+
+**Flat or inverted nipples:** most babies still feed — ASHA/ANM can help with position.
+
+🚨 **Red, hot, painful area with fever (mastitis)** → see the doctor. **Keep breastfeeding** — the milk is safe for the baby.`
   },
 
   // ══════════════════════ DEFAULT / UNKNOWN ══════════════════════

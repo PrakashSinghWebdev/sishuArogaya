@@ -145,7 +145,7 @@ function CaseCard({ child, caseType, statusLabels }) {
           </div>
 
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            <button className="action-btn" style={{ background: '#ef4444', color: '#fff' }} onClick={() => nav(`/asha/log-visit?childId=${child._id}&type=phc-referral`)}>
+            <button className="action-btn" style={{ background: '#ef4444', color: '#fff' }} onClick={() => nav(`/asha/referrals?childId=${child._id}`)}>
               🏥 PHC Referral
             </button>
             <button className="action-btn" style={{ background: colors.primary, color: '#fff' }} onClick={() => nav(`/asha/log-visit?childId=${child._id}`)}>
