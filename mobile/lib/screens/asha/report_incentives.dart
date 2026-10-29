@@ -34,7 +34,7 @@ class _GenerateReportScreenState extends State<GenerateReportScreen> {
         child: Padding(
           padding: const EdgeInsets.all(14),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('$icon $title', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+            Row(children: [Icon(glyphIcon(icon), size: 20, color: C.primary), const SizedBox(width: 8), Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15))]),
             const Divider(),
             for (final (label, value, warn) in rows)
               Padding(
@@ -97,10 +97,10 @@ class _GenerateReportScreenState extends State<GenerateReportScreen> {
                 (t('highRisk', 'High risk'), m['highRiskNow'], n(m['highRiskNow']) > 0),
               ]),
               _section('📢', t('outreachIncentives', 'Outreach & incentives'), [(t('campsHeld', 'Camps held'), camps['held'], false), (t('incentiveClaims', 'Incentive claims'), inc['claims'], false), (t('claimApproved', 'Approved'), rupees(inc['approvedAmount']), false)]),
-              SectionTitle('⚠ ${t('needsFollowUp', 'Needs follow-up')} (${follow.length})'),
+              SectionTitle('${t('needsFollowUp', 'Needs follow-up')} (${follow.length})'),
               Card(
                 child: follow.isEmpty
-                    ? EmptyState('✅ ${t('visitsNoneDue', 'No visits due')}')
+                    ? EmptyState(t('visitsNoneDue', 'No visits due'))
                     : Column(children: [for (final f in follow) ListTile(dense: true, title: Text('${f['name']}', style: const TextStyle(fontWeight: FontWeight.w600)), subtitle: Text('${f['village'] ?? '—'} · ${f['reasons'] ?? ''}'), trailing: Text(fmtDate(f['due'])))]),
               ),
             ]);
@@ -112,10 +112,10 @@ class _GenerateReportScreenState extends State<GenerateReportScreen> {
 // ── Incentive claims ───────────────────────────────────────────────────────
 const claimStatus = {
   'pending': ('claimPending', neutralTone),
-  'submitted': ('claimSubmitted', Tone(Color(0xFF1D4ED8), Color(0xFFDBEAFE))),
-  'approved': ('claimApproved', Tone(Color(0xFF15803D), Color(0xFFDCFCE7))),
+  'submitted': ('claimSubmitted', Tone(Color(0xFF3B6E8F), Color(0xFFE5ECF2))),
+  'approved': ('claimApproved', Tone(Color(0xFF276749), Color(0xFFE3F1E8))),
   'rejected': ('claimRejected', badTone),
-  'paid': ('claimPaid', Tone(Color(0xFF065F46), Color(0xFFD1FAE5))),
+  'paid': ('claimPaid', Tone(Color(0xFF276749), Color(0xFFE3F1E8))),
 };
 
 class IncentivesScreen extends StatefulWidget {
@@ -159,7 +159,7 @@ class _IncentivesScreenState extends State<IncentivesScreen> {
 
             return ListView(padding: const EdgeInsets.fromLTRB(16, 16, 16, 90), children: [
               Row(children: [
-                for (final (label, st, color) in [(t('claimSubmitted', 'Submitted'), ['submitted'], const Color(0xFF1D4ED8)), (t('claimApproved', 'Approved'), ['approved'], const Color(0xFF15803D)), (t('claimPaid', 'Paid'), ['paid'], const Color(0xFF065F46))])
+                for (final (label, st, color) in [(t('claimSubmitted', 'Submitted'), ['submitted'], const Color(0xFF3B6E8F)), (t('claimApproved', 'Approved'), ['approved'], const Color(0xFF276749)), (t('claimPaid', 'Paid'), ['paid'], const Color(0xFF276749))])
                   Expanded(child: Padding(padding: const EdgeInsets.only(right: 6), child: StatTile(label: label, value: rupees(total(st)), color: color))),
               ]),
               gap,
@@ -168,7 +168,7 @@ class _IncentivesScreenState extends State<IncentivesScreen> {
                   padding: const EdgeInsets.all(12),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Row(children: [
-                      Expanded(child: Text('💡 ${t('eligibleActivities', 'Eligible activities')}', style: const TextStyle(fontWeight: FontWeight.w700))),
+                      Expanded(child: Text(t('eligibleActivities', 'Eligible activities'), style: const TextStyle(fontWeight: FontWeight.w700))),
                       TextButton.icon(
                         onPressed: () async {
                           final mo = await pickMonth(context, month);

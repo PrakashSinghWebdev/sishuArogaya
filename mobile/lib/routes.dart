@@ -40,6 +40,7 @@ final Map<String, PageBuilder> publicPages = {
   '/about': (_) => const AboutScreen(),
   '/privacy': (_) => const LegalScreen(privacy: true),
   '/terms': (_) => const LegalScreen(privacy: false),
+  '/credits': (_) => const CreditsScreen(),
   '/login': (_) => const LoginScreen(),
   '/register': (_) => const RegisterScreen(),
   '/change-password': (_) => const ChangePasswordScreen(),

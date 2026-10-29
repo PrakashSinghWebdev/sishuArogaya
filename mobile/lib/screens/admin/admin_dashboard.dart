@@ -75,9 +75,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
               for (final a in ashaResults)
                 Card(
                   child: ListTile(
-                    leading: const Text('👩‍⚕️', style: TextStyle(fontSize: 22)),
+                    leading: glyph('👩‍⚕️', size: 22),
                     title: Text('${a['name']} · ${a['ashaId']}', style: const TextStyle(fontWeight: FontWeight.w700)),
-                    subtitle: Text('${a['region'] ?? ''} · 👶 ${a['totalChildren'] ?? 0} children · ✅ ${a['totalVisits'] ?? 0} visits'),
+                    subtitle: Text('${a['region'] ?? ''} · ${a['totalChildren'] ?? 0} children · ${a['totalVisits'] ?? 0} visits'),
                     onTap: () => go('/admin/asha-workers'),
                   ),
                 ),
@@ -88,16 +88,16 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 StatTile(icon: Icons.report_outlined, label: t('malnutrition', 'Malnutrition cases'), value: inr(s['malnutritionCases'] ?? 0), color: C.red, onTap: () => go('/admin/malnutrition')),
                 StatTile(icon: Icons.vaccines_outlined, label: t('missedVaccinations', 'Missed vaccinations'), value: inr(s['missedVaccinations'] ?? 0), color: C.amber, onTap: () => go('/admin/vaccination-data')),
               ]),
-              SectionTitle('📊 ${t('blockMalnutrition', 'Block-wise malnutrition')}', trailing: Text('${blocks.length} blocks', style: const TextStyle(color: C.muted))),
+              SectionTitle(t('blockMalnutrition', 'Block-wise malnutrition'), trailing: Text('${blocks.length} blocks', style: const TextStyle(color: C.muted))),
               Card(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(8, 16, 16, 8),
                   child: blocks.isEmpty ? const EmptyState('No block data yet. Register children to see district stats.') : BlockBarChart(blocks: blocks),
                 ),
               ),
-              SectionTitle('🥗 ${t('nutritionDist', 'Nutrition distribution')}'),
+              SectionTitle(t('nutritionDist', 'Nutrition distribution')),
               Card(child: Padding(padding: const EdgeInsets.all(16), child: NutritionPie(healthy: healthy, moderate: moderate, severe: severe))),
-              SectionTitle('🚨 ${t('priorityBlocks', 'Priority blocks')}'),
+              SectionTitle(t('priorityBlocks', 'Priority blocks')),
               Card(
                 child: blocks.isEmpty
                     ? const EmptyState('No block data available')
@@ -111,7 +111,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           ),
                       ]),
               ),
-              SectionTitle('⚡ ${t('quickAccess', 'Quick access')}'),
+              SectionTitle(t('quickAccess', 'Quick access')),
               StatGrid(columns: 2, [
                 for (final (r, e, title, hint) in [
                   ('/admin/children', '👦', t('childrenRegistry', 'Children registry'), 'Live child records'),
@@ -125,7 +125,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 ])
                   Card(
                     margin: EdgeInsets.zero,
-                    child: ListTile(leading: Text(e, style: const TextStyle(fontSize: 22)), title: Text(lang.plain(title), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)), subtitle: Text(hint, style: const TextStyle(fontSize: 11.5)), onTap: () => go(r)),
+                    child: ListTile(leading: glyph(e, size: 22), title: Text(lang.plain(title), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)), subtitle: Text(hint, style: const TextStyle(fontSize: 11.5)), onTap: () => go(r)),
                   ),
               ]),
             ]);
@@ -157,7 +157,7 @@ class BlockBarChart extends StatelessWidget {
             width: (blocks.length * 64.0).clamp(MediaQuery.of(context).size.width - 80, 4000),
             child: BarChart(BarChartData(
               maxY: maxY * 1.15,
-              gridData: FlGridData(drawVerticalLine: false, getDrawingHorizontalLine: (_) => const FlLine(color: Color(0xFFF1F5F9), strokeWidth: 1)),
+              gridData: FlGridData(drawVerticalLine: false, getDrawingHorizontalLine: (_) => const FlLine(color: Color(0xFFEFECE6), strokeWidth: 1)),
               borderData: FlBorderData(show: false),
               titlesData: FlTitlesData(
                 topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -194,7 +194,7 @@ class NutritionPie extends StatelessWidget {
   final num healthy, moderate, severe;
   @override
   Widget build(BuildContext context) {
-    final items = [(t('healthy', 'Healthy'), healthy, const Color(0xFF059669)), (t('moderate', 'Moderate'), moderate, const Color(0xFFF59E0B)), (t('severe', 'Severe'), severe, const Color(0xFFDC2626))];
+    final items = [(t('healthy', 'Healthy'), healthy, const Color(0xFF2F855A)), (t('moderate', 'Moderate'), moderate, const Color(0xFFB7791F)), (t('severe', 'Severe'), severe, const Color(0xFFB5452F))];
     final empty = healthy + moderate + severe == 0;
     return Row(children: [
       SizedBox(

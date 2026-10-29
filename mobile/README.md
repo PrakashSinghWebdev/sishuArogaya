@@ -42,7 +42,9 @@ Before publishing:
 - **Languages:** `assets/i18n.json` holds the website's translation tables. Missing keys fall back to English.
 - **Shared data:** translations, districts, Privacy Policy and Terms, built-in diet plans, chatbot answers and the shop catalogue come from the website's source files. After changing any of them on the website, run `node mobile/tool/export_web_data.mjs` from the project root.
 - **Offline chatbot:** if the server can't be reached, the assistant answers from the bundled knowledge base, as the website does.
-- **App icon:** generated from `icon/app_icon.png` with `dart run flutter_launcher_icons`.
+- **Look:** colours, font (Figtree, OFL licence in `assets/fonts`) and shared widgets are in `lib/core/ui.dart`. No emoji in the UI: emoji that still come from the website data or the server are turned into line icons (`glyph()` in `ui.dart`) or removed.
+- **Logo and app icon:** the logo is drawn in code (`lib/widgets/logo.dart`). After changing it: `flutter test tool/render_icon_test.dart && dart run flutter_launcher_icons`.
+- **Photos:** `assets/photos` are real photos from Wikimedia Commons under free licences; authors and licences are in `assets/photo_credits.json` and shown in the app under Photo credits. Keep that list up to date if you swap a photo.
 
 ## Layout
 

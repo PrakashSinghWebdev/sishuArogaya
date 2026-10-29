@@ -204,7 +204,7 @@ class _ChatBotScreenState extends State<ChatBotScreen> {
     final ok = await stt.initialize(onError: (e) {
       if (!mounted) return;
       setState(() => listening = false);
-      toast(context, e.errorMsg == 'error_no_match' || e.errorMsg == 'error_speech_timeout' ? "I didn't hear anything. Tap 🎤 and speak again." : 'Voice input error: ${e.errorMsg}', error: true);
+      toast(context, e.errorMsg == 'error_no_match' || e.errorMsg == 'error_speech_timeout' ? "I didn't hear anything. Tap and speak again." : 'Voice input error: ${e.errorMsg}', error: true);
     });
     if (!ok) {
       if (mounted) toast(context, 'Voice input is not available on this phone.', error: true);
@@ -228,7 +228,7 @@ class _ChatBotScreenState extends State<ChatBotScreen> {
     if (data == null) return const Scaffold(body: Center(child: CircularProgressIndicator()));
     return Scaffold(
       appBar: AppBar(
-        title: const Text('🩺 Health Assistant'),
+        title: const Text('Health Assistant'),
         actions: [
           PopupMenuButton<String>(
             tooltip: 'Chat language',
@@ -273,7 +273,7 @@ class _ChatBotScreenState extends State<ChatBotScreen> {
             SizedBox(
               height: 44,
               child: ListView(scrollDirection: Axis.horizontal, padding: const EdgeInsets.symmetric(horizontal: 12), children: [
-                for (final s in _suggestions) Padding(padding: const EdgeInsets.only(right: 8), child: ActionChip(label: Text(s), onPressed: () => send(s))),
+                for (final s in _suggestions) Padding(padding: const EdgeInsets.only(right: 8), child: ActionChip(label: Text(noEmoji(s)), onPressed: () => send(s))),
               ]),
             ),
           Padding(
@@ -289,12 +289,14 @@ class _ChatBotScreenState extends State<ChatBotScreen> {
     );
   }
 
-  /// **bold**, *italic*; 🚨 lines in red, 📞 lines in green (as the website renders them).
+  /// **bold**, *italic*; alert lines (marked with an alarm emoji in the data) in red, helpline lines in green.
+  /// The emoji markers themselves are not shown.
   TextSpan _markdown(String text, bool bot) {
     final base = TextStyle(color: bot ? C.text : Colors.white, height: 1.45, fontSize: 14.5);
     final spans = <InlineSpan>[];
-    for (final line in text.split('\n')) {
-      final style = line.startsWith('🚨') ? base.copyWith(color: const Color(0xFFB91C1C), fontWeight: FontWeight.w600) : line.startsWith('📞') ? base.copyWith(color: C.green, fontWeight: FontWeight.w600) : base;
+    for (final raw in text.split('\n')) {
+      final line = noEmoji(raw);
+      final style = raw.startsWith('🚨') ? base.copyWith(color: const Color(0xFFB5452F), fontWeight: FontWeight.w600) : raw.startsWith('📞') ? base.copyWith(color: C.green, fontWeight: FontWeight.w600) : base;
       final re = RegExp(r'\*\*(.+?)\*\*|\*(.+?)\*');
       var last = 0;
       for (final m in re.allMatches(line)) {

@@ -36,7 +36,7 @@ class _PagedListState extends State<PagedList> {
     return (rows, int.tryParse(headers['x-total-count'] ?? '') ?? rows.length);
   }
 
-  void reload() => setState(() => _future = _load());
+  void reload() => setState(() { _future = _load(); });
 
   @override
   void didUpdateWidget(PagedList old) {
@@ -162,7 +162,7 @@ class _MalnutritionCasesScreenState extends State<MalnutritionCasesScreen> {
               query: {'status': filter == 'all' ? null : filter},
               header: (total) => Padding(padding: const EdgeInsets.only(bottom: 8), child: Text('${t('malnutritionCases', 'Malnutrition cases')} (${inr(total)})', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16))),
               itemBuilder: (context, c, _) => Card(
-                color: c['nutritionStatus'] == 'severe' ? const Color(0xFFFEF2F2) : null,
+                color: c['nutritionStatus'] == 'severe' ? const Color(0xFFF8E3DD) : null,
                 child: ListTile(
                   title: Text('${c['name']}', style: const TextStyle(fontWeight: FontWeight.w700)),
                   subtitle: Text([
@@ -300,7 +300,7 @@ class AuditLogsScreen extends StatelessWidget {
           query: const {},
           itemBuilder: (context, log, _) {
             final role = '${log['actorRole'] ?? ''}';
-            final tone = role == 'admin' ? const Tone(Color(0xFF6B21A8), Color(0xFFF3E8FF)) : role == 'asha' ? infoTone : role == 'parent' ? goodTone : neutralTone;
+            final tone = role == 'admin' ? const Tone(Color(0xFF5E4B7D), Color(0xFFEEEAF3)) : role == 'asha' ? infoTone : role == 'parent' ? goodTone : neutralTone;
             return Card(
               child: ListTile(
                 dense: true,

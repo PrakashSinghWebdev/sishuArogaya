@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 
 import '../../core/api.dart';
@@ -7,6 +5,7 @@ import '../../core/auth.dart';
 import '../../core/i18n.dart';
 import '../../core/ui.dart';
 import '../../shell.dart';
+import '../../widgets/warning_popup.dart';
 import 'parent_common.dart';
 
 class ParentDashboard extends StatefulWidget {
@@ -25,6 +24,27 @@ class _DashData {
 
 class _ParentDashboardState extends State<ParentDashboard> {
   final _loader = GlobalKey<LoaderState<_DashData>>();
+  // the popup shows once per app launch (per user), not on every refresh
+  static Object? _warnedUser;
+
+  void _warnOnce(_DashData d) {
+    final child = d.children.selected;
+    final user = auth.user?['_id'] ?? auth.name;
+    if (child == null || _warnedUser == user) return;
+    _warnedUser = user;
+    final latest = d.growth.firstOrNull;
+    final warnings = parentWarnings(
+      child: child,
+      vaccines: d.vaccines,
+      meals: (d.diet?['meals'] as List?) ?? [],
+      prediction: d.prediction,
+      lastGrowth: latest == null ? null : DateTime.tryParse('${latest['recordedDate'] ?? latest['createdAt']}'),
+      unread: d.notifications.where((n) => n['isRead'] != true).length,
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) showWarningPopup(context, warnings);
+    });
+  }
 
   Future<_DashData> load() async {
     final d = _DashData();
@@ -55,21 +75,21 @@ class _ParentDashboardState extends State<ParentDashboard> {
     final server = more[3];
     d.diet = server is Map && (server['meals'] as List?)?.isNotEmpty == true ? server : (group == null ? null : dietData['plans'][group['tag']]);
     d.ageLabel = group?['label'];
+    _warnOnce(d);
     return d;
   }
 
   @override
   Widget build(BuildContext context) => RoleShell(
         route: '/parent/dashboard',
+        title: '',
         child: Loader<_DashData>(
           key: _loader,
           load: load,
           builder: (context, d, reload) {
             final child = d.children.selected;
-            final first = auth.name.split(' ').first;
-            return ListView(padding: const EdgeInsets.all(16), children: [
-              _Hero(first: first, child: child, vaccines: d.vaccines),
-              const SizedBox(height: 14),
+            return ListView(padding: const EdgeInsets.fromLTRB(16, 0, 16, 96), children: [
+              _Greeting(first: auth.name.split(' ').first),
               ChildPicker(children: d.children, onChanged: reload),
               if (child == null) ..._noChild(context) else ..._full(context, d, child),
             ]);
@@ -80,291 +100,220 @@ class _ParentDashboardState extends State<ParentDashboard> {
   List<Widget> _noChild(BuildContext context) => [
         Card(
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('${t('registerTitle')}. ${t('childInfoTitle')} to track ${t('vaccines').toLowerCase()}, ${t('growth').toLowerCase()}, ${t('dietPlan').toLowerCase()} and ${t('reports').toLowerCase()}.'),
-              gap,
-              FilledButton.icon(onPressed: () => Navigator.pushReplacementNamed(context, '/parent/child-profile'), icon: const Icon(Icons.add), label: Text(t('addChild', 'Add Child'))),
+              const IconWell(Icons.child_care_outlined, size: 52),
+              const SizedBox(height: 14),
+              Text(t('dash_addTitle', "Add your child's details"), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 6),
+              Text(
+                t('dash_addText', 'Name and date of birth are enough to start. The vaccine schedule and meal plan are made from the date of birth.'),
+                style: const TextStyle(color: C.muted, height: 1.45),
+              ),
+              const SizedBox(height: 16),
+              FilledButton.icon(onPressed: () => Navigator.pushReplacementNamed(context, '/parent/child-profile'), icon: const Icon(Icons.add), label: Text(t('addChild', 'Add child'))),
             ]),
           ),
         ),
-        _QuickGrid(),
-        NoticeBox('Logged in as: ${auth.name} (${auth.user?['email'] ?? ''}) · Role: Parent\nAdd your child\'s profile to unlock vaccination schedules, growth charts, diet plans and more.', tone: infoTone),
       ];
 
   List<Widget> _full(BuildContext context, _DashData d, Map child) {
-    final due = d.vaccines.where((v) => v['status'] == 'due').toList();
     final done = d.vaccines.where((v) => v['status'] == 'done').length;
-    final unread = d.notifications.where((n) => n['isRead'] != true).length;
+    final pending = d.vaccines.where((v) => v['status'] != 'done').toList()
+      ..sort((a, b) => '${a['dueDate']}'.compareTo('${b['dueDate']}'));
+    final next = pending.firstOrNull;
     final latest = d.growth.firstOrNull;
-    final info = [
-      ageText(child['dob']),
-      child['gender'],
-      if (child['bloodGroup'] != null) 'Blood: ${child['bloodGroup']}',
-      if (child['nutritionStatus'] != null) 'Nutrition: ${child['nutritionStatus']}',
-    ].where((e) => e != null && '$e' != '—').join(' · ');
     final meals = (d.diet?['meals'] as List?) ?? [];
     final nowIdx = currentMealIndex(meals);
+    final meal = (nowIdx >= 0 ? meals[nowIdx] : meals.firstOrNull) as Map?;
     final p = d.prediction;
+    final unreadFirst = [...d.notifications]..sort((a, b) => (a['isRead'] == true ? 1 : 0) - (b['isRead'] == true ? 1 : 0));
+    final weight = latest?['weight'] ?? child['currentWeight'];
+    final height = latest?['height'] ?? child['currentHeight'];
+    final late = next != null && next['status'] == 'missed' || (next?['status'] == 'due' && (parseDate(next?['dueDate'])?.isBefore(DateUtils.dateOnly(DateTime.now())) ?? false));
 
     return [
+      // the child
       Card(
-        child: ListTile(
-          contentPadding: const EdgeInsets.fromLTRB(14, 8, 8, 8),
-          leading: const CircleAvatar(radius: 24, backgroundColor: Color(0xFFE0F7FA), child: Text('👶', style: TextStyle(fontSize: 24))),
-          title: Text('${child['name']}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
-          subtitle: Text(info),
-          trailing: IconButton(icon: const Icon(Icons.description_outlined, color: C.dark), tooltip: 'Download Report', onPressed: () => Navigator.pushReplacementNamed(context, '/parent/reports')),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
           onTap: () => Navigator.pushReplacementNamed(context, '/parent/child-profile'),
-        ),
-      ),
-      StatGrid([
-        StatTile(icon: Icons.vaccines, label: 'Vaccines Done', value: '$done/${d.vaccines.length}', sub: due.isNotEmpty ? '${due.length} due now' : 'All up to date', color: C.primary),
-        StatTile(icon: Icons.monitor_weight_outlined, label: 'Current Weight', value: latest?['weight'] != null ? '${latest['weight']} kg' : (child['currentWeight'] != null ? '${child['currentWeight']} kg' : 'N/A'), sub: latest != null ? 'Recorded ${fmtDate(latest['recordedDate'] ?? latest['createdAt'])}' : 'No record yet', color: C.green),
-        StatTile(icon: Icons.height, label: 'Current Height', value: latest?['height'] != null ? '${latest['height']} cm' : (child['currentHeight'] != null ? '${child['currentHeight']} cm' : 'N/A'), sub: child['ageInMonths'] != null ? 'Age: ${child['ageInMonths']} months' : '${child['gender'] ?? '—'}', color: C.amber),
-        StatTile(icon: Icons.notifications_active_outlined, label: 'Unread Alerts', value: '$unread', sub: '${d.schemes.length} govt schemes', color: const Color(0xFF1D4ED8)),
-      ]),
-      const SizedBox(height: 16),
-      SectionTitle('💉 Vaccination Schedule', trailing: _viewAll(context, '/parent/vaccination')),
-      Card(
-        child: d.vaccines.isEmpty
-            ? const EmptyState('No vaccination records yet.')
-            : Column(children: [
-                for (final v in d.vaccines.take(8))
-                  ListTile(dense: true, title: Text('${v['vaccineName']}', style: const TextStyle(fontWeight: FontWeight.w600)), subtitle: Text(fmtDate(v['dueDate'])), trailing: VaccineBadge(v['status'])),
-              ]),
-      ),
-      Card(
-        child: ListTile(
-          leading: const Icon(Icons.local_hospital, color: C.red),
-          title: Text(lang.plain('nearbyHospitals', 'Nearby Hospitals'), style: const TextStyle(fontWeight: FontWeight.w700)),
-          subtitle: Text(t('realtimeGps', 'Real-time GPS')),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => Navigator.pushNamed(context, '/parent/hospitals'),
-        ),
-      ),
-      SectionTitle('📈 Growth Monitoring', trailing: _viewAll(context, '/parent/child-profile')),
-      Card(
-        child: d.growth.isEmpty
-            ? const EmptyState('No growth records yet.')
-            : SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: DataTable(
-                  columnSpacing: 18,
-                  headingTextStyle: const TextStyle(color: C.muted, fontWeight: FontWeight.w700, fontSize: 12),
-                  columns: const [DataColumn(label: Text('Date')), DataColumn(label: Text('Weight (kg)')), DataColumn(label: Text('Height (cm)')), DataColumn(label: Text('Age (mo)')), DataColumn(label: Text('Weight Z')), DataColumn(label: Text('Height Z')), DataColumn(label: Text('Status'))],
-                  rows: [
-                    for (final g in d.growth)
-                      DataRow(cells: [
-                        DataCell(Text(fmtDate(g['recordedDate'] ?? g['createdAt']))),
-                        DataCell(Text(str(g['weight']), style: const TextStyle(color: C.green, fontWeight: FontWeight.w600))),
-                        DataCell(Text(str(g['height']), style: const TextStyle(color: C.primary, fontWeight: FontWeight.w600))),
-                        DataCell(Text(str(g['ageMonths']))),
-                        DataCell(Text(g['wazScore'] is num ? (g['wazScore'] as num).toStringAsFixed(2) : '—')),
-                        DataCell(Text(g['hazScore'] is num ? (g['hazScore'] as num).toStringAsFixed(2) : '—')),
-                        DataCell(g['prediction'] == null ? const Text('—') : StatusBadge(g['prediction'])),
-                      ]),
-                  ],
-                ),
-              ),
-      ),
-      if (p != null)
-        Card(
-          color: C.dark,
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('AI-POWERED PREDICTION', style: TextStyle(color: Color(0xFFCFFAFE), fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.5)),
-              const SizedBox(height: 4),
-              Text('🤖 Growth Forecast for ${child['name']}', style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700)),
-              const SizedBox(height: 10),
-              Wrap(spacing: 24, runSpacing: 8, children: [
-                if (p.predictedWeight != null) _forecast('Predicted Weight', '${p.predictedWeight} kg', const Color(0xFFF7C948)),
-                if (p.predictedHeight != null) _forecast('Predicted Height', '${p.predictedHeight} cm', const Color(0xFFF7C948)),
-                _forecast('Risk Level', p.riskLevel[0].toUpperCase() + p.riskLevel.substring(1),
-                    p.riskLevel == 'low' ? const Color(0xFF86EFAC) : p.riskLevel == 'moderate' ? const Color(0xFFFDE68A) : const Color(0xFFFCA5A5)),
+              Row(children: [
+                const IconWell(Icons.child_care_outlined, size: 48),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text('${child['name']}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
+                    Text([ageText(child['dob']), if (child['gender'] != null) child['gender']].join(' · '), style: const TextStyle(color: C.muted)),
+                  ]),
+                ),
+                if (child['nutritionStatus'] != null) StatusBadge(child['nutritionStatus']),
               ]),
-              if (p.recommendation != null) Padding(padding: const EdgeInsets.only(top: 10), child: Text(p.recommendation!, style: const TextStyle(color: Colors.white70))),
+              const Padding(padding: EdgeInsets.symmetric(vertical: 14), child: Divider()),
+              Row(children: [
+                _Measure(t('weight', 'Weight'), weight == null ? '—' : '$weight kg'),
+                _Measure(t('height', 'Height'), height == null ? '—' : '$height cm'),
+                _Measure(t('vaccines', 'Vaccines'), '$done of ${d.vaccines.length}'),
+              ]),
+              if (latest != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: Text('Last measured ${fmtDate(latest['recordedDate'] ?? latest['createdAt'])}', style: const TextStyle(color: C.muted, fontSize: 12.5)),
+                ),
             ]),
           ),
         ),
-      SectionTitle('🔔 Recent Alerts', trailing: _viewAll(context, '/parent/notifications')),
+      ),
+
+      // what needs doing
+      SectionTitle(t('dash_next', 'Coming up')),
       Card(
-        child: d.notifications.isEmpty
-            ? const EmptyState('No alerts yet.')
+        child: Column(children: [
+          ListTile(
+            leading: IconWell(Icons.vaccines_outlined, color: late ? C.red : C.primary),
+            title: Text(next == null ? t('dash_allDone', 'All vaccines given so far') : '${next['vaccineName']}', style: const TextStyle(fontWeight: FontWeight.w600)),
+            subtitle: next == null ? null : Text(late ? 'Was due ${fmtDate(next['dueDate'])}. Visit your health centre.' : 'Due ${fmtDate(next['dueDate'])}'),
+            trailing: const Icon(Icons.chevron_right, color: C.muted),
+            onTap: () => Navigator.pushReplacementNamed(context, '/parent/vaccination'),
+          ),
+          if (meal != null) ...[
+            const Divider(indent: 72),
+            ListTile(
+              leading: IconWell(glyphIcon('${meal['icon']}'), color: C.amber),
+              title: Text('${meal['name']}', style: const TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: Text('${meal['time']}\n${mealItemsText(meal)}', maxLines: 3, overflow: TextOverflow.ellipsis),
+              isThreeLine: true,
+              trailing: const Icon(Icons.chevron_right, color: C.muted),
+              onTap: () => Navigator.pushReplacementNamed(context, '/parent/diet-plan'),
+            ),
+          ],
+        ]),
+      ),
+
+      // growth
+      SectionTitle(t('growth', 'Growth'), trailing: _viewAll(context, '/parent/child-profile')),
+      Card(
+        child: d.growth.isEmpty
+            ? const EmptyState('No measurements yet. Your ASHA worker records them at home visits, or you can add one from My Child.', icon: Icons.straighten)
             : Column(children: [
-                for (final n in d.notifications)
+                for (final g in d.growth.take(3))
                   ListTile(
                     dense: true,
-                    leading: Text(n['type'] == 'vaccine' ? '💉' : n['type'] == 'growth' ? '📈' : n['type'] == 'diet' ? '🥗' : '📣', style: const TextStyle(fontSize: 20)),
-                    title: Text('${n['title'] ?? n['message']}', style: const TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: Text([if (n['title'] != null && n['message'] != null) n['message'], fmtDate(n['createdAt'])].join('\n')),
-                    trailing: n['isRead'] == true ? null : const CircleAvatar(radius: 4, backgroundColor: C.primary),
+                    title: Text('${str(g['weight'])} kg · ${str(g['height'])} cm', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14.5)),
+                    subtitle: Text(fmtDate(g['recordedDate'] ?? g['createdAt'])),
+                    trailing: g['prediction'] == null ? null : StatusBadge(g['prediction']),
                   ),
               ]),
       ),
-      SectionTitle('🥗 Diet Plan', trailing: _viewAll(context, '/parent/diet-plan')),
-      Card(
-        child: d.diet == null
-            ? const EmptyState('Set child age to view diet plan.')
-            : Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  if (d.ageLabel != null) Badge2(d.ageLabel!, tone: infoTone),
-                  for (var i = 0; i < meals.length; i++)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 10),
-                      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        SizedBox(width: 86, child: Text('${meals[i]['time']}', style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: C.dark))),
-                        Text('${meals[i]['icon'] ?? '🍽️'}', style: const TextStyle(fontSize: 20)),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Row(children: [
-                              Flexible(child: Text('${meals[i]['name']}', style: const TextStyle(fontWeight: FontWeight.w600))),
-                              if (i == nowIdx) const Padding(padding: EdgeInsets.only(left: 6), child: Badge2('Now', tone: Tone(Colors.white, C.primary))),
-                            ]),
-                            Text(mealItemsText(meals[i]), style: const TextStyle(fontSize: 12, color: C.muted)),
-                          ]),
-                        ),
-                      ]),
-                    ),
+      if (p != null)
+        Card(
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () => Navigator.pushReplacementNamed(context, '/parent/ai-prediction'),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Row(children: [
+                  const Expanded(child: Text('Growth outlook', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16))),
+                  Badge2('${p.riskLevel[0].toUpperCase()}${p.riskLevel.substring(1)} risk', tone: p.riskLevel == 'low' ? goodTone : p.riskLevel == 'moderate' ? warnTone : badTone),
                 ]),
+                if (p.predictedWeight != null || p.predictedHeight != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      'Expected next month: ${[if (p.predictedWeight != null) '${p.predictedWeight} kg', if (p.predictedHeight != null) '${p.predictedHeight} cm'].join(', ')}',
+                      style: const TextStyle(color: C.muted),
+                    ),
+                  ),
+                if (p.recommendation != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(p.recommendation!, style: const TextStyle(height: 1.4))),
+              ]),
+            ),
+          ),
+        ),
+
+      // messages and help
+      if (d.notifications.isNotEmpty) ...[
+        SectionTitle(t('alerts', 'Alerts'), trailing: _viewAll(context, '/parent/notifications')),
+        Card(
+          child: Column(children: [
+            for (final n in unreadFirst.take(3))
+              ListTile(
+                dense: true,
+                leading: glyph(n['type'] == 'vaccine' ? '💉' : n['type'] == 'growth' ? '📈' : n['type'] == 'diet' ? '🥗' : '📣', size: 18),
+                title: Text('${n['title'] ?? n['message']}', style: TextStyle(fontWeight: n['isRead'] == true ? FontWeight.w500 : FontWeight.w700)),
+                subtitle: Text(fmtDate(n['createdAt'])),
               ),
-      ),
-      if (d.schemes.isNotEmpty) ...[
-        SectionTitle('🏛️ Government Schemes', trailing: _viewAll(context, '/parent/schemes')),
-        for (final s in d.schemes)
-          Card(
-            child: ListTile(
-              leading: const Text('🏛️', style: TextStyle(fontSize: 22)),
-              title: Text('${s['name']}', style: const TextStyle(fontWeight: FontWeight.w700)),
-              subtitle: s['description'] == null ? null : Text('${s['description']}', maxLines: 3, overflow: TextOverflow.ellipsis),
+          ]),
+        ),
+      ],
+      const SizedBox(height: 6),
+      Card(
+        child: Column(children: [
+          ListTile(
+            leading: const IconWell(Icons.local_hospital_outlined, color: C.red),
+            title: Text(lang.plain('nearbyHospitals', 'Nearby hospitals'), style: const TextStyle(fontWeight: FontWeight.w600)),
+            subtitle: const Text('Map, directions and emergency numbers'),
+            trailing: const Icon(Icons.chevron_right, color: C.muted),
+            onTap: () => Navigator.pushNamed(context, '/parent/hospitals'),
+          ),
+          if (d.schemes.isNotEmpty) ...[
+            const Divider(indent: 72),
+            ListTile(
+              leading: const IconWell(Icons.account_balance_outlined, color: Color(0xFF3B6E8F)),
+              title: Text(t('schemes', 'Government schemes'), style: const TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: Text('${d.schemes.length} you may be eligible for'),
+              trailing: const Icon(Icons.chevron_right, color: C.muted),
               onTap: () => Navigator.pushReplacementNamed(context, '/parent/schemes'),
             ),
+          ],
+          const Divider(indent: 72),
+          ListTile(
+            leading: const IconWell(Icons.description_outlined, color: C.muted),
+            title: Text(t('reports', 'Reports'), style: const TextStyle(fontWeight: FontWeight.w600)),
+            subtitle: const Text('Download the health record or vaccine card'),
+            trailing: const Icon(Icons.chevron_right, color: C.muted),
+            onTap: () => Navigator.pushReplacementNamed(context, '/parent/reports'),
           ),
-      ],
-      _QuickGrid(),
-    ];
-  }
-
-  Widget _forecast(String label, String value, Color color) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label, style: const TextStyle(color: Color(0xFFCFFAFE), fontSize: 11)),
-        Text(value, style: TextStyle(color: color, fontSize: 20, fontWeight: FontWeight.w800)),
-      ]);
-
-  Widget _viewAll(BuildContext context, String route) => TextButton(onPressed: () => Navigator.pushReplacementNamed(context, route), child: const Text('View all →'));
-}
-
-class _Hero extends StatelessWidget {
-  const _Hero({required this.first, required this.child, required this.vaccines});
-  final String first;
-  final Map? child;
-  final List vaccines;
-
-  @override
-  Widget build(BuildContext context) {
-    final due = vaccines.where((v) => v['status'] == 'due').firstOrNull;
-    final text = child == null
-        ? '${t('addChild')} ${t('myChild').toLowerCase()} to start tracking ${t('vaccines').toLowerCase()}, ${t('growth').toLowerCase()}, and ${t('nutrition').toLowerCase()} updates.'
-        : due != null
-            ? '${child!['name']} has ${due['vaccineName']} ${t('due').toLowerCase()} soon.'
-            : "${child!['name']}'s ${t('healthScore').toLowerCase()} and records are up to date.";
-    final status = child?['nutritionStatus'];
-    final score = child == null ? 0 : (status == 'healthy' ? 86 : status == 'moderate' ? 62 : 42);
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), gradient: const LinearGradient(colors: [C.primary, C.dark])),
-      child: Row(children: [
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(lang.plain('dashboard', 'Dashboard').toUpperCase(), style: const TextStyle(color: Color(0xFFCFFAFE), fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.5)),
-            const SizedBox(height: 6),
-            Text('${t('welcome', 'Welcome')}, $first', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 6),
-            Text(text, style: const TextStyle(color: Colors.white70, fontSize: 13.5)),
-          ]),
-        ),
-        if (child != null) ...[const SizedBox(width: 12), _ScoreCircle(score)],
-      ]),
-    );
-  }
-}
-
-class _ScoreCircle extends StatelessWidget {
-  const _ScoreCircle(this.score);
-  final int score;
-  @override
-  Widget build(BuildContext context) {
-    final color = score >= 75 ? const Color(0xFF22C55E) : score >= 50 ? const Color(0xFFF59E0B) : const Color(0xFFEF4444);
-    return SizedBox(
-      width: 88,
-      height: 88,
-      child: CustomPaint(
-        painter: _Ring(score / 100, color),
-        child: Center(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Text('$score', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
-            const Text('Health Score', style: TextStyle(color: Colors.white70, fontSize: 9)),
-          ]),
-        ),
+        ]),
       ),
-    );
-  }
-}
-
-class _Ring extends CustomPainter {
-  _Ring(this.fraction, this.color);
-  final double fraction;
-  final Color color;
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
-    final bg = Paint()
-      ..color = Colors.white24
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 7;
-    final fg = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 7
-      ..strokeCap = StrokeCap.round;
-    canvas.drawArc(rect.deflate(5), 0, 2 * math.pi, false, bg);
-    canvas.drawArc(rect.deflate(5), -math.pi / 2, 2 * math.pi * fraction, false, fg);
+    ];
   }
 
-  @override
-  bool shouldRepaint(_Ring old) => old.fraction != fraction || old.color != color;
+  Widget _viewAll(BuildContext context, String route) => TextButton(onPressed: () => Navigator.pushReplacementNamed(context, route), child: const Text('See all'));
 }
 
-class _QuickGrid extends StatelessWidget {
+/// "Good morning, Asha" and today's date.
+class _Greeting extends StatelessWidget {
+  const _Greeting({required this.first});
+  final String first;
   @override
   Widget build(BuildContext context) {
-    final items = [
-      ('💉', t('vaccines', 'Vaccines'), '/parent/vaccination'),
-      ('👶', t('myChild', 'My Child'), '/parent/child-profile'),
-      ('🥗', t('dietPlan', 'Diet Plan'), '/parent/diet-plan'),
-      ('🏛️', t('schemes', 'Schemes'), '/parent/schemes'),
-      ('📋', t('reports', 'Reports'), '/parent/reports'),
-      ('🔔', t('notifications', 'Notifications'), '/parent/notifications'),
-      ('⚙️', t('settings', 'Settings'), '/parent/settings'),
-    ];
+    final now = DateTime.now();
+    final part = now.hour < 12 ? 'Good morning' : now.hour < 17 ? 'Good afternoon' : 'Good evening';
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: StatGrid(columns: 3, [
-        for (final (e, label, route) in items)
-          Card(
-            margin: EdgeInsets.zero,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(14),
-              onTap: () => Navigator.pushReplacementNamed(context, route),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
-                child: Column(children: [Text(e, style: const TextStyle(fontSize: 26)), const SizedBox(height: 6), Text(lang.plain(label), textAlign: TextAlign.center, maxLines: 2, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600))]),
-              ),
-            ),
-          ),
+      padding: const EdgeInsets.fromLTRB(4, 4, 4, 16),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('$part, $first', style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w700, letterSpacing: -0.5)),
+        const SizedBox(height: 2),
+        Text('${days[now.weekday - 1]}, ${fmtDate(now.toIso8601String())}', style: const TextStyle(color: C.muted)),
       ]),
     );
   }
+}
+
+class _Measure extends StatelessWidget {
+  const _Measure(this.label, this.value);
+  final String label, value;
+  @override
+  Widget build(BuildContext context) => Expanded(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(label, style: const TextStyle(color: C.muted, fontSize: 12.5)),
+          const SizedBox(height: 2),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 17)),
+        ]),
+      );
 }

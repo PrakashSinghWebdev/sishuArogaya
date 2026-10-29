@@ -64,20 +64,20 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen> {
               StatGrid([
                 StatTile(icon: Icons.check_circle_outline, label: 'Completed', value: '$done', color: C.primary),
                 StatTile(icon: Icons.alarm, label: 'Due Soon', value: '$due', color: C.amber),
-                StatTile(icon: Icons.event_outlined, label: 'Upcoming', value: '$upcoming', color: const Color(0xFF16A34A)),
-                StatTile(icon: Icons.vaccines_outlined, label: 'Coverage Rate', value: '$pct%', color: const Color(0xFF2563EB)),
+                StatTile(icon: Icons.event_outlined, label: 'Upcoming', value: '$upcoming', color: const Color(0xFF2F855A)),
+                StatTile(icon: Icons.vaccines_outlined, label: 'Coverage Rate', value: '$pct%', color: const Color(0xFF3B6E8F)),
               ]),
               const SizedBox(height: 14),
               if (firstDue != null)
                 Card(
-                  color: const Color(0xFFFEF3C7),
+                  color: const Color(0xFFFBEFD9),
                   child: ListTile(
-                    leading: const Text('⚠️', style: TextStyle(fontSize: 26)),
-                    title: Text('${firstDue['vaccineName']} is due!', style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF92400E))),
-                    subtitle: Text('Due date: ${fmtDate(firstDue['dueDate'])}', style: const TextStyle(color: Color(0xFFB45309))),
+                    leading: glyph('⚠️', size: 26),
+                    title: Text('${firstDue['vaccineName']} is due!', style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF8A5A12))),
+                    subtitle: Text('Due date: ${fmtDate(firstDue['dueDate'])}', style: const TextStyle(color: Color(0xFF8A5A12))),
                   ),
                 ),
-              const SectionTitle('📋 Complete Vaccine Timeline'),
+              const SectionTitle('Complete Vaccine Timeline'),
               ChoiceRow(
                 value: filter,
                 onChanged: (x) => setState(() => filter = x),
@@ -124,15 +124,15 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen> {
                 child: Padding(
                   padding: const EdgeInsets.all(14),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    const Text('🏥 Vaccination Centre', style: TextStyle(fontWeight: FontWeight.w700, color: C.dark, fontSize: 15)),
+                    const Text('Vaccination Centre', style: TextStyle(fontWeight: FontWeight.w700, color: C.dark, fontSize: 15)),
                     const SizedBox(height: 6),
-                    InfoRow('🏛️ Centre Name', asha?['block'] != null ? 'PHC – ${asha!['block']}' : 'Primary Health Centre'),
-                    InfoRow('📍 Address', [asha?['village'], asha?['block'], asha?['district']].where((e) => e != null).join(', ').ifEmpty('Block PHC, Main Road')),
-                    const InfoRow('⏰ Timings', 'Mon–Sat: 9 AM – 1 PM'),
+                    InfoRow('Centre Name', asha?['block'] != null ? 'PHC – ${asha!['block']}' : 'Primary Health Centre'),
+                    InfoRow('Address', [asha?['village'], asha?['block'], asha?['district']].where((e) => e != null).join(', ').ifEmpty('Block PHC, Main Road')),
+                    const InfoRow('Timings', 'Mon–Sat: 9 AM – 1 PM'),
                     if (ashaPhone != null)
                       ListTile(contentPadding: EdgeInsets.zero, dense: true, leading: const Icon(Icons.call, color: C.primary), title: Text('ASHA Contact: $ashaPhone', style: const TextStyle(fontWeight: FontWeight.w700, color: C.primary)), onTap: () => callPhone(ashaPhone))
                     else
-                      const InfoRow('📞 ASHA Contact', 'Contact your ASHA worker'),
+                      const InfoRow('ASHA Contact', 'Contact your ASHA worker'),
                   ]),
                 ),
               ),
@@ -141,7 +141,7 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen> {
                 child: Padding(
                   padding: const EdgeInsets.all(14),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    const Text('💡 After Vaccination Tips', style: TextStyle(fontWeight: FontWeight.w700, color: C.dark, fontSize: 15)),
+                    const Text('After Vaccination Tips', style: TextStyle(fontWeight: FontWeight.w700, color: C.dark, fontSize: 15)),
                     const SizedBox(height: 6),
                     for (final tip in const [
                       'Mild fever is normal – give paracetamol if needed',

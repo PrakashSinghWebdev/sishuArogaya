@@ -25,20 +25,20 @@ class CredentialsCard extends StatelessWidget {
     final phone = '${result['phone'] ?? ''}';
     final text = Uri.encodeComponent('${result['text'] ?? ''}');
     return Card(
-      color: const Color(0xFFF0FDF4),
+      color: const Color(0xFFE3F1E8),
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            Expanded(child: Text(title, style: const TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF15803D)))),
+            Expanded(child: Text(title, style: const TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF276749)))),
             if (onClose != null) IconButton(icon: const Icon(Icons.close), onPressed: onClose),
           ]),
           SelectableText('Username: ${result['username']}\nPassword: ${result['password']}', style: const TextStyle(fontWeight: FontWeight.w700)),
           const SizedBox(height: 6),
-          for (final e in delivery.entries) Text('${e.value == 'sent' ? '✓' : '✕'} ${'${e.key}'.toUpperCase()}${e.value == 'sent' ? '' : ': ${e.value}'}', style: const TextStyle(fontSize: 12.5)),
+          for (final e in delivery.entries) glyph('${e.value == 'sent' ? '✓' : '✕'} ${'${e.key}'.toUpperCase()}${e.value == 'sent' ? '' : ': ${e.value}'}', size: 12.5),
           const SizedBox(height: 8),
           Wrap(spacing: 8, children: [
-            FilledButton.icon(style: FilledButton.styleFrom(backgroundColor: const Color(0xFF16A34A)), onPressed: () => openLink('https://wa.me/91$phone?text=$text'), icon: const Icon(Icons.chat, size: 18), label: const Text('WhatsApp')),
+            FilledButton.icon(style: FilledButton.styleFrom(backgroundColor: const Color(0xFF2F855A)), onPressed: () => openLink('https://wa.me/91$phone?text=$text'), icon: const Icon(Icons.chat, size: 18), label: const Text('WhatsApp')),
             OutlinedButton.icon(onPressed: () => openLink('sms:+91$phone?body=$text'), icon: const Icon(Icons.sms, size: 18), label: const Text('SMS')),
             OutlinedButton.icon(
               onPressed: () {
@@ -89,7 +89,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                 child: ListTile(
                   title: Row(children: [
                     Expanded(child: Text('${u['name']}', style: const TextStyle(fontWeight: FontWeight.w700))),
-                    Badge2('${u['role']}', tone: u['role'] == 'admin' ? const Tone(Color(0xFF6B21A8), Color(0xFFF3E8FF)) : u['role'] == 'asha' ? infoTone : goodTone),
+                    Badge2('${u['role']}', tone: u['role'] == 'admin' ? const Tone(Color(0xFF5E4B7D), Color(0xFFEEEAF3)) : u['role'] == 'asha' ? infoTone : goodTone),
                   ]),
                   subtitle: Text('${u['email'] ?? ''}\n${u['phone'] ?? '—'} · ${fmtDate(u['createdAt'])} · ${u['isActive'] == true ? t('activate', 'Active') : t('suspend', 'Suspended')}'),
                   isThreeLine: true,
@@ -332,10 +332,10 @@ class _AddAshaWorkerScreenState extends State<AddAshaWorkerScreen> {
     final adult = DateTime(DateTime.now().year - 18, DateTime.now().month, DateTime.now().day);
     return RoleShell(
       route: '/admin/asha-workers/new',
-      title: '👩‍⚕️ Add ASHA Worker',
+      title: 'Add ASHA Worker',
       child: ListView(padding: const EdgeInsets.all(16), children: [
         if (result != null) ...[
-          CredentialsCard(result: result!, title: '✅ ASHA worker created — share these login details if any message failed'),
+          CredentialsCard(result: result!, title: 'ASHA worker created — share these login details if any message failed'),
           Row(children: [
             FilledButton(onPressed: () => setState(() => result = null), child: const Text('+ Add another')),
             const SizedBox(width: 8),

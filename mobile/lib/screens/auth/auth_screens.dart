@@ -8,6 +8,7 @@ import '../../core/api.dart';
 import '../../core/auth.dart';
 import '../../core/i18n.dart';
 import '../../core/ui.dart';
+import '../../widgets/logo.dart';
 
 final _email = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
 final _phone = RegExp(r'^\d{10}$');
@@ -19,21 +20,12 @@ class _Brand extends StatelessWidget {
   final String subtitle;
   @override
   Widget build(BuildContext context) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.asset('assets/logo.png', width: 44, height: 44)),
-          const SizedBox(width: 10),
-          const Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Sishu Arogaya', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: C.dark)),
-              Text('Integrated Child Health Monitoring System', style: TextStyle(fontSize: 12, color: C.muted)),
-            ]),
-          ),
-        ]),
-        const SizedBox(height: 22),
-        Text(title, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: C.text)),
-        const SizedBox(height: 4),
-        Text(subtitle, style: const TextStyle(color: C.muted)),
-        const SizedBox(height: 18),
+        const Logo(size: 36),
+        const SizedBox(height: 32),
+        Text(title, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w700, color: C.text, letterSpacing: -0.5)),
+        const SizedBox(height: 6),
+        Text(subtitle, style: const TextStyle(color: C.muted, fontSize: 15)),
+        const SizedBox(height: 24),
       ]);
 }
 
@@ -42,13 +34,13 @@ class _Page extends StatelessWidget {
   final List<Widget> children;
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(backgroundColor: C.bg, foregroundColor: C.dark, actions: [
-          IconButton(icon: const Icon(Icons.translate), onPressed: () => Navigator.pushNamed(context, '/language')),
+        appBar: AppBar(actions: [
+          IconButton(tooltip: 'Language', icon: const Icon(Icons.translate), onPressed: () => Navigator.pushNamed(context, '/language')),
         ]),
         body: SafeArea(
           child: Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 460),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
@@ -304,7 +296,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (RegExp('[0-9]').hasMatch(p)) score++;
     if (RegExp('[^a-zA-Z0-9]').hasMatch(p)) score++;
     const labels = ['', 'Weak', 'Fair', 'Good', 'Strong'];
-    const colors = [C.border, Color(0xFFEF4444), Color(0xFFF59E0B), Color(0xFFFACC15), Color(0xFF22C55E)];
+    const colors = [C.border, Color(0xFFB5452F), Color(0xFFB7791F), Color(0xFFE09F3E), Color(0xFF2F855A)];
     return (score, labels[score], colors[score]);
   }
 
@@ -488,7 +480,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   Widget build(BuildContext context) {
     final forced = auth.mustChangePassword;
     return _Page(children: [
-      const Center(child: Text('🔐', style: TextStyle(fontSize: 40))),
+      Center(child: glyph('🔐', size: 40)),
       Center(child: Text(t('setNewPassword', 'Set a new password'), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: C.text))),
       Center(child: Text(auth.name, style: const TextStyle(color: C.muted))),
       const SizedBox(height: 16),

@@ -30,7 +30,7 @@ class AshaWorkersScreen extends StatelessWidget {
                   subtitle: Text([
                     '${w['ashaId']}${w['userId'] is Map && w['userId']['username'] != null && w['userId']['username'] != w['ashaId'] ? ' · Login: ${w['userId']['username']}' : ''}',
                     '${w['district'] ?? ''} / ${w['block'] ?? ''}',
-                    '👶 ${w['assignedCount'] ?? (w['assignedChildren'] as List?)?.length ?? 0} children · ✅ ${w['totalVisits'] ?? 0} visits',
+                    '${w['assignedCount'] ?? (w['assignedChildren'] as List?)?.length ?? 0} children · ${w['totalVisits'] ?? 0} visits',
                   ].join('\n')),
                   isThreeLine: true,
                   trailing: const Icon(Icons.settings_outlined),
@@ -105,9 +105,9 @@ class _AssignChildrenState extends State<_AssignChildren> {
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(title: Text('Assign children — ${widget.worker['userId'] is Map ? widget.worker['userId']['name'] : ''} (${widget.worker['ashaId']})', overflow: TextOverflow.ellipsis)),
         body: ListView(padding: const EdgeInsets.all(16), children: [
-          SectionTitle('👥 Currently Assigned (${assigned.length})'),
+          SectionTitle('Currently Assigned (${assigned.length})'),
           Card(child: assigned.isEmpty ? const EmptyState('No children assigned yet.') : Column(children: [for (final c in assigned) _child(c, true)])),
-          const SectionTitle('🔎 Find Unassigned Children'),
+          const SectionTitle('Find Unassigned Children'),
           TextField(
             onChanged: (v) {
               _debounce?.cancel();
@@ -220,7 +220,7 @@ class _HealthCentresScreenState extends State<HealthCentresScreen> {
                   StatTile(label: 'Total Centres', value: inr(stats['total'] ?? 0), color: C.primary),
                   StatTile(label: 'Emergency Ready', value: inr(stats['emergency'] ?? 0), color: C.red),
                   StatTile(label: 'Government', value: inr(stats['government'] ?? 0), color: C.green),
-                  StatTile(label: 'ICU Support', value: inr(stats['icu'] ?? 0), color: const Color(0xFF7C3AED)),
+                  StatTile(label: 'ICU Support', value: inr(stats['icu'] ?? 0), color: const Color(0xFF6B5B95)),
                 ]),
                 gap,
                 if (centres.isEmpty) const Card(child: EmptyState('No health centres found for the selected filters.')),

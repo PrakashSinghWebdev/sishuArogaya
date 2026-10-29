@@ -22,14 +22,14 @@ const _nearestN = 10;
 const _radii = [10000, 30000, 100000];
 
 const amenity = {
-  'hospital': (Color(0xFFDC2626), 'Hospital', '🏥'),
-  'clinic': (Color(0xFF0891B2), 'Clinic', '🏨'),
-  'pharmacy': (Color(0xFF059669), 'Pharmacy', '💊'),
-  'health_post': (Color(0xFFD97706), 'PHC / CHC', '🏠'),
-  'doctors': (Color(0xFF7C3AED), 'Doctor', '👨‍⚕️'),
-  'ambulance_station': (Color(0xFFBE123C), 'Ambulance', '🚑'),
+  'hospital': (Color(0xFFB5452F), 'Hospital', '🏥'),
+  'clinic': (Color(0xFF2D6A4F), 'Clinic', '🏨'),
+  'pharmacy': (Color(0xFF2F855A), 'Pharmacy', '💊'),
+  'health_post': (Color(0xFFB7791F), 'PHC / CHC', '🏠'),
+  'doctors': (Color(0xFF6B5B95), 'Doctor', '👨‍⚕️'),
+  'ambulance_station': (Color(0xFF9B3A26), 'Ambulance', '🚑'),
 };
-const _filters = [('all', '📍 All'), ('hospital', '🏥 Hospitals'), ('health_post', '🏠 PHC / CHC'), ('clinic', '🏨 Clinics'), ('ambulance_station', '🚑 Ambulance'), ('pharmacy', '💊 Pharmacy'), ('doctors', '👨‍⚕️ Doctors')];
+const _filters = [('all', 'All'), ('hospital', 'Hospitals'), ('health_post', 'PHC / CHC'), ('clinic', 'Clinics'), ('ambulance_station', 'Ambulance'), ('pharmacy', 'Pharmacy'), ('doctors', 'Doctors')];
 
 const _static = [
   ('s13', 30.0869, 78.2650, 'AIIMS Rishikesh', 'Virbhadra Rd, Rishikesh', '0135-2462916'),
@@ -156,7 +156,7 @@ class _HospitalMapState extends State<HospitalMap> {
       final res = await api.get('/hospitals/nearby', {'lat': origin.latitude, 'lng': origin.longitude, 'radius': 30000, 'type': 'all'});
       final rows = (res is Map ? res['hospitals'] : null) as List? ?? [];
       db = _nearest([for (final h in rows) _fromDb(h, origin)]);
-      if (_hospitals(db) >= _nearestN) return _show(db, 'done', '🗄️ Database');
+      if (_hospitals(db) >= _nearestN) return _show(db, 'done', 'Database');
     } catch (_) {}
 
     var osm = <Facility>[];
@@ -184,7 +184,7 @@ class _HospitalMapState extends State<HospitalMap> {
       if (_hospitals(osm) >= _nearestN) break;
     }
     final live = _hospitals(osm) >= _hospitals(db) ? osm : db;
-    if (_hospitals(live) >= _nearestN) return _show(live, 'done', identical(live, osm) ? '🌐 OpenStreetMap' : '🗄️ Database');
+    if (_hospitals(live) >= _nearestN) return _show(live, 'done', identical(live, osm) ? 'OpenStreetMap' : 'Database');
     final known = [for (final s in _static) Facility(id: s.$1, pos: LatLng(s.$2, s.$3), type: 'hospital', name: s.$4, address: s.$5, phone: s.$6, isGovernment: true, hasEmergency: true, dist: distKm(origin, LatLng(s.$2, s.$3)))];
     _show(_nearest([...osm, ...db, ...known]), 'fallback', t('hospital_cached_source', 'Known facilities'));
     if (mounted) setState(() => error = t('hospital_data_fallback_msg', 'Live hospital data unavailable. Showing nearest known facilities.'));
@@ -264,7 +264,7 @@ class _HospitalMapState extends State<HospitalMap> {
       final rows = (res is Map ? res['hospitals'] : null) as List? ?? [];
       if (rows.isNotEmpty) {
         final list = [for (final h in rows) _fromDb(h, me)];
-        _show(list, 'done', '🗄️ Database');
+        _show(list, 'done', 'Database');
         map.move(list.first.pos, 13);
         return;
       }
@@ -311,10 +311,10 @@ class _HospitalMapState extends State<HospitalMap> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Card(
-            color: const Color(0xFFEFF6FF),
+            color: const Color(0xFFE5ECF2),
             child: ListTile(
               dense: true,
-              leading: const Icon(Icons.directions_car, color: Color(0xFF2563EB)),
+              leading: const Icon(Icons.directions_car, color: Color(0xFF3B6E8F)),
               title: Text(routeInfo!, style: const TextStyle(fontWeight: FontWeight.w600)),
               trailing: IconButton(icon: const Icon(Icons.close), onPressed: () => setState(() {
                 route = [];
@@ -331,7 +331,7 @@ class _HospitalMapState extends State<HospitalMap> {
             options: const MapOptions(initialCenter: LatLng(20.5937, 78.9629), initialZoom: 5, maxZoom: 19),
             children: [
               TileLayer(urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', userAgentPackageName: 'com.shishuaarogya.shishu_aarogya'),
-              if (route.isNotEmpty) PolylineLayer(polylines: [Polyline(points: route, color: const Color(0xFF2563EB), strokeWidth: 5)]),
+              if (route.isNotEmpty) PolylineLayer(polylines: [Polyline(points: route, color: const Color(0xFF3B6E8F), strokeWidth: 5)]),
               MarkerLayer(markers: [
                 for (final f in shown)
                   Marker(
@@ -343,11 +343,11 @@ class _HospitalMapState extends State<HospitalMap> {
                       child: Container(
                         decoration: BoxDecoration(color: amenity[f.type]?.$1 ?? C.red, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2), boxShadow: selected?.id == f.id ? const [BoxShadow(color: Color(0x66DC2626), spreadRadius: 6)] : null),
                         alignment: Alignment.center,
-                        child: Text(amenity[f.type]?.$3 ?? '🏥', style: const TextStyle(fontSize: 15)),
+                        child: glyph(amenity[f.type]?.$3 ?? '🏥', size: 15),
                       ),
                     ),
                   ),
-                if (me != null) Marker(point: me!, width: 22, height: 22, child: Container(decoration: BoxDecoration(color: const Color(0xFF2563EB), shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 3)))),
+                if (me != null) Marker(point: me!, width: 22, height: 22, child: Container(decoration: BoxDecoration(color: const Color(0xFF3B6E8F), shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 3)))),
               ]),
               const RichAttributionWidget(attributions: [TextSourceAttribution('© OpenStreetMap contributors')]),
             ],
@@ -366,7 +366,7 @@ class _HospitalMapState extends State<HospitalMap> {
         ]),
       ),
       Container(
-        color: const Color(0xFFFEF2F2),
+        color: const Color(0xFFF8E3DD),
         padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
         child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
           for (final (n, label) in const [('108', 'Ambulance'), ('102', 'Mother & child'), ('112', 'Emergency')])
@@ -383,7 +383,7 @@ class _HospitalMapState extends State<HospitalMap> {
                   final f = shown[i];
                   return ListTile(
                     dense: true,
-                    leading: Text(amenity[f.type]?.$3 ?? '🏥', style: const TextStyle(fontSize: 22)),
+                    leading: glyph(amenity[f.type]?.$3 ?? '🏥', size: 22),
                     title: Text(f.name, style: const TextStyle(fontWeight: FontWeight.w600)),
                     subtitle: Text([amenity[f.type]?.$2, if (f.dist != null) '${f.dist!.toStringAsFixed(1)} km', if (f.address.isNotEmpty) f.address].whereType<String>().join(' · '), maxLines: 2),
                     trailing: IconButton(icon: const Icon(Icons.directions, color: C.primary), onPressed: () => directions(f)),
@@ -404,7 +404,7 @@ class _HospitalMapState extends State<HospitalMap> {
           child: Padding(
             padding: const EdgeInsets.all(18),
             child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('${amenity[f.type]?.$3 ?? '🏥'} ${f.name}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+              Text(f.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
               Text([amenity[f.type]?.$2, if (f.dist != null) '${f.dist!.toStringAsFixed(1)} km away'].whereType<String>().join(' · '), style: const TextStyle(color: C.muted)),
               if (f.address.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 6), child: Text(f.address)),
               const SizedBox(height: 8),

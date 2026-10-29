@@ -13,7 +13,15 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
-const write = (name, data) => fs.writeFileSync(path.join(root, 'mobile/assets', name), JSON.stringify(data));
+// The app shows line icons, not emoji: strip emoji from every text value. `icon` / `emoji` fields stay;
+// the app maps them to icons. Chatbot text keeps its emoji (they mark alert lines) and is cleaned on screen.
+const EMOJI = /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{2300}-\u{23FF}\u{FE0F}\u{200D}]/gu;
+const plain = (v, key) =>
+  typeof v === 'string' ? (key === 'icon' || key === 'emoji' ? v : v.replace(EMOJI, '').replace(/[ \t]{2,}/g, ' ').trim())
+  : Array.isArray(v) ? v.map((x) => plain(x))
+  : v && typeof v === 'object' ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, plain(x, k)]))
+  : v;
+const write = (name, data) => fs.writeFileSync(path.join(root, 'mobile/assets', name), JSON.stringify(name === 'chatbot.json' ? data : plain(data)));
 // literal between `marker` and the first `end` after it, evaluated as JS
 const literal = (src, marker, end) => {
   const a = src.indexOf(marker);

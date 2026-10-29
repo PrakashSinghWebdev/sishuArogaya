@@ -34,9 +34,9 @@ Widget pregnancyChips(Map p) {
   final step = nextStep(p);
   final missed = ((p['summary']?['nextAnc']?['missed']) as List?) ?? [];
   return Wrap(spacing: 6, runSpacing: 6, children: [
-    if (step != null) Badge2('📅 ${step.$1}', tone: step.$2 ? warnTone : infoTone),
+    if (step != null) Badge2(step.$1, tone: step.$2 ? warnTone : infoTone),
     if (missed.isNotEmpty) Badge2('${t('missedAnc', 'Missed ANC')}: ${missed.map((n) => 'ANC-$n').join(', ')}', tone: badTone),
-    for (final r in riskHigh(p)) Badge2('⚠ $r', tone: const Tone(Colors.white, C.red)),
+    for (final r in riskHigh(p)) Badge2('$r', tone: const Tone(Colors.white, C.red)),
     for (final r in riskWarn(p)) Badge2('$r', tone: warnTone),
   ]);
 }
@@ -85,7 +85,7 @@ class _MaternalCareScreenState extends State<MaternalCareScreen> {
               });
             return ListView(padding: const EdgeInsets.fromLTRB(16, 16, 16, 90), children: [
               Row(children: [
-                for (final (label, n, color) in [(t('pregnantWomen', 'Pregnant'), count('pregnant'), C.dark), (t('highRisk', 'High risk'), high, const Color(0xFF991B1B)), (t('checkupsDue', 'Check-ups due'), due, const Color(0xFF92400E))])
+                for (final (label, n, color) in [(t('pregnantWomen', 'Pregnant'), count('pregnant'), C.dark), (t('highRisk', 'High risk'), high, const Color(0xFF9B3A26)), (t('checkupsDue', 'Check-ups due'), due, const Color(0xFF8A5A12))])
                   Expanded(child: Padding(padding: const EdgeInsets.only(right: 6), child: StatTile(label: label, value: '$n', color: color))),
               ]),
               gap,
@@ -151,7 +151,7 @@ class _RegisterPregnancyState extends State<_RegisterPregnancy> {
         f('womanName', t('womanName', "Woman's name"), req: true),
         f('husbandName', t('husbandName', "Husband's name")),
         DateField(label: '${t('lmp', 'LMP')} *', value: lmp, first: DateTime.now().subtract(const Duration(days: 300)), last: DateTime.now(), onChanged: (v) => setState(() => lmp = v)),
-        if (edd != null) Padding(padding: const EdgeInsets.only(top: 6), child: Text('📅 ${t('edd', 'EDD')}: ${fmtDate(edd.toIso8601String())}', style: const TextStyle(fontWeight: FontWeight.w700))),
+        if (edd != null) Padding(padding: const EdgeInsets.only(top: 6), child: Text('${t('edd', 'EDD')}: ${fmtDate(edd.toIso8601String())}', style: const TextStyle(fontWeight: FontWeight.w700))),
         gap,
         Row(children: [Expanded(child: f('age', t('age', 'Age'), number: true)), const SizedBox(width: 10), Expanded(child: f('phone', t('phone2', 'Phone'), number: true))]),
         f('village', t('village', 'Village')),
@@ -159,7 +159,7 @@ class _RegisterPregnancyState extends State<_RegisterPregnancy> {
         f('rchId', t('rchId', 'RCH ID')),
         Text(t('riskHistory', 'Risk history'), style: const TextStyle(fontWeight: FontWeight.w600)),
         const SizedBox(height: 6),
-        Wrap(spacing: 6, runSpacing: 6, children: [for (final r in historyRisks) FilterChip(label: Text(r), selected: risks.contains(r), selectedColor: const Color(0xFFFEE2E2), onSelected: (s) => setState(() => s ? risks.add(r) : risks.remove(r)))]),
+        Wrap(spacing: 6, runSpacing: 6, children: [for (final r in historyRisks) FilterChip(label: Text(r), selected: risks.contains(r), selectedColor: const Color(0xFFF8E3DD), onSelected: (s) => setState(() => s ? risks.add(r) : risks.remove(r)))]),
         const SizedBox(height: 16),
         FilledButton(
           onPressed: busy
@@ -216,12 +216,12 @@ class PregnancyDetailScreen extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.all(14),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    if (p['husbandName'] != null) Text('👨 ${t('husbandName', 'Husband')}: ${p['husbandName']}'),
-                    if (p['age'] != null) Text('🎂 ${t('age', 'Age')}: ${p['age']}'),
-                    if (p['phone'] != null) InkWell(onTap: () => callPhone(p['phone']), child: Text('📞 ${p['phone']}', style: const TextStyle(color: C.primary, fontWeight: FontWeight.w600))),
-                    if (p['village'] != null) Text('🏠 ${p['village']}'),
-                    if (p['rchId'] != null) Text('🪪 ${t('rchId', 'RCH ID')}: ${p['rchId']}'),
-                    Text('🤰 G${p['gravida'] ?? '?'} P${p['para'] ?? '?'} · ${t('lmp', 'LMP')}: ${fmtDate(p['lmp'])}'),
+                    if (p['husbandName'] != null) Text('${t('husbandName', 'Husband')}: ${p['husbandName']}'),
+                    if (p['age'] != null) Text('${t('age', 'Age')}: ${p['age']}'),
+                    if (p['phone'] != null) InkWell(onTap: () => callPhone(p['phone']), child: Text('${p['phone']}', style: const TextStyle(color: C.primary, fontWeight: FontWeight.w600))),
+                    if (p['village'] != null) Text('${p['village']}'),
+                    if (p['rchId'] != null) Text('${t('rchId', 'RCH ID')}: ${p['rchId']}'),
+                    Text('G${p['gravida'] ?? '?'} P${p['para'] ?? '?'} · ${t('lmp', 'LMP')}: ${fmtDate(p['lmp'])}'),
                   ]),
                 ),
               ),
@@ -236,8 +236,8 @@ class PregnancyDetailScreen extends StatelessWidget {
                     if (status == 'delivered' && del != null) ...[
                       Text('${t('delivered', 'Delivered')} ${fmtDate(del['date'])} · ${t(del['place'] == 'home' ? 'homeDelivery' : 'institutionalDelivery')}', style: const TextStyle(fontWeight: FontWeight.w700)),
                       if (del['childId'] is Map)
-                        TextButton(style: TextButton.styleFrom(padding: EdgeInsets.zero), onPressed: () => Navigator.pushNamed(context, '/asha/child', arguments: {'id': del['childId']['_id']}), child: Text('👶 ${del['childId']['name']}')),
-                      if (s['nextPnc']?['complete'] == true) Text('✅ ${t('pncComplete', 'PNC complete')}'),
+                        TextButton(style: TextButton.styleFrom(padding: EdgeInsets.zero), onPressed: () => Navigator.pushNamed(context, '/asha/child', arguments: {'id': del['childId']['_id']}), child: Text('${del['childId']['name']}')),
+                      if (s['nextPnc']?['complete'] == true) Text(t('pncComplete', 'PNC complete')),
                     ],
                     const SizedBox(height: 6),
                     pregnancyChips(p),
@@ -280,7 +280,7 @@ class PregnancyDetailScreen extends StatelessWidget {
                         'Hb ${v['hb'] ?? '—'}',
                         'IFA/Ca ${v['ifaTablets'] ?? '—'}/${v['calciumTablets'] ?? '—'}',
                         'Td ${v['tdDose'] ?? '—'}',
-                        if (((v['dangerSigns'] as List?) ?? []).isNotEmpty) '⚠ ${(v['dangerSigns'] as List).join(', ')}',
+                        if (((v['dangerSigns'] as List?) ?? []).isNotEmpty) (v['dangerSigns'] as List).join(', '),
                       ].join(' · ')),
                     ),
                   ),
@@ -295,7 +295,7 @@ class PregnancyDetailScreen extends StatelessWidget {
                       subtitle: Text([
                         '${t('babyWeight', 'Baby weight')} ${v['babyWeight'] ?? '—'}',
                         '${t('exclusiveBreastfeeding', 'Breastfeeding')} ${v['breastfeeding'] == null ? '—' : v['breastfeeding'] == true ? '✓' : '✗'}',
-                        if ([...((v['motherDangerSigns'] as List?) ?? []), ...((v['babyDangerSigns'] as List?) ?? [])].isNotEmpty) '⚠ ${[...((v['motherDangerSigns'] as List?) ?? []), ...((v['babyDangerSigns'] as List?) ?? [])].join(', ')}',
+                        if ([...((v['motherDangerSigns'] as List?) ?? []), ...((v['babyDangerSigns'] as List?) ?? [])].isNotEmpty) [...((v['motherDangerSigns'] as List?) ?? []), ...((v['babyDangerSigns'] as List?) ?? [])].join(', '),
                       ].join(' · ')),
                     ),
                   ),
@@ -308,7 +308,7 @@ class PregnancyDetailScreen extends StatelessWidget {
 
 String _savedText(dynamic data) {
   final refs = data is Map ? (data['referralId'] != null ? 1 : ((data['referralIds'] as List?)?.length ?? 0)) : 0;
-  return refs > 0 ? '${t('saved', 'Saved')} 🚨 ${t('dangerSignReferred', 'An emergency referral was opened.')}' : t('saved', 'Saved');
+  return refs > 0 ? '${t('saved', 'Saved')} ${t('dangerSignReferred', 'An emergency referral was opened.')}' : t('saved', 'Saved');
 }
 
 Widget _signPicker(List<String> signs, Set<String> value, VoidCallback changed) => Wrap(spacing: 6, runSpacing: 6, children: [
@@ -316,7 +316,7 @@ Widget _signPicker(List<String> signs, Set<String> value, VoidCallback changed) 
         FilterChip(
           label: Text(s),
           selected: value.contains(s),
-          selectedColor: const Color(0xFFFEE2E2),
+          selectedColor: const Color(0xFFF8E3DD),
           onSelected: (on) {
             on ? value.add(s) : value.remove(s);
             changed();
@@ -325,9 +325,9 @@ Widget _signPicker(List<String> signs, Set<String> value, VoidCallback changed) 
     ]);
 
 Widget _autoReferNote() => Card(
-      color: const Color(0xFFFEE2E2),
+      color: const Color(0xFFF8E3DD),
       child: ListTile(
-        leading: const Text('🚨'),
+        leading: const Icon(Icons.priority_high_rounded, color: C.red),
         title: Text(t('dangerSignsAutoRefer', 'Danger signs: an emergency referral will be opened. Call an ambulance:')),
         trailing: FilledButton(style: FilledButton.styleFrom(backgroundColor: C.red), onPressed: () => callPhone('108'), child: const Text('108')),
       ),
@@ -358,8 +358,8 @@ class _AncFormState extends State<_AncForm> {
         Row(children: [n('bpSys', 'BP (upper)'), n('bpDia', 'BP (lower)')]),
         Row(children: [n('ifaTablets', t('ifaGiven', 'IFA tablets')), n('calciumTablets', t('calciumGiven', 'Calcium tablets'))]),
         Padding(padding: const EdgeInsets.all(4), child: Pick<String>(label: 'Td', value: td, items: const [('', '—'), ('Td1', 'Td1'), ('Td2', 'Td2'), ('Booster', 'Booster')], onChanged: (v) => setState(() => td = v ?? ''))),
-        if (sys >= 140 || dia >= 90) NoticeBox('⚠ ${t('highBpWarning', 'High blood pressure')}', tone: badTone),
-        if (hb != null && hb < 7) NoticeBox('⚠ ${t('severeAnaemiaWarning', 'Severe anaemia')}', tone: badTone),
+        if (sys >= 140 || dia >= 90) NoticeBox(t('highBpWarning', 'High blood pressure'), tone: badTone),
+        if (hb != null && hb < 7) NoticeBox(t('severeAnaemiaWarning', 'Severe anaemia'), tone: badTone),
         const SizedBox(height: 8),
         Text(t('dangerSigns', 'Danger signs'), style: const TextStyle(fontWeight: FontWeight.w600)),
         const SizedBox(height: 6),
@@ -415,7 +415,7 @@ class _DeliveryFormState extends State<_DeliveryForm> {
           Pick<String>(label: '${t('gender', 'Gender')}${registerBaby ? ' *' : ''}', value: gender, items: [('', '—'), ('female', t('girl', 'Girl')), ('male', t('boy', 'Boy'))], onChanged: (v) => setState(() => gender = v ?? '')),
           gap,
           TextField(controller: birthWeight, keyboardType: const TextInputType.numberWithOptions(decimal: true), onChanged: (_) => setState(() {}), decoration: InputDecoration(labelText: '${t('birthWeight', 'Birth weight')} (kg)')),
-          if (bw > 0 && bw < 2.5) NoticeBox('⚠ ${t('lowBirthWeight', 'Low birth weight')}', tone: warnTone),
+          if (bw > 0 && bw < 2.5) NoticeBox(t('lowBirthWeight', 'Low birth weight'), tone: warnTone),
           CheckboxListTile(contentPadding: EdgeInsets.zero, value: registerBaby, onChanged: (v) => setState(() => registerBaby = v ?? true), title: Text(t('registerNewborn', 'Register the newborn'))),
           if (registerBaby) TextField(controller: babyName, maxLength: 100, decoration: InputDecoration(hintText: '${t('babyName', 'Baby name')} (${t('optional', 'optional')}) — Baby of ${widget.womanName}')),
         ],

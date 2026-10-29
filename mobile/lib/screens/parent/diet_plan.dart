@@ -135,7 +135,7 @@ class _DietPlanScreenState extends State<DietPlanScreen> {
                   child: Padding(
                     padding: const EdgeInsets.all(24),
                     child: Column(children: [
-                      const Text('👶', style: TextStyle(fontSize: 48)),
+                      glyph('👶', size: 48),
                       Text('${t('noRecords', 'No records')}.', style: const TextStyle(color: C.muted)),
                       TextButton(onPressed: () => Navigator.pushReplacementNamed(context, '/parent/child-profile'), child: Text(t('addChild', 'Add Child'))),
                     ]),
@@ -162,22 +162,22 @@ class _DietPlanScreenState extends State<DietPlanScreen> {
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(14), border: Border.all(color: C.border)),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('📅 ${d.group?['label']} — ${meals.length} feeding sessions per day', style: const TextStyle(fontWeight: FontWeight.w700)),
+                  Text('${d.group?['label']} — ${meals.length} feeding sessions per day', style: const TextStyle(fontWeight: FontWeight.w700)),
                   const SizedBox(height: 4),
                   Text('${plan['intro']}'),
                 ]),
               ),
               gap,
-              ChoiceRow(value: tab, onChanged: (v) => setState(() => tab = v), options: const [('plan', '📋 Daily Meal Plan'), ('superfoods', '⭐ Superfoods & Tips')]),
+              ChoiceRow(value: tab, onChanged: (v) => setState(() => tab = v), options: const [('plan', 'Daily Meal Plan'), ('superfoods', 'Superfoods & Tips')]),
               if (tab == 'plan') ...[
                 for (final meal in meals) _MealCard(meal: meal, color: color),
                 if (plan['warning'] != null) NoticeBox('${plan['warning']}', tone: warnTone),
                 Card(
-                  color: const Color(0xFFFFF7ED),
+                  color: const Color(0xFFFBEFD9),
                   child: Padding(
                     padding: const EdgeInsets.all(14),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      const Text('🚫 Foods to Avoid', style: TextStyle(fontWeight: FontWeight.w700, color: Color(0xFFC2410C))),
+                      const Text('Foods to Avoid', style: TextStyle(fontWeight: FontWeight.w700, color: Color(0xFFA4541E))),
                       const SizedBox(height: 8),
                       Wrap(spacing: 6, runSpacing: 6, children: [for (final f in (plan['avoidFoods'] as List? ?? [])) Badge2('✕ $f', tone: badTone)]),
                     ]),
@@ -189,19 +189,19 @@ class _DietPlanScreenState extends State<DietPlanScreen> {
                     padding: const EdgeInsets.all(14),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                       Row(children: [
-                        const Expanded(child: Text('✅ Daily Meal Checklist', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15))),
+                        const Expanded(child: Text('Daily Meal Checklist', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15))),
                         Text('$done / $total done', style: const TextStyle(color: C.dark, fontWeight: FontWeight.w700, fontSize: 12)),
                       ]),
-                      if (done == total && total > 0) NoticeBox('🎉 Day complete! Well done.${d.streak > 0 ? '\n🔥 ${d.streak}-day streak' : ''}', tone: goodTone),
+                      if (done == total && total > 0) NoticeBox('Day complete! Well done.${d.streak > 0 ? '\n${d.streak}-day streak' : ''}', tone: goodTone),
                       const SizedBox(height: 10),
-                      LinearProgressIndicator(value: total == 0 ? 0 : done / total, minHeight: 10, borderRadius: BorderRadius.circular(99), backgroundColor: const Color(0xFFCFFAFE)),
+                      LinearProgressIndicator(value: total == 0 ? 0 : done / total, minHeight: 10, borderRadius: BorderRadius.circular(99), backgroundColor: const Color(0xFFE6F0EA)),
                       const SizedBox(height: 8),
                       for (var mi = 0; mi < meals.length; mi++) _checklistMeal(d, mi, meals[mi], color),
                       gap,
                       TextField(
                         controller: notesCtrl,
                         maxLines: 3,
-                        decoration: const InputDecoration(labelText: '📝 Notes for today', hintText: 'Any observations about meals today...'),
+                        decoration: const InputDecoration(labelText: 'Notes for today', hintText: 'Any observations about meals today...'),
                         onChanged: (v) {
                           d.notes = v;
                           _notesDebounce?.cancel();
@@ -217,14 +217,14 @@ class _DietPlanScreenState extends State<DietPlanScreen> {
                   future: DietData.load(),
                   builder: (context, s) => Column(children: [
                     for (final sf in (s.data?['superfoods'] as List? ?? []))
-                      Card(child: ListTile(leading: Text('${sf['emoji']}', style: const TextStyle(fontSize: 28)), title: Text('${sf['name']}', style: const TextStyle(fontWeight: FontWeight.w700)), subtitle: Text('${sf['desc']}'))),
+                      Card(child: ListTile(leading: glyph('${sf['emoji']}', size: 28), title: Text('${sf['name']}', style: const TextStyle(fontWeight: FontWeight.w700)), subtitle: Text('${sf['desc']}'))),
                   ]),
                 ),
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(14),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text('💡 Feeding Tips for ${d.group?['label']}', style: const TextStyle(fontWeight: FontWeight.w700, color: C.dark, fontSize: 15)),
+                      Text('Feeding Tips for ${d.group?['label']}', style: const TextStyle(fontWeight: FontWeight.w700, color: C.dark, fontSize: 15)),
                       const SizedBox(height: 6),
                       for (final tip in (plan['tips'] as List? ?? [])) Padding(padding: const EdgeInsets.symmetric(vertical: 4), child: Text('• $tip')),
                     ]),
@@ -247,30 +247,30 @@ class _DietPlanScreenState extends State<DietPlanScreen> {
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(color: color, borderRadius: const BorderRadius.vertical(top: Radius.circular(11))),
           child: Row(children: [
-            Text('${meal['icon'] ?? '🍽️'}', style: const TextStyle(fontSize: 18)),
+            glyph('${meal['icon'] ?? '🍽️'}', size: 18),
             const SizedBox(width: 8),
-            Expanded(child: Text('${meal['name']}\n🕐 ${meal['time']}', style: const TextStyle(fontWeight: FontWeight.w600))),
+            Expanded(child: Text('${meal['name']}\n${meal['time']}', style: const TextStyle(fontWeight: FontWeight.w600))),
             Text('$mealDone/${items.length}', style: const TextStyle(color: C.primary, fontWeight: FontWeight.w700)),
           ]),
         ),
         for (var ii = 0; ii < items.length; ii++)
           if (items[ii]['type'] == 'options') ...[
-            Padding(padding: const EdgeInsets.fromLTRB(12, 10, 12, 2), child: Text('🔀 ${items[ii]['label']}'.toUpperCase(), style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: C.dark))),
+            Padding(padding: const EdgeInsets.fromLTRB(12, 10, 12, 2), child: Text('${items[ii]['label']}'.toUpperCase(), style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: C.dark))),
             for (var oi = 0; oi < (items[ii]['options'] as List).length; oi++)
               ListTile(
                 dense: true,
                 leading: Icon(d.checks.contains('$mi-$ii:$oi') ? Icons.radio_button_checked : Icons.radio_button_unchecked, color: C.primary),
                 onTap: () => toggle(d, '$mi-$ii:$oi', slotPrefix: '$mi-$ii'),
-                title: Text('${items[ii]['options'][oi]['emoji']} ${items[ii]['options'][oi]['name']}'),
-                subtitle: Text('📏 ${items[ii]['options'][oi]['qty'] ?? ''}${items[ii]['options'][oi]['note'] != null ? ' · ${items[ii]['options'][oi]['note']}' : ''}'),
+                title: Text('${items[ii]['options'][oi]['name']}'),
+                subtitle: Text('${items[ii]['options'][oi]['qty'] ?? ''}${items[ii]['options'][oi]['note'] != null ? ' · ${items[ii]['options'][oi]['note']}' : ''}'),
               ),
           ] else
             CheckboxListTile(
               dense: true,
               value: d.checks.contains('$mi-$ii'),
               onChanged: (_) => toggle(d, '$mi-$ii'),
-              title: Text('${items[ii]['emoji'] ?? ''} ${items[ii]['name']}', style: TextStyle(decoration: d.checks.contains('$mi-$ii') ? TextDecoration.lineThrough : null)),
-              subtitle: Text('📏 ${items[ii]['qty'] ?? ''}${items[ii]['note'] != null ? '\n💡 ${items[ii]['note']}' : ''}'),
+              title: Text('${items[ii]['name']}', style: TextStyle(decoration: d.checks.contains('$mi-$ii') ? TextDecoration.lineThrough : null)),
+              subtitle: Text('${items[ii]['qty'] ?? ''}${items[ii]['note'] != null ? '\nTip: ${items[ii]['note']}' : ''}'),
             ),
       ]),
     );
@@ -289,9 +289,9 @@ class _MealCard extends StatelessWidget {
             color: color,
             padding: const EdgeInsets.all(12),
             child: Row(children: [
-              Text('${meal['icon'] ?? '🍽️'}', style: const TextStyle(fontSize: 22)),
+              glyph('${meal['icon'] ?? '🍽️'}', size: 22),
               const SizedBox(width: 10),
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('${meal['name']}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)), Text('🕐 ${meal['time']}', style: const TextStyle(color: C.muted, fontSize: 12))])),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('${meal['name']}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)), Text('${meal['time']}', style: const TextStyle(color: C.muted, fontSize: 12))])),
             ]),
           ),
           for (final item in meal['items'] as List)
@@ -299,23 +299,23 @@ class _MealCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.all(12),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('🔀 ${item['label']}'.toUpperCase(), style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: C.dark)),
+                  Text('${item['label']}'.toUpperCase(), style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: C.dark)),
                   const SizedBox(height: 6),
                   Wrap(spacing: 8, runSpacing: 8, children: [
                     for (final o in item['options'] as List)
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(color: C.bg, borderRadius: BorderRadius.circular(10), border: Border.all(color: C.border)),
-                        child: Text('${o['emoji']} ${o['name']}\n📏 ${o['qty'] ?? ''}', style: const TextStyle(fontSize: 12.5)),
+                        child: Text('${o['name']}\n${o['qty'] ?? ''}', style: const TextStyle(fontSize: 12.5)),
                       ),
                   ]),
                 ]),
               )
             else
               ListTile(
-                leading: Text('${item['emoji'] ?? ''}', style: const TextStyle(fontSize: 22)),
+                leading: const Icon(Icons.circle, size: 8, color: C.accent),
                 title: Text('${item['name']}', style: const TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: Text('📏 ${item['qty'] ?? ''}${item['note'] != null ? '\n💡 ${item['note']}' : ''}'),
+                subtitle: Text('${item['qty'] ?? ''}${item['note'] != null ? '\nTip: ${item['note']}' : ''}'),
               ),
         ]),
       );

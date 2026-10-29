@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/api.dart';
 import '../../core/ui.dart';
+import '../../widgets/warning_popup.dart';
 
 /// The parent's children and which one is selected (remembered across launches, like the website).
 class Children {
@@ -80,8 +81,8 @@ double? mealStartHour(String? time) {
 }
 
 /// Index of the meal happening now (the last one whose start time has passed).
-int currentMealIndex(List meals) {
-  final now = DateTime.now();
+int currentMealIndex(List meals, [DateTime? at]) {
+  final now = at ?? DateTime.now();
   final hour = now.hour + now.minute / 60;
   var idx = -1, lastTimed = -1;
   var latest = -1.0;
@@ -99,8 +100,8 @@ int currentMealIndex(List meals) {
 
 String mealItemsText(Map meal) => ((meal['items'] as List?) ?? [])
     .map((item) => item['type'] == 'options'
-        ? (item['options'] as List).take(2).map((o) => '${o['emoji']} ${o['name']}').join(' / ')
-        : '${item['emoji'] ?? ''} ${item['name']}${item['qty'] != null ? ' (${item['qty']})' : ''}')
+        ? (item['options'] as List).take(2).map((o) => '${o['name']}').join(' / ')
+        : '${item['name']}${item['qty'] != null ? ' (${item['qty']})' : ''}')
     .join(' + ');
 
 // ── AI prediction: flattens the two shapes GET /growth/:id/predict can return ──
@@ -151,4 +152,48 @@ class VaccineBadge extends StatelessWidget {
     final tone = s == 'done' ? goodTone : s == 'due' ? warnTone : s == 'missed' ? badTone : infoTone;
     return Badge2(s, tone: tone);
   }
+}
+
+/// What the parent should be warned about when the app opens: missed or due vaccines, the meal
+/// due now, poor nutrition or high AI risk, and a growth check that is overdue.
+List<Warning> parentWarnings({
+  required Map child,
+  required List vaccines,
+  required List meals,
+  Prediction? prediction,
+  DateTime? lastGrowth,
+  int unread = 0,
+  DateTime? now,
+}) {
+  final today = DateUtils.dateOnly(now ?? DateTime.now());
+  final name = child['name'] ?? 'Your child';
+  final out = <Warning>[];
+  for (final v in vaccines) {
+    final dueDate = DateTime.tryParse('${v['dueDate']}')?.toLocal();
+    final late = dueDate != null && DateUtils.dateOnly(dueDate).isBefore(today);
+    if (v['status'] == 'missed' || (v['status'] == 'due' && late)) {
+      out.add((icon: '💉', text: 'Missed vaccine: ${v['vaccineName']}${dueDate == null ? '' : ' (was due ${fmtDate(v['dueDate'])})'}. Visit your health centre.', urgent: true));
+    } else if (v['status'] == 'due') {
+      out.add((icon: '💉', text: 'Vaccine due today: ${v['vaccineName']}', urgent: false));
+    }
+  }
+  final status = '${child['nutritionStatus'] ?? ''}'.toLowerCase();
+  if (status == 'severe' || status == 'moderate') {
+    out.add((icon: '⚠️', text: '$name has ${status == 'severe' ? 'severe' : 'moderate'} malnutrition. Follow the diet plan and meet your ASHA worker.', urgent: status == 'severe'));
+  }
+  if (prediction != null && prediction.riskLevel == 'high') {
+    out.add((icon: '🤖', text: 'AI prediction shows high growth risk for $name.', urgent: true));
+  }
+  if (lastGrowth == null || today.difference(DateUtils.dateOnly(lastGrowth.toLocal())).inDays > 30) {
+    out.add((icon: '📏', text: lastGrowth == null ? 'No weight/height recorded yet for $name.' : 'Weight/height not recorded for over a month.', urgent: false));
+  }
+  // meal due now; plans without clock times (0–5 months: "every 2–3 hours") use their first entry
+  final i = currentMealIndex(meals, now);
+  final meal = (i >= 0 ? meals[i] : meals.firstOrNull) as Map?;
+  if (meal != null) {
+    out.add((icon: '${meal['icon'] ?? '🍽️'}', text: 'Food time: ${meal['name']} (${meal['time']}) – ${mealItemsText(meal)}', urgent: false));
+  }
+  if (unread > 0) out.add((icon: '🔔', text: '$unread unread alert${unread == 1 ? '' : 's'}', urgent: false));
+  // urgent first
+  return [...out.where((w) => w.urgent), ...out.where((w) => !w.urgent)];
 }

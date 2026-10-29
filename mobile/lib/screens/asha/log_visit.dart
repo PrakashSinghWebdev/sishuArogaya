@@ -74,7 +74,7 @@ class _LogVisitScreenState extends State<LogVisitScreen> {
         if (followUp.isNotEmpty) 'followUpDate': followUp,
       });
       if (!mounted) return;
-      toast(context, '✅ Visit saved');
+      toast(context, 'Visit saved');
       Navigator.pushReplacementNamed(context, '/asha/visit-history');
     } catch (e) {
       setState(() {
@@ -107,7 +107,7 @@ class _LogVisitScreenState extends State<LogVisitScreen> {
         ),
         Expanded(
           child: ListView(padding: const EdgeInsets.all(16), children: [
-            if (error.isNotEmpty) ErrorBox('⚠️ $error'),
+            if (error.isNotEmpty) ErrorBox(error),
             if (step == 1) ...[
               const Text('Step 1 — Select Child & Visit Type', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
               gap,
@@ -147,7 +147,7 @@ class _LogVisitScreenState extends State<LogVisitScreen> {
               _num(muac, 'MUAC', 'cm', 'e.g. 12.5'),
               if (wazStatus != null)
                 NoticeBox(
-                  '${wazStatus == 'healthy' ? '✅' : wazStatus == 'moderate' ? '⚠️' : '🚨'} AI Assessment: ${wazStatus == 'healthy' ? 'Normal Weight-for-Age' : wazStatus == 'moderate' ? 'Moderate Underweight' : 'Severe Underweight'}\n'
+                  'Assessment: ${wazStatus == 'healthy' ? 'Normal Weight-for-Age' : wazStatus == 'moderate' ? 'Moderate Underweight' : 'Severe Underweight'}\n'
                   'WAZ Score: $waz | ${wazStatus == 'healthy' ? 'Child is growing well.' : wazStatus == 'moderate' ? 'Enhanced nutrition counselling recommended.' : 'Immediate PHC referral advised.'}',
                   tone: nutritionTone[wazStatus]!,
                 ),
@@ -174,7 +174,7 @@ class _LogVisitScreenState extends State<LogVisitScreen> {
                 contentPadding: EdgeInsets.zero,
                 value: referral,
                 onChanged: (v) => setState(() => referral = v ?? false),
-                title: Text('🏥 ${t('phcReferralNeeded', 'PHC referral needed')}'),
+                title: Text(t('phcReferralNeeded', 'PHC referral needed')),
                 subtitle: const Text('Check if this child needs to be referred to Primary Health Centre'),
               ),
               if (referral) ...[
@@ -182,7 +182,7 @@ class _LogVisitScreenState extends State<LogVisitScreen> {
                 gap,
                 TextField(controller: facility, maxLength: 200, decoration: const InputDecoration(labelText: 'Refer to (facility)', hintText: 'PHC / CHC / District Hospital')),
               ],
-              DateField(label: '📅 Next visit / follow-up date (optional)', value: followUp, first: DateTime.now(), onChanged: (v) => setState(() => followUp = v)),
+              DateField(label: 'Next visit / follow-up date (optional)', value: followUp, first: DateTime.now(), onChanged: (v) => setState(() => followUp = v)),
               gap,
               Card(
                 child: Padding(
@@ -212,7 +212,7 @@ class _LogVisitScreenState extends State<LogVisitScreen> {
               if (step < 4)
                 FilledButton(onPressed: step == 1 && (childId.isEmpty || visitType.isEmpty) ? null : () => setState(() => step++), child: Text('${t('next', 'Next')} →'))
               else
-                FilledButton(onPressed: submitting ? null : submit, child: Text(submitting ? t('loading', 'Saving…') : '💾 Save visit')),
+                FilledButton(onPressed: submitting ? null : submit, child: Text(submitting ? t('loading', 'Saving…') : 'Save visit')),
             ]),
           ),
         ),

@@ -36,8 +36,8 @@ class _MyChildrenScreenState extends State<MyChildrenScreen> {
               StatGrid([
                 StatTile(label: t('totalChildren', 'Total children'), value: '${kids.length}', sub: t('assignedChildren', 'Assigned'), color: C.primary),
                 StatTile(label: t('healthy', 'Healthy'), value: '${count('healthy')}', sub: 'WAZ ≥ −1', color: C.green),
-                StatTile(label: t('moderate', 'Moderate'), value: '${count('moderate')}', sub: t('followUpNeeded', 'Follow-up needed'), color: const Color(0xFFF59E0B)),
-                StatTile(label: t('severe', 'Severe'), value: '${count('severe')}', sub: t('phcReferralNeeded', 'PHC referral needed'), color: const Color(0xFFEF4444)),
+                StatTile(label: t('moderate', 'Moderate'), value: '${count('moderate')}', sub: t('followUpNeeded', 'Follow-up needed'), color: const Color(0xFFB7791F)),
+                StatTile(label: t('severe', 'Severe'), value: '${count('severe')}', sub: t('phcReferralNeeded', 'PHC referral needed'), color: const Color(0xFFB5452F)),
               ]),
               gap,
               TextField(onChanged: (v) => setState(() => search = v), decoration: InputDecoration(prefixIcon: const Icon(Icons.search), hintText: t('searchByName', 'Search by name'))),
@@ -45,7 +45,7 @@ class _MyChildrenScreenState extends State<MyChildrenScreen> {
               ChoiceRow(
                 value: filter,
                 onChanged: (v) => setState(() => filter = v),
-                options: [('all', '👥 ${t('viewAll', 'All')} ${kids.length}'), ('healthy', '✅ ${t('healthy', 'Healthy')} ${count('healthy')}'), ('moderate', '⚠️ ${t('moderate', 'Moderate')} ${count('moderate')}'), ('severe', '🚨 ${t('severe', 'Severe')} ${count('severe')}')],
+                options: [('all', '${t('viewAll', 'All')} ${kids.length}'), ('healthy', '${t('healthy', 'Healthy')} ${count('healthy')}'), ('moderate', '${t('moderate', 'Moderate')} ${count('moderate')}'), ('severe', '${t('severe', 'Severe')} ${count('severe')}')],
               ),
               if (shown.isEmpty) Card(child: EmptyState(t('noRecords', 'No records'))),
               for (final c in shown) _ChildCard(c: c),
@@ -66,20 +66,20 @@ class _ChildCard extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: BorderSide(color: tone.fg.withValues(alpha: .4))),
       child: ExpansionTile(
         shape: const Border(),
-        leading: CircleAvatar(backgroundColor: tone.bg, child: const Text('👶')),
+        leading: CircleAvatar(backgroundColor: tone.bg, child: Icon(Icons.child_care_outlined, color: tone.fg, size: 20)),
         title: Text('${c['name']}', style: const TextStyle(fontWeight: FontWeight.w700)),
         subtitle: Text('${childAge(c)} · ${c['currentWeight'] ?? '—'} kg · ${c['currentHeight'] ?? '—'} cm · ${c['gender'] ?? '—'}'),
         trailing: StatusBadge(status),
         childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
         expandedCrossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('🩸 ${c['bloodGroup'] ?? '—'}${c['dob'] != null ? ' · 📅 DOB: ${fmtDate(c['dob'])}' : ''}', style: const TextStyle(color: C.muted)),
+          Text('${c['bloodGroup'] ?? '—'}${c['dob'] != null ? ' · DOB ${fmtDate(c['dob'])}' : ''}', style: const TextStyle(color: C.muted)),
           const SizedBox(height: 6),
           Text(status == 'healthy'
-              ? '✅ Normal growth — continue current plan'
+              ? 'Normal growth — continue current plan'
               : status == 'moderate'
-                  ? '⚠️ Moderate risk — increase nutrients + weekly follow-up'
-                  : '🚨 Severe malnutrition — PHC referral required TODAY'),
+                  ? 'Moderate risk — increase nutrients + weekly follow-up'
+                  : 'Severe malnutrition — PHC referral required TODAY'),
           const SizedBox(height: 8),
           Wrap(spacing: 8, children: [
             FilledButton.icon(onPressed: () => Navigator.pushNamed(context, '/asha/log-visit', arguments: {'childId': c['_id']}), icon: const Icon(Icons.assignment_add, size: 18), label: Text(t('logVisit', 'Log visit'))),
@@ -115,7 +115,7 @@ class ChildDetailScreen extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(children: [
-                    const CircleAvatar(radius: 32, backgroundColor: Color(0xFFE0F2FE), child: Icon(Icons.person, size: 36, color: C.primary)),
+                    const CircleAvatar(radius: 32, backgroundColor: Color(0xFFE5ECF2), child: Icon(Icons.person, size: 36, color: C.primary)),
                     const SizedBox(height: 8),
                     Text('${c['name']}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
                     Text('${c['gender'] ?? ''} · ${c['ageInMonths'] ?? ageMonths(c['dob'])} months', style: const TextStyle(color: C.muted)),
@@ -138,7 +138,7 @@ class ChildDetailScreen extends StatelessWidget {
                 OutlinedButton.icon(style: OutlinedButton.styleFrom(foregroundColor: C.red), onPressed: () => go('/asha/referrals', {'childId': id, 'new': '1'}), icon: const Icon(Icons.local_hospital), label: const Text('Refer to Health Centre')),
               ]),
               gap,
-              if (due > 0) NoticeBox('⚠️ $due vaccine(s) overdue! Immediate action required.', tone: badTone),
+              if (due > 0) NoticeBox('$due vaccine(s) overdue! Immediate action required.', tone: badTone),
               if (growth.isNotEmpty) Card(child: Padding(padding: const EdgeInsets.all(12), child: GrowthChart(records: growth))),
               const SectionTitle('Recent Growth Records'),
               Card(

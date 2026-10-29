@@ -69,7 +69,7 @@ class _GrowthRecordsScreenState extends State<GrowthRecordsScreen> {
           return Padding(
             padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(c).viewInsets.bottom + 20),
             child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              Text('📋 ${t('growthEntry', 'Growth entry')} — ${child['name']}', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+              Text('${t('growthEntry', 'Growth entry')} — ${child['name']}', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
               gap,
               Row(children: [
                 Expanded(child: TextField(controller: w, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: InputDecoration(labelText: '${t('weight', 'Weight')} (kg)', hintText: 'e.g. 8.5'))),
@@ -98,7 +98,7 @@ class _GrowthRecordsScreenState extends State<GrowthRecordsScreen> {
                           });
                         }
                       },
-                child: Text(saving ? '💾 ${t('loading', 'Saving')}…' : '💾 ${t('save', 'Save')}'),
+                child: Text(saving ? '${t('loading', 'Saving')}…' : t('save', 'Save')),
               ),
             ]),
           );
@@ -127,8 +127,8 @@ class _GrowthRecordsScreenState extends State<GrowthRecordsScreen> {
               : ListView(padding: const EdgeInsets.fromLTRB(16, 16, 16, 90), children: [
                   StatGrid([
                     StatTile(label: '${t('healthy', 'Healthy')} (WAZ ≥ −1)', value: '$normal', color: C.green),
-                    StatTile(label: t('moderate', 'Moderate'), value: '$moderate', color: const Color(0xFFF59E0B)),
-                    StatTile(label: '${t('severe', 'Severe')} Cases', value: '$severe', color: const Color(0xFFEF4444)),
+                    StatTile(label: t('moderate', 'Moderate'), value: '$moderate', color: const Color(0xFFB7791F)),
+                    StatTile(label: '${t('severe', 'Severe')} Cases', value: '$severe', color: const Color(0xFFB5452F)),
                     StatTile(label: t('totalChildren', 'Total children'), value: '${children.length}', color: C.primary),
                   ]),
                   gap,
@@ -182,7 +182,7 @@ class _GrowthRecordsScreenState extends State<GrowthRecordsScreen> {
                     ),
                     if (loadingRecords) const LinearProgressIndicator(),
                     if (records.isNotEmpty) Card(child: Padding(padding: const EdgeInsets.all(12), child: GrowthChart(records: records))),
-                    SectionTitle('📋 ${t('growthRecords', 'Growth records')}'),
+                    SectionTitle(t('growthRecords', 'Growth records')),
                     Card(
                       child: records.isEmpty
                           ? EmptyState('${t('noRecords', 'No records')}\nTap "${t('growthEntry', 'Growth entry')}" to add the first record.')
@@ -239,18 +239,18 @@ class MalnutritionReportScreen extends StatelessWidget {
             return ListView(padding: const EdgeInsets.all(16), children: [
               Text('Active malnutrition cases in your area — ${kids.length} children monitored', style: const TextStyle(color: C.muted)),
               gap,
-              if (severe.isNotEmpty) NoticeBox('🚨 ${severe.length} ${t('severe', 'severe')} case${severe.length > 1 ? 's' : ''} — Immediate Action Required\n${severe.map((c) => c['name']).join(', ')} require urgent referral today.', tone: badTone),
+              if (severe.isNotEmpty) NoticeBox('${severe.length} ${t('severe', 'severe')} case${severe.length > 1 ? 's' : ''} — Immediate Action Required\n${severe.map((c) => c['name']).join(', ')} require urgent referral today.', tone: badTone),
               StatGrid([
-                StatTile(label: t('severeCases', 'Severe cases'), value: '${severe.length}', sub: severe.isNotEmpty ? t('urgentAction', 'Urgent action') : null, color: const Color(0xFFEF4444)),
-                StatTile(label: t('moderateCases', 'Moderate cases'), value: '${moderate.length}', sub: moderate.isNotEmpty ? 'Weekly monitoring' : null, color: const Color(0xFFF59E0B)),
+                StatTile(label: t('severeCases', 'Severe cases'), value: '${severe.length}', sub: severe.isNotEmpty ? t('urgentAction', 'Urgent action') : null, color: const Color(0xFFB5452F)),
+                StatTile(label: t('moderateCases', 'Moderate cases'), value: '${moderate.length}', sub: moderate.isNotEmpty ? 'Weekly monitoring' : null, color: const Color(0xFFB7791F)),
                 StatTile(label: t('healthy', 'Healthy'), value: '$healthy', color: C.green),
                 StatTile(label: t('phcReferralNeeded', 'PHC referral needed'), value: '${severe.length}', sub: severe.isNotEmpty ? 'Pending referrals' : 'None pending', color: C.primary),
               ]),
-              if (severe.isNotEmpty) ...[SectionTitle('🚨 ${t('severeCases', 'Severe cases')} (${severe.length})'), const Text('Requires immediate referral and daily home visits', style: TextStyle(color: C.muted)), for (final c in severe) _CaseCard(c: c, type: 'severe')],
-              if (moderate.isNotEmpty) ...[SectionTitle('⚠️ ${t('moderateCases', 'Moderate cases')} (${moderate.length})'), const Text('Weekly home visits and enhanced nutrition counselling', style: TextStyle(color: C.muted)), for (final c in moderate) _CaseCard(c: c, type: 'moderate')],
-              if (severe.isEmpty && moderate.isEmpty) Card(child: EmptyState('✅ No Active Malnutrition Cases\nAll ${kids.length} children in your area are healthy. Keep up the great work!', icon: Icons.verified)),
-              const SectionTitle('📋 ASHA Action Protocol'),
-              for (final (title, steps, color) in [('🚨 Severe Malnutrition Protocol', _severeSteps, const Color(0xFFEF4444)), ('⚠️ Moderate Malnutrition Protocol', _moderateSteps, const Color(0xFFF59E0B))])
+              if (severe.isNotEmpty) ...[SectionTitle('${t('severeCases', 'Severe cases')} (${severe.length})'), const Text('Requires immediate referral and daily home visits', style: TextStyle(color: C.muted)), for (final c in severe) _CaseCard(c: c, type: 'severe')],
+              if (moderate.isNotEmpty) ...[SectionTitle('${t('moderateCases', 'Moderate cases')} (${moderate.length})'), const Text('Weekly home visits and enhanced nutrition counselling', style: TextStyle(color: C.muted)), for (final c in moderate) _CaseCard(c: c, type: 'moderate')],
+              if (severe.isEmpty && moderate.isEmpty) Card(child: EmptyState('No Active Malnutrition Cases\nAll ${kids.length} children in your area are healthy. Keep up the great work!', icon: Icons.verified)),
+              const SectionTitle('ASHA Action Protocol'),
+              for (final (title, steps, color) in [('Severe Malnutrition Protocol', _severeSteps, const Color(0xFFB5452F)), ('Moderate Malnutrition Protocol', _moderateSteps, const Color(0xFFB7791F))])
                 Card(
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: color, width: 1.5)),
                   child: Padding(
@@ -281,7 +281,7 @@ class _CaseCard extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: BorderSide(color: tone.fg.withValues(alpha: .5), width: 1.5)),
       child: ExpansionTile(
         shape: const Border(),
-        leading: CircleAvatar(backgroundColor: tone.bg, child: Text(type == 'severe' ? '🚨' : '⚠️')),
+        leading: CircleAvatar(backgroundColor: tone.bg, child: Icon(type == 'severe' ? Icons.priority_high_rounded : Icons.warning_amber_rounded, color: tone.fg, size: 20)),
         title: Text('${c['name']}', style: const TextStyle(fontWeight: FontWeight.w700)),
         subtitle: Text([months != null ? '$months months' : '—', if (c['gender'] != null) '${c['gender']}', if (c['parentId'] is Map) 'Parent: ${c['parentId']['name']}'].join(' · ')),
         trailing: StatusBadge(type),

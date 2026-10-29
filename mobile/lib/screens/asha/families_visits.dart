@@ -36,11 +36,11 @@ class _FamiliesScreenState extends State<FamiliesScreen> {
               gap,
               if (dups.isNotEmpty)
                 Card(
-                  color: const Color(0xFFFFFBEB),
+                  color: const Color(0xFFFBEFD9),
                   child: Padding(
                     padding: const EdgeInsets.all(12),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text('⚠️ ${t('possibleDuplicates', 'Possible duplicate records')}', style: const TextStyle(fontWeight: FontWeight.w700)),
+                      Text(t('possibleDuplicates', 'Possible duplicate records'), style: const TextStyle(fontWeight: FontWeight.w700)),
                       for (final pair in dups)
                         TextButton(
                           style: TextButton.styleFrom(padding: EdgeInsets.zero, alignment: Alignment.centerLeft),
@@ -56,7 +56,7 @@ class _FamiliesScreenState extends State<FamiliesScreen> {
               if (families.isEmpty) Card(child: EmptyState(t('noRecords', 'No records'))),
               for (final f in families)
                 Card(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: BorderSide(color: f['needsFollowUp'] == true ? const Color(0xFFF59E0B) : C.border, width: 1.5)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: BorderSide(color: f['needsFollowUp'] == true ? const Color(0xFFB7791F) : C.border, width: 1.5)),
                   child: Padding(
                     padding: const EdgeInsets.all(14),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -70,16 +70,16 @@ class _FamiliesScreenState extends State<FamiliesScreen> {
                         if (f['needsFollowUp'] == true) Badge2(t('needsFollowUp', 'Needs follow-up'), tone: warnTone),
                       ]),
                       const SizedBox(height: 6),
-                      if (f['motherName'] != null) Text('👩 ${t('mother', 'Mother')}: ${f['motherName']}'),
-                      if (f['fatherName'] != null) Text('👨 ${t('father', 'Father')}: ${f['fatherName']}'),
-                      if (f['phone'] != null) InkWell(onTap: () => callPhone(f['phone']), child: Text('📞 ${f['phone']}', style: const TextStyle(color: C.primary, fontWeight: FontWeight.w600))),
+                      if (f['motherName'] != null) Text('${t('mother', 'Mother')}: ${f['motherName']}'),
+                      if (f['fatherName'] != null) Text('${t('father', 'Father')}: ${f['fatherName']}'),
+                      if (f['phone'] != null) InkWell(onTap: () => callPhone(f['phone']), child: Text('${f['phone']}', style: const TextStyle(color: C.primary, fontWeight: FontWeight.w600))),
                       Text('${t('lastVisit', 'Last visit')}: ${f['lastVisit'] != null ? fmtDate(f['lastVisit']) : t('never', 'Never')}', style: const TextStyle(color: C.muted)),
                       const SizedBox(height: 6),
                       for (final c in (f['children'] as List?) ?? [])
                         ListTile(
                           dense: true,
                           contentPadding: EdgeInsets.zero,
-                          title: Text('${c['name']}  ${ageText(c['dob'])}${c['openReferral'] == true ? '  🏥' : ''}', style: const TextStyle(fontWeight: FontWeight.w600)),
+                          title: Text('${c['name']}  ${ageText(c['dob'])}${c['openReferral'] == true ? ' · referred' : ''}', style: const TextStyle(fontWeight: FontWeight.w600)),
                           trailing: StatusBadge(c['nutritionStatus'] ?? 'healthy'),
                           onTap: () => Navigator.pushNamed(context, '/asha/child', arguments: {'id': c['_id']}),
                         ),
@@ -139,7 +139,7 @@ class _MyVisitsScreenState extends State<MyVisitsScreen> {
                 onChanged: (v) => setState(() => tab = v),
                 options: [for (final k in ['now', 'week', 'all']) (k, '${t(k == 'now' ? 'visitsDueNow' : k == 'week' ? 'visitsThisWeek' : 'visitsAll')} (${items.where((i) => _match(k, i['bucket'])).length})')],
               ),
-              if (shown.isEmpty) Card(child: EmptyState('✅ ${t('visitsNoneDue', 'No visits due')}', icon: Icons.event_available)),
+              if (shown.isEmpty) Card(child: EmptyState(t('visitsNoneDue', 'No visits due'), icon: Icons.event_available)),
               for (final item in shown)
                 Builder(builder: (context) {
                   final c = item['child'] as Map;
@@ -155,7 +155,7 @@ class _MyVisitsScreenState extends State<MyVisitsScreen> {
                             child: InkWell(
                               onTap: () => Navigator.pushNamed(context, '/asha/child', arguments: {'id': c['_id']}),
                               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                Text('${c['name']}  ${ageText(c['dob'])} · ${c['gender'] == 'female' ? '♀' : '♂'}', style: const TextStyle(fontWeight: FontWeight.w800, color: C.dark)),
+                                Text('${c['name']}  ${ageText(c['dob'])} · ${c['gender'] == 'female' ? 'girl' : 'boy'}', style: const TextStyle(fontWeight: FontWeight.w800, color: C.dark)),
                                 Text('${c['parentId'] is Map ? c['parentId']['name'] : c['motherName'] ?? '—'}${c['village'] != null ? ' · ${c['village']}' : ''}', style: const TextStyle(color: C.muted, fontSize: 12.5)),
                               ]),
                             ),

@@ -87,13 +87,13 @@ class AccountSettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _section(String s) => Padding(padding: const EdgeInsets.fromLTRB(4, 12, 4, 6), child: Text(s, style: const TextStyle(color: Color(0xFF64748B), fontSize: 14)));
+  Widget _section(String s) => Padding(padding: const EdgeInsets.fromLTRB(4, 12, 4, 6), child: Text(s, style: const TextStyle(color: Color(0xFF66706B), fontSize: 14)));
 
   Widget _row(IconData icon, String label, {String? value, VoidCallback? onTap, bool danger = false}) => ListTile(
-        leading: Icon(icon, color: danger ? C.red : const Color(0xFF334155)),
+        leading: Icon(icon, color: danger ? C.red : const Color(0xFF55605B)),
         title: Text(label, style: TextStyle(color: danger ? C.red : null)),
         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-          if (value != null) Text(value, style: const TextStyle(color: Color(0xFF64748B), fontSize: 13.5)),
+          if (value != null) Text(value, style: const TextStyle(color: Color(0xFF66706B), fontSize: 13.5)),
           const Icon(Icons.chevron_right),
         ]),
         onTap: onTap,
@@ -262,10 +262,10 @@ class _TextSizePanel extends StatelessWidget {
         builder: (context, _) => _Panel(title: t('textSize', 'Text size'), children: [
           for (final e in Lang.textSizes.entries)
             Card(
-              color: e.key == lang.textSize ? const Color(0xFFF0FDF4) : Colors.white,
+              color: e.key == lang.textSize ? const Color(0xFFE3F1E8) : Colors.white,
               child: ListTile(
                 title: Text(t('textSize_${e.key}', e.key), style: TextStyle(fontSize: 15 * e.value, fontWeight: e.key == lang.textSize ? FontWeight.w700 : null)),
-                trailing: e.key == lang.textSize ? const Icon(Icons.check, color: Color(0xFF16A34A)) : null,
+                trailing: e.key == lang.textSize ? const Icon(Icons.check, color: Color(0xFF2F855A)) : null,
                 onTap: () => lang.setTextSize(e.key),
               ),
             ),

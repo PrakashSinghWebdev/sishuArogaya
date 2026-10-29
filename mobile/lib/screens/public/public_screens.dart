@@ -7,8 +7,11 @@ import 'package:flutter/services.dart';
 import '../../core/api.dart';
 import '../../core/i18n.dart';
 import '../../core/ui.dart';
+import '../../shell.dart';
+import '../../widgets/logo.dart';
+import 'shop.dart';
 
-/// Live platform numbers ('—' until loaded or if the server is down, never invented).
+/// Live platform numbers. Hidden until loaded (and if the server is down), never invented.
 class _PublicStats extends StatefulWidget {
   const _PublicStats();
   @override
@@ -27,38 +30,85 @@ class _PublicStatsState extends State<_PublicStats> {
 
   String fmt(dynamic n) {
     if (n is! num) return '—';
-    if (n >= 10000000) return '${(n / 10000000).toStringAsFixed(1).replaceAll('.0', '')}Cr';
-    if (n >= 100000) return '${(n / 100000).toStringAsFixed(1).replaceAll('.0', '')}L';
-    if (n >= 1000) return '${(n / 1000).toStringAsFixed(1).replaceAll('.0', '')}K';
-    return '$n';
+    if (n >= 10000000) return '${(n / 10000000).toStringAsFixed(1).replaceAll('.0', '')} Cr';
+    if (n >= 100000) return '${(n / 100000).toStringAsFixed(1).replaceAll('.0', '')} L';
+    return inr(n);
   }
 
   @override
-  Widget build(BuildContext context) => StatGrid([
-        StatTile(label: t('aboutStat1Label', 'Children'), value: fmt(stats?['children']), icon: Icons.child_care),
-        StatTile(label: t('aboutStat2Label', 'ASHA Workers'), value: fmt(stats?['ashaWorkers']), icon: Icons.health_and_safety_outlined),
-        StatTile(label: t('aboutStat3Label', 'Districts'), value: fmt(stats?['districts']), icon: Icons.map_outlined),
-        StatTile(label: t('aboutStat4Label', 'Languages'), value: '${lang.languages.length}', icon: Icons.translate),
-      ]);
+  Widget build(BuildContext context) {
+    if (stats == null) return const SizedBox.shrink();
+    Widget cell(String value, String label) => Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700, letterSpacing: -0.5)),
+            Text(label, style: const TextStyle(color: C.muted, fontSize: 13)),
+          ]),
+        );
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+      child: Row(children: [
+        cell(fmt(stats?['children']), t('land_statChildren', 'children registered')),
+        cell(fmt(stats?['ashaWorkers']), t('land_statAsha', 'ASHA workers')),
+        cell(fmt(stats?['districts']), t('land_statDistricts', 'districts')),
+      ]),
+    );
+  }
 }
 
-// ── Home (public landing) ──────────────────────────────────────────────────
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+/// Icon, title and one line of text, used for the "what you can do" list.
+class _Point extends StatelessWidget {
+  const _Point(this.icon, this.title, this.text);
+  final IconData icon;
+  final String title, text;
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 18),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          IconWell(icon, size: 44),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 2),
+              Text(text, style: const TextStyle(color: C.muted, height: 1.4)),
+            ]),
+          ),
+        ]),
+      );
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+/// Photo with rounded corners (assets/photos, credits in assets/photo_credits.json).
+class _Photo extends StatelessWidget {
+  const _Photo(this.file, {this.height = 240});
+  final String file;
+  final double height;
+  @override
+  Widget build(BuildContext context) => ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Image.asset('assets/photos/$file.jpg', height: height, width: double.infinity, fit: BoxFit.cover),
+      );
+}
+
+/// Landing photos that slide every 5 seconds (or by swiping), with dots for the current one.
+class _HeroCarousel extends StatefulWidget {
+  const _HeroCarousel();
+  @override
+  State<_HeroCarousel> createState() => _HeroCarouselState();
+}
+
+class _HeroCarouselState extends State<_HeroCarousel> {
+  static const photos = ['photo_mother', 'photo_health_worker', 'photo_anganwadi'];
   final _pages = PageController();
-  int slide = 0;
+  int index = 0;
   Timer? _timer;
 
   @override
   void initState() {
     super.initState();
-    _timer = Timer.periodic(const Duration(seconds: 4), (_) {
-      if (_pages.hasClients) _pages.animateToPage((slide + 1) % 3, duration: const Duration(milliseconds: 500), curve: Curves.easeInOut);
+    _timer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (_pages.hasClients) {
+        _pages.animateToPage((index + 1) % photos.length, duration: const Duration(milliseconds: 600), curve: Curves.easeInOut);
+      }
     });
   }
 
@@ -70,139 +120,136 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    const images = ['assets/hero_mom_child.png', 'assets/hero_growth_chart.png', 'assets/hero_health_worker.png'];
-    final features = [
-      (Icons.trending_up, t('homeFeature1_title'), t('homeFeature1_text')),
-      (Icons.event_available, t('homeFeature2_title'), t('homeFeature2_text')),
-      (Icons.smart_toy_outlined, t('homeFeature3_title'), t('homeFeature3_text')),
-      (Icons.assignment_outlined, t('homeFeature4_title'), t('homeFeature4_text')),
-    ];
-    final platform = [
-      ('📊', t('aboutFeature1'), t('homeFeature1_desc_long')),
-      ('💉', t('aboutFeature2'), t('homeFeature2_desc_long')),
-      ('📍', t('aboutFeature3'), t('homeFeature3_desc_long')),
-      ('🤖', t('aboutFeature4'), t('homeFeature4_desc_long')),
-      ('📋', t('aboutFeature5'), t('homeFeature5_desc_long')),
-      ('🔔', t('aboutFeature6'), t('homeFeature6_desc_long')),
-    ];
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Shishu Aarogya'),
-        actions: [
-          IconButton(tooltip: 'Health assistant', icon: const Icon(Icons.chat_bubble_outline), onPressed: () => Navigator.pushNamed(context, '/chat')),
-          IconButton(tooltip: 'Shop', icon: const Icon(Icons.shopping_bag_outlined), onPressed: () => Navigator.pushNamed(context, '/shop')),
-          IconButton(tooltip: 'Language', icon: const Icon(Icons.translate), onPressed: () => Navigator.pushNamed(context, '/language')),
-        ],
-      ),
-      body: ListView(children: [
+  Widget build(BuildContext context) => Column(children: [
         SizedBox(
-          height: 260,
-          child: Stack(children: [
-            PageView(
-              controller: _pages,
-              onPageChanged: (i) => setState(() => slide = i),
-              children: [
-                for (var i = 0; i < 3; i++)
-                  Stack(fit: StackFit.expand, children: [
-                    Image.asset(images[i], fit: BoxFit.cover),
-                    Container(color: const Color(0x990C2340)),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 36),
-                      child: Column(mainAxisAlignment: MainAxisAlignment.end, crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Badge2(t('homeHero${i + 1}_badge'), tone: const Tone(Colors.white, Color(0x33FFFFFF))),
-                        const SizedBox(height: 10),
-                        Text(t('homeHero${i + 1}_headline'), style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w800)),
-                        const SizedBox(height: 6),
-                        Text(t('homeHero${i + 1}_desc'), maxLines: 3, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white70)),
-                      ]),
-                    ),
-                  ]),
-              ],
+          height: 280,
+          child: PageView(
+            controller: _pages,
+            onPageChanged: (i) => setState(() => index = i),
+            children: [
+              for (final p in photos) Padding(padding: const EdgeInsets.symmetric(horizontal: 2), child: _Photo(p, height: 280)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          for (var i = 0; i < photos.length; i++)
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              width: i == index ? 20 : 7,
+              height: 7,
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              decoration: BoxDecoration(color: i == index ? C.primary : C.border, borderRadius: BorderRadius.circular(4)),
             ),
-            Positioned(
-              bottom: 12,
-              left: 0,
-              right: 0,
-              child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                for (var i = 0; i < 3; i++)
-                  Container(width: i == slide ? 18 : 8, height: 8, margin: const EdgeInsets.symmetric(horizontal: 3), decoration: BoxDecoration(color: i == slide ? Colors.white : Colors.white54, borderRadius: BorderRadius.circular(4))),
+        ]),
+      ]);
+}
+
+// ── Home (public landing) ──────────────────────────────────────────────────
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final current = lang.languages.where((l) => l.code == lang.language).firstOrNull?.label ?? 'English';
+    return Scaffold(
+      floatingActionButton: const ChatFab(),
+      body: SafeArea(
+        child: ListView(padding: EdgeInsets.zero, children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 8, 8),
+            child: Row(children: [
+              const Logo(size: 34),
+              const Spacer(),
+              TextButton.icon(
+                onPressed: () => showLanguagePicker(context),
+                icon: const Icon(Icons.translate, size: 18),
+                label: Text(current),
+              ),
+            ]),
+          ),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: _HeroCarousel(),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 22, 20, 0),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              Text(
+                t('land_title', "Your child's health, kept in one place"),
+                style: const TextStyle(fontSize: 28, height: 1.15, fontWeight: FontWeight.w700, letterSpacing: -0.6),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                t('land_sub', 'Vaccines, growth and meals for children up to five years, shared between you and your ASHA worker.'),
+                style: const TextStyle(fontSize: 16, color: C.muted, height: 1.45),
+              ),
+              const SizedBox(height: 22),
+              FilledButton(onPressed: () => Navigator.pushNamed(context, '/register'), child: Text(t('land_create', 'Create an account'))),
+              const SizedBox(height: 10),
+              OutlinedButton(onPressed: () => Navigator.pushNamed(context, '/login'), child: Text(t('land_login', 'I already have an account'))),
+              const SizedBox(height: 36),
+              Text(t('land_whatTitle', 'What you can do'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, letterSpacing: -0.3)),
+              const SizedBox(height: 16),
+              _Point(Icons.vaccines_outlined, t('land_p1', 'Keep vaccines on time'),
+                  t('land_p1d', "See the full national schedule for your child, what's due next, and anything that was missed.")),
+              _Point(Icons.monitor_weight_outlined, t('land_p2', 'Follow growth'),
+                  t('land_p2d', 'Record weight and height. The app compares them with WHO growth charts and tells you if something needs attention.')),
+              _Point(Icons.rice_bowl_outlined, t('land_p3', 'Know what to feed'),
+                  t('land_p3d', "Simple meal plans for your child's age, with foods you can find at home.")),
+              _Point(Icons.chat_bubble_outline_rounded, t('land_p4', 'Ask in your language'),
+                  t('land_p4d', 'Questions about fever, feeding or schemes. Answers work even without internet.')),
+            ]),
+          ),
+          const _PublicStats(),
+          const SizedBox(height: 20),
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              const _Photo('photo_health_worker', height: 220),
+              const SizedBox(height: 16),
+              Text(t('land_ashaTitle', 'For ASHA workers'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, letterSpacing: -0.3)),
+              const SizedBox(height: 6),
+              Text(
+                t('land_ashaText', 'Log home visits, record vaccines and growth for every child in your area, follow up pregnancies and send referrals to the PHC. Your login comes from your block office.'),
+                style: const TextStyle(color: C.muted, height: 1.45),
+              ),
+              const SizedBox(height: 14),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: OutlinedButton.icon(
+                  onPressed: () => Navigator.pushNamed(context, '/login'),
+                  icon: const Icon(Icons.login, size: 18),
+                  label: Text(t('land_ashaLogin', 'ASHA worker login')),
+                ),
+              ),
+            ]),
+          ),
+          const SizedBox(height: 24),
+          const ShopTeaser(),
+          const SizedBox(height: 24),
+          const Divider(),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Logo(size: 28),
+              const SizedBox(height: 14),
+              Text(t('homeFooter_contact', 'Contact'), style: const TextStyle(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 4),
+              InkWell(onTap: () => openLink('mailto:support@shishuaarogya.gov.in'), child: const Padding(padding: EdgeInsets.symmetric(vertical: 4), child: Text('support@shishuaarogya.gov.in', style: TextStyle(color: C.primary)))),
+              InkWell(onTap: () => callPhone('18001234567'), child: const Padding(padding: EdgeInsets.symmetric(vertical: 4), child: Text('1800 123 4567 (toll free)', style: TextStyle(color: C.primary)))),
+              const SizedBox(height: 12),
+              Wrap(spacing: 18, runSpacing: 6, children: [
+                for (final (label, route) in [(t('homeFooter_linkAbout', 'About'), '/about'), ('Privacy Policy', '/privacy'), ('Terms of Use', '/terms'), ('Photo credits', '/credits')])
+                  InkWell(onTap: () => Navigator.pushNamed(context, route), child: Text(label, style: const TextStyle(color: C.text, decoration: TextDecoration.underline, decorationColor: C.border))),
               ]),
-            ),
-          ]),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Row(children: [
-              Expanded(child: FilledButton(onPressed: () => Navigator.pushNamed(context, '/login'), child: Text(t('login', 'Login')))),
-              const SizedBox(width: 10),
-              Expanded(child: OutlinedButton(onPressed: () => Navigator.pushNamed(context, '/register'), child: Text(t('register', 'Register')))),
+              const SizedBox(height: 14),
+              Text('© ${DateTime.now().year} Shishu Aarogya', style: const TextStyle(color: C.muted, fontSize: 12)),
             ]),
-            const SizedBox(height: 20),
-            SectionTitle(t('homeServices_title')),
-            Text(t('homeServices_subtitle'), style: const TextStyle(color: C.muted)),
-            gap,
-            for (final (icon, title, text) in features)
-              Card(child: ListTile(leading: CircleAvatar(backgroundColor: const Color(0xFFE0F7FA), child: Icon(icon, color: C.dark)), title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)), subtitle: Text(text))),
-            gap,
-            const _PublicStats(),
-            const SizedBox(height: 20),
-            Badge2(t('homeAbout_badge'), tone: infoTone),
-            const SizedBox(height: 8),
-            Text(t('homeAbout_headline'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: C.text)),
-            const SizedBox(height: 6),
-            Text(t('homeAbout_desc'), style: const TextStyle(color: C.muted)),
-            gap,
-            for (var i = 1; i <= 4; i++)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const Icon(Icons.check_circle, color: C.green, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(t('homeAbout_feat${i}_title'), style: const TextStyle(fontWeight: FontWeight.w700)),
-                      Text(t('homeAbout_feat${i}_desc'), style: const TextStyle(color: C.muted, fontSize: 13)),
-                    ]),
-                  ),
-                ]),
-              ),
-            const SizedBox(height: 12),
-            SectionTitle(t('homePlatform_title')),
-            Text(t('homePlatform_subtitle'), style: const TextStyle(color: C.muted)),
-            gap,
-            for (final (e, title, desc) in platform)
-              Card(child: ListTile(leading: Text(e, style: const TextStyle(fontSize: 26)), title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)), subtitle: Text(desc))),
-            const SizedBox(height: 12),
-            Card(
-              color: C.dark,
-              child: Padding(
-                padding: const EdgeInsets.all(18),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(t('homeCTA_title'), style: const TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.w800)),
-                  const SizedBox(height: 6),
-                  Text(t('homeCTA_desc'), style: const TextStyle(color: Colors.white70)),
-                  const SizedBox(height: 12),
-                  FilledButton(style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: C.dark), onPressed: () => Navigator.pushNamed(context, '/register'), child: Text(t('homeCTA_btn'))),
-                ]),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(t('homeFooter_contact'), style: const TextStyle(fontWeight: FontWeight.w700, color: C.text)),
-            const SizedBox(height: 6),
-            const ListTile(dense: true, contentPadding: EdgeInsets.zero, leading: Icon(Icons.place_outlined, color: C.primary), title: Text('Health Dept, New Delhi')),
-            ListTile(dense: true, contentPadding: EdgeInsets.zero, leading: const Icon(Icons.email_outlined, color: C.primary), title: const Text('support@shishuaarogya.gov.in'), onTap: () => openLink('mailto:support@shishuaarogya.gov.in')),
-            ListTile(dense: true, contentPadding: EdgeInsets.zero, leading: const Icon(Icons.phone_outlined, color: C.primary), title: const Text('+91 1800 123 4567'), onTap: () => callPhone('18001234567')),
-            Wrap(alignment: WrapAlignment.center, children: [
-              TextButton(onPressed: () => Navigator.pushNamed(context, '/about'), child: Text(t('homeFooter_linkAbout', 'About'))),
-              TextButton(onPressed: () => Navigator.pushNamed(context, '/privacy'), child: const Text('Privacy Policy')),
-              TextButton(onPressed: () => Navigator.pushNamed(context, '/terms'), child: const Text('Terms of Use')),
-            ]),
-            Text('© ${DateTime.now().year} ${t('homeFooter_copyright')}', textAlign: TextAlign.center, style: const TextStyle(color: C.muted, fontSize: 12)),
-          ]),
-        ),
-      ]),
+          ),
+        ]),
+      ),
     );
   }
 }
@@ -213,35 +260,59 @@ class AboutScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(title: Text(t('homeNav_about', 'About'))),
-        body: ListView(padding: const EdgeInsets.all(16), children: [
-          const Badge2('Shishu Aarogya', tone: infoTone),
-          const SizedBox(height: 10),
-          Text(t('aboutTitle'), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: C.text)),
-          const SizedBox(height: 6),
-          Text(t('aboutTagline'), style: const TextStyle(fontSize: 16, color: C.dark, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
-          Text(t('aboutDesc'), style: const TextStyle(color: C.muted)),
-          gap,
-          FilledButton(onPressed: () => Navigator.pushNamed(context, '/register'), child: Text(t('register', 'Register'))),
+        body: ListView(padding: const EdgeInsets.fromLTRB(20, 4, 20, 32), children: [
+          const _Photo('photo_anganwadi', height: 200),
           const SizedBox(height: 20),
-          Text(t('aboutPilotTitle'), style: const TextStyle(fontWeight: FontWeight.w700, color: C.text)),
-          Text(t('aboutPilotDesc'), style: const TextStyle(color: C.muted)),
-          gap,
-          const _PublicStats(),
-          const SizedBox(height: 16),
-          Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(t('aboutMission'), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)), const SizedBox(height: 6), Text(t('aboutDesc'))]))),
-          Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(t('aboutVision'), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)), const SizedBox(height: 6), Text(t('homeAbout_headline'))]))),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(t('aboutTeam'), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
-                const SizedBox(height: 6),
-                for (var i = 1; i <= 6; i++) Padding(padding: const EdgeInsets.symmetric(vertical: 4), child: Text('• ${t('aboutFeature$i')}')),
-              ]),
-            ),
+          Text(t('aboutTitle', 'About Shishu Aarogya'), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700, letterSpacing: -0.4)),
+          const SizedBox(height: 10),
+          Text(
+            t('about_p1', "Shishu Aarogya keeps a child's health record in one place: vaccines, weight and height, meals and visits. Parents see it on their phone; the ASHA worker for their area sees the same record and adds to it after each home visit."),
+            style: const TextStyle(height: 1.5),
           ),
+          const SizedBox(height: 12),
+          Text(
+            t('about_p2', 'Block and district health officers see totals for their area, so children who are behind on vaccines or not growing well can be reached sooner.'),
+            style: const TextStyle(height: 1.5),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            t('about_p3', 'Growth is checked against the WHO child growth standards, and the vaccine list follows the national immunisation schedule. The app does not replace a doctor: if something looks wrong, it tells you to visit your health centre.'),
+            style: const TextStyle(height: 1.5),
+          ),
+          const SizedBox(height: 20),
+          const _PublicStats(),
+          const SizedBox(height: 20),
+          FilledButton(onPressed: () => Navigator.pushNamed(context, '/register'), child: Text(t('land_create', 'Create an account'))),
         ]),
+      );
+}
+
+// ── Photo credits (assets/photo_credits.json) ──────────────────────────────
+class CreditsScreen extends StatelessWidget {
+  const CreditsScreen({super.key});
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        appBar: AppBar(title: const Text('Photo credits')),
+        body: FutureBuilder<String>(
+          future: rootBundle.loadString('assets/photo_credits.json'),
+          builder: (context, snap) {
+            if (!snap.hasData) return const Center(child: CircularProgressIndicator());
+            final rows = jsonDecode(snap.data!) as List;
+            return ListView(padding: const EdgeInsets.all(16), children: [
+              const Text('Photos from Wikimedia Commons, used under their free licences.', style: TextStyle(color: C.muted)),
+              const SizedBox(height: 12),
+              for (final r in rows)
+                Card(
+                  child: ListTile(
+                    leading: ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.asset('assets/photos/${r['file']}', width: 52, height: 52, fit: BoxFit.cover)),
+                    title: Text('${r['title']}', maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600)),
+                    subtitle: Text('${r['author']} · ${r['license']}', style: const TextStyle(fontSize: 12.5)),
+                    onTap: () => openLink('${r['source']}'),
+                  ),
+                ),
+            ]);
+          },
+        ),
       );
 }
 

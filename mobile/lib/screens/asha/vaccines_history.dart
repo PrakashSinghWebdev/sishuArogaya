@@ -42,22 +42,22 @@ class _VaccinationTrackerScreenState extends State<VaccinationTrackerScreen> {
             final nextCamp = camps.where((c) => c['kind'] == 'immunisation').firstOrNull ?? camps.firstOrNull;
             return ListView(padding: const EdgeInsets.all(16), children: [
               StatGrid([
-                StatTile(label: t('upToDate', 'Up to date'), value: '${sum['upToDate'] ?? 0}/${sum['children'] ?? 0}', sub: '${sum['coveragePct'] ?? 0}% ${t('coverage', 'coverage')}', color: const Color(0xFF15803D)),
-                StatTile(label: t('childrenOverdue', 'Children overdue'), value: '${sum['overdueChildren'] ?? 0}', sub: t('followUpThisWeek', 'Follow up this week'), color: const Color(0xFFB91C1C)),
-                StatTile(label: t('vaccinesDueWeek', 'Due this week'), value: '${sum['dueThisWeek'] ?? 0}', sub: t('dosesLabel', 'doses'), color: const Color(0xFFA16207)),
-                StatTile(label: t('nextCamp', 'Next camp'), value: nextCamp != null ? fmtDate(nextCamp['date']) : '—', sub: nextCamp != null ? '${nextCamp['village'] ?? nextCamp['venue'] ?? nextCamp['title']}' : t('noCampScheduled', 'No camp scheduled'), color: const Color(0xFF1D4ED8)),
+                StatTile(label: t('upToDate', 'Up to date'), value: '${sum['upToDate'] ?? 0}/${sum['children'] ?? 0}', sub: '${sum['coveragePct'] ?? 0}% ${t('coverage', 'coverage')}', color: const Color(0xFF276749)),
+                StatTile(label: t('childrenOverdue', 'Children overdue'), value: '${sum['overdueChildren'] ?? 0}', sub: t('followUpThisWeek', 'Follow up this week'), color: const Color(0xFFB5452F)),
+                StatTile(label: t('vaccinesDueWeek', 'Due this week'), value: '${sum['dueThisWeek'] ?? 0}', sub: t('dosesLabel', 'doses'), color: const Color(0xFF8A5A12)),
+                StatTile(label: t('nextCamp', 'Next camp'), value: nextCamp != null ? fmtDate(nextCamp['date']) : '—', sub: nextCamp != null ? '${nextCamp['village'] ?? nextCamp['venue'] ?? nextCamp['title']}' : t('noCampScheduled', 'No camp scheduled'), color: const Color(0xFF3B6E8F)),
               ]),
               gap,
               ChoiceRow(value: tab, onChanged: (v) => setState(() => tab = v), options: [('due', '${t('dueAndOverdue', 'Due & overdue')} (${due.length})'), ('all', '${t('allChildren', 'All children')} (${rows.length})'), ('camps', '${t('healthCampaigns', 'Camps')} (${camps.length})')]),
               if (tab != 'camps') ...[TextField(onChanged: (v) => setState(() => search = v), decoration: InputDecoration(prefixIcon: const Icon(Icons.search), hintText: t('search', 'Search'))), gap],
               if (tab == 'due') ...[
-                if (due.isEmpty) Card(child: EmptyState('✅ ${t('allUpToDate', 'All children are up to date')}')),
+                if (due.isEmpty) Card(child: EmptyState(t('allUpToDate', 'All children are up to date'))),
                 for (final r in due)
                   Builder(builder: (context) {
                     final c = r['child'] as Map;
                     final phone = c['parentId'] is Map ? c['parentId']['phone'] : c['contactPhone'];
                     return Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: BorderSide(color: (r['overdue'] ?? 0) > 0 ? C.red : const Color(0xFFF59E0B), width: 1.5)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: BorderSide(color: (r['overdue'] ?? 0) > 0 ? C.red : const Color(0xFFB7791F), width: 1.5)),
                       child: Padding(
                         padding: const EdgeInsets.all(12),
                         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -83,7 +83,7 @@ class _VaccinationTrackerScreenState extends State<VaccinationTrackerScreen> {
                               padding: const EdgeInsets.fromLTRB(10, 2, 2, 2),
                               decoration: BoxDecoration(color: C.bg, borderRadius: BorderRadius.circular(10)),
                               child: Row(children: [
-                                Expanded(child: Text('💉 ${d['vaccineName']}', style: const TextStyle(fontWeight: FontWeight.w600))),
+                                Expanded(child: Text('${d['vaccineName']}', style: const TextStyle(fontWeight: FontWeight.w600))),
                                 Badge2('${d['overdue'] == true ? t('visitsOverdue', 'Overdue') : t('due', 'Due')} · ${fmtDate(d['dueDate'])}', tone: d['overdue'] == true ? badTone : warnTone),
                                 TextButton(onPressed: () => markGiven(context, d, '${c['name']}', reload), child: Text('✓ ${t('markGiven', 'Given')}')),
                               ]),
@@ -114,7 +114,7 @@ class _VaccinationTrackerScreenState extends State<VaccinationTrackerScreen> {
                   Card(
                     child: ListTile(
                       title: Text('${c['title']}', style: const TextStyle(fontWeight: FontWeight.w700)),
-                      subtitle: Text('📅 ${fmtDateTime(c['date'])}${c['venue'] != null ? ' · 📍 ${c['venue']}' : ''}${c['village'] != null ? ' · ${c['village']}' : ''}'),
+                      subtitle: Text('${fmtDateTime(c['date'])}${c['venue'] != null ? ' · ${c['venue']}' : ''}${c['village'] != null ? ' · ${c['village']}' : ''}'),
                       onTap: () => Navigator.pushNamed(context, '/asha/camps'),
                     ),
                   ),
@@ -149,13 +149,13 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
               StatGrid([
                 StatTile(label: t('visitHistory', 'Visits'), value: '${visits.length}', color: C.primary),
                 StatTile(label: '${t('healthy', 'Healthy')} outcomes', value: '${count('healthy')}', color: C.green),
-                StatTile(label: '${t('moderate', 'Moderate')} outcomes', value: '${count('moderate')}', color: const Color(0xFFF59E0B)),
-                StatTile(label: '${t('severe', 'Severe')} outcomes', value: '${count('severe')}', color: const Color(0xFFEF4444)),
+                StatTile(label: '${t('moderate', 'Moderate')} outcomes', value: '${count('moderate')}', color: const Color(0xFFB7791F)),
+                StatTile(label: '${t('severe', 'Severe')} outcomes', value: '${count('severe')}', color: const Color(0xFFB5452F)),
               ]),
               gap,
               TextField(onChanged: (v) => setState(() => search = v), decoration: InputDecoration(prefixIcon: const Icon(Icons.search), hintText: t('searchByName', 'Search by name'))),
               gap,
-              ChoiceRow(value: filter, onChanged: (v) => setState(() => filter = v), options: [('all', '${t('all', 'All')} (${visits.length})'), ('healthy', '✓ ${t('healthy', 'Healthy')} (${count('healthy')})'), ('moderate', '⚠ ${t('moderate', 'Moderate')} (${count('moderate')})'), ('severe', '🚨 ${t('severe', 'Severe')} (${count('severe')})')]),
+              ChoiceRow(value: filter, onChanged: (v) => setState(() => filter = v), options: [('all', '${t('all', 'All')} (${visits.length})'), ('healthy', '✓ ${t('healthy', 'Healthy')} (${count('healthy')})'), ('moderate', '${t('moderate', 'Moderate')} (${count('moderate')})'), ('severe', '${t('severe', 'Severe')} (${count('severe')})')]),
               Text('Showing ${shown.length} of ${visits.length} visits', style: const TextStyle(color: C.muted, fontSize: 12.5)),
               const SizedBox(height: 8),
               if (shown.isEmpty) Card(child: EmptyState(visits.isEmpty ? '${t('noVisitsYet', 'No visits yet')}\nStart logging home visits to see them appear here.' : '${t('noRecords', 'No records')}\nTry a different search term or filter.')),
@@ -187,7 +187,7 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
                             const SizedBox(height: 4),
                             Badge2('${v['visitType'] ?? 'Routine'}', tone: infoTone),
                             const SizedBox(height: 4),
-                            Text([if (v['weight'] != null) '⚖️ ${v['weight']} kg', if (v['height'] != null) '📏 ${v['height']} cm', if (vaccines.isNotEmpty) '💉 $vaccines'].join('   ')),
+                            Text([if (v['weight'] != null) '${v['weight']} kg', if (v['height'] != null) '${v['height']} cm', if (vaccines.isNotEmpty) vaccines].join('   ')),
                             if (v['notes'] != null && '${v['notes']}'.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 4), child: Text('${v['notes']}', style: const TextStyle(color: C.muted, fontSize: 12.5))),
                           ]),
                         ),

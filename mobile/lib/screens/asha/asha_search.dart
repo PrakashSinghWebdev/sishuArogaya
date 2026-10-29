@@ -62,14 +62,14 @@ class _AshaSearchScreenState extends State<AshaSearchScreen> {
                   : ListView(children: [
                       for (final c in kids)
                         ListTile(
-                          leading: Text(c['gender'] == 'female' ? '👧' : '👦', style: const TextStyle(fontSize: 24)),
+                          leading: glyph(c['gender'] == 'female' ? '👧' : '👦', size: 24),
                           title: Text('${c['name']}', style: const TextStyle(fontWeight: FontWeight.w600)),
                           subtitle: Text([c['childId'], if (c['motherName'] != null) '${t('mother', 'Mother')}: ${c['motherName']}', c['village']].where((e) => e != null).join(' · ')),
                           onTap: () => Navigator.pushReplacementNamed(context, '/asha/child', arguments: {'id': c['_id']}),
                         ),
                       for (final m in mothers)
                         ListTile(
-                          leading: const Text('🤰', style: TextStyle(fontSize: 24)),
+                          leading: glyph('🤰', size: 24),
                           title: Text('${m['womanName']}', style: const TextStyle(fontWeight: FontWeight.w600)),
                           subtitle: Text([t(m['status'] == 'pregnant' ? 'tabPregnant' : m['status'] == 'delivered' ? 'tabPostnatal' : 'refClosed'), m['village']].where((e) => e != null).join(' · ')),
                           onTap: () => Navigator.pushReplacementNamed(context, '/asha/pregnancy', arguments: {'id': m['_id']}),

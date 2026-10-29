@@ -18,12 +18,12 @@ Future<DateTime?> pickDateTime(BuildContext context, {DateTime? initial, bool fu
 
 // ── Messages (admin ↔ ASHA; parents write to support) ─────────────────────
 const _kindStyle = {
-  'instruction': ('📋', Color(0xFFCFFAFE), Color(0xFF0E7490)),
-  'announcement': ('📢', Color(0xFFE0E7FF), Color(0xFF3730A3)),
-  'training': ('🎓', Color(0xFFD1FAE5), Color(0xFF065F46)),
-  'meeting': ('📅', Color(0xFFFEF3C7), Color(0xFF92400E)),
-  'correction': ('✏️', Color(0xFFFEE2E2), Color(0xFF991B1B)),
-  'query': ('❓', Color(0xFFF1F5F9), Color(0xFF334155)),
+  'instruction': ('📋', Color(0xFFE6F0EA), Color(0xFF1B4332)),
+  'announcement': ('📢', Color(0xFFE5ECF2), Color(0xFF35556E)),
+  'training': ('🎓', Color(0xFFE3F1E8), Color(0xFF276749)),
+  'meeting': ('📅', Color(0xFFFBEFD9), Color(0xFF8A5A12)),
+  'correction': ('✏️', Color(0xFFF8E3DD), Color(0xFF9B3A26)),
+  'query': ('❓', Color(0xFFEFECE6), Color(0xFF55605B)),
 };
 const _senderKinds = ['instruction', 'announcement', 'training', 'meeting', 'correction'];
 
@@ -126,11 +126,11 @@ class _MessageCardState extends State<_MessageCard> {
           }
         },
         title: Row(children: [
-          Expanded(child: Text('$icon ${m['subject']}', style: TextStyle(fontWeight: m['unread'] == true ? FontWeight.w800 : FontWeight.w600))),
+          Expanded(child: Text('${m['subject']}', style: TextStyle(fontWeight: m['unread'] == true ? FontWeight.w800 : FontWeight.w600))),
           if (m['unread'] == true) Badge2(t('newBadge', 'New'), tone: const Tone(Colors.white, C.red)),
         ]),
         subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('$meta · ${fmtDateTime(m['createdAt'])}${replies.isNotEmpty ? ' · 💬 ${replies.length}' : ''}', style: const TextStyle(fontSize: 12)),
+          Text('$meta · ${fmtDateTime(m['createdAt'])}${replies.isNotEmpty ? ' · ${replies.length} ${replies.length == 1 ? 'reply' : 'replies'}' : ''}', style: const TextStyle(fontSize: 12)),
           const SizedBox(height: 4),
           Wrap(spacing: 6, children: [
             Badge2(t('kind_${m['kind']}', '${m['kind']}'), tone: Tone(fg, bg)),
@@ -140,8 +140,8 @@ class _MessageCardState extends State<_MessageCard> {
         childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
         expandedCrossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (m['meetingAt'] != null) Text('📅 ${fmtDateTime(m['meetingAt'])}', style: const TextStyle(fontWeight: FontWeight.w600)),
-          if (m['related'] is Map && m['related']['label'] != null) Text('🔗 ${m['related']['label']}'),
+          if (m['meetingAt'] != null) Text(fmtDateTime(m['meetingAt']), style: const TextStyle(fontWeight: FontWeight.w600)),
+          if (m['related'] is Map && m['related']['label'] != null) Text('${m['related']['label']}'),
           if (m['body'] != null && '${m['body']}'.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 6), child: Text('${m['body']}')),
           for (final r in replies)
             Container(
@@ -261,7 +261,7 @@ class _ComposeState extends State<_Compose> {
                 ]),
               ),
             gap,
-            Pick<String>(label: t('messageType', 'Type'), value: kind, items: [for (final k in _senderKinds) (k, '${_kindStyle[k]!.$1} ${t('kind_$k', k)}')], onChanged: (v) => setState(() => kind = v ?? 'instruction')),
+            Pick<String>(label: t('messageType', 'Type'), value: kind, items: [for (final k in _senderKinds) (k, t('kind_$k', k))], onChanged: (v) => setState(() => kind = v ?? 'instruction')),
             if (kind == 'meeting' || kind == 'training') ...[
               gap,
               OutlinedButton.icon(
@@ -291,7 +291,7 @@ const _campKinds = {
   'awareness': ('📢', 'campAwareness'),
   'other': ('📅', 'campOther'),
 };
-const _campStatus = {'scheduled': Tone(Color(0xFF1D4ED8), Color(0xFFDBEAFE)), 'completed': Tone(Color(0xFF15803D), Color(0xFFDCFCE7)), 'cancelled': Tone(Color(0xFF64748B), Color(0xFFF1F5F9))};
+const _campStatus = {'scheduled': Tone(Color(0xFF3B6E8F), Color(0xFFE5ECF2)), 'completed': Tone(Color(0xFF276749), Color(0xFFE3F1E8)), 'cancelled': Tone(Color(0xFF66706B), Color(0xFFEFECE6))};
 
 class CampsScreen extends StatefulWidget {
   const CampsScreen({super.key, required this.route});
@@ -346,11 +346,11 @@ class _CampsScreenState extends State<CampsScreen> {
                             padding: const EdgeInsets.all(14),
                             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                               Row(children: [
-                                Expanded(child: Text('${(_campKinds[c['kind']] ?? _campKinds['other']!).$1} ${c['title']}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15))),
+                                Expanded(child: Text('${c['title']}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15))),
                                 Badge2(t('camp_${c['status']}', '${c['status']}'), tone: _campStatus[c['status']] ?? neutralTone),
                               ]),
                               const SizedBox(height: 4),
-                              Text('📅 ${fmtDateTime(c['date'])}${c['venue'] != null ? ' · 📍 ${c['venue']}' : ''}${c['village'] != null ? ' · ${c['village']}' : ''} · ${c['block'] ?? ''}', style: const TextStyle(color: C.muted, fontSize: 13)),
+                              Text('${fmtDateTime(c['date'])}${c['venue'] != null ? ' · ${c['venue']}' : ''}${c['village'] != null ? ' · ${c['village']}' : ''} · ${c['block'] ?? ''}', style: const TextStyle(color: C.muted, fontSize: 13)),
                               if (c['notes'] != null) Padding(padding: const EdgeInsets.only(top: 4), child: Text('${c['notes']}')),
                               Text('${t('scheduledBy', 'Scheduled by')} ${c['createdBy'] is Map ? c['createdBy']['name'] : '—'}${(c['notifiedParents'] ?? 0) > 0 ? ' · ${c['notifiedParents']} ${t('parentsNotified', 'parents notified')}' : ''}', style: const TextStyle(color: C.muted, fontSize: 12)),
                               if (c['status'] == 'scheduled' && canChange(c))
@@ -384,7 +384,7 @@ class _CampFormState extends State<_CampForm> {
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(title: Text(t('scheduleCamp', 'Schedule camp'))),
         body: ListView(padding: const EdgeInsets.all(16), children: [
-          Pick<String>(label: t('messageType', 'Type'), value: kind, items: [for (final e in _campKinds.entries) (e.key, '${e.value.$1} ${t(e.value.$2)}')], onChanged: (v) => setState(() => kind = v ?? 'immunisation')),
+          Pick<String>(label: t('messageType', 'Type'), value: kind, items: [for (final e in _campKinds.entries) (e.key, t(e.value.$2))], onChanged: (v) => setState(() => kind = v ?? 'immunisation')),
           gap,
           TextField(controller: title, maxLength: 150, decoration: InputDecoration(labelText: '${t('subject', 'Title')} *', hintText: t('campTitlePlaceholder', ''))),
           OutlinedButton.icon(

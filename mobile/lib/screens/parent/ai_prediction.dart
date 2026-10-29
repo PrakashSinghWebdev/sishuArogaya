@@ -16,16 +16,16 @@ class _Data {
 }
 
 ({String emoji, String label, String desc, int score, String scoreLabel, Color color}) _meta(String status) => switch (status) {
-      'moderate' => (emoji: '⚠️', label: 'Moderate — Monitor Closely', desc: 'Your child shows signs of moderate nutritional risk. Consult your ASHA worker and follow the dietary recommendations.', score: 62, scoreLabel: 'Monitor', color: const Color(0xFFB45309)),
-      'severe' => (emoji: '🚨', label: 'Severe — Immediate Attention', desc: 'Your child is at risk of severe malnutrition. Please visit the nearest PHC or contact your ASHA worker immediately.', score: 42, scoreLabel: 'Urgent', color: const Color(0xFFB91C1C)),
-      _ => (emoji: '✅', label: 'Healthy — Normal Growth', desc: 'Your child is growing well within normal WHO standards. Keep up the good nutrition and regular check-ups.', score: 80, scoreLabel: 'Excellent ✓', color: const Color(0xFF1D4ED8)),
+      'moderate' => (emoji: '⚠️', label: 'Moderate — Monitor Closely', desc: 'Your child shows signs of moderate nutritional risk. Consult your ASHA worker and follow the dietary recommendations.', score: 62, scoreLabel: 'Monitor', color: const Color(0xFF8A5A12)),
+      'severe' => (emoji: '🚨', label: 'Severe — Immediate Attention', desc: 'Your child is at risk of severe malnutrition. Please visit the nearest PHC or contact your ASHA worker immediately.', score: 42, scoreLabel: 'Urgent', color: const Color(0xFFB5452F)),
+      _ => (emoji: '✅', label: 'Healthy — Normal Growth', desc: 'Your child is growing well within normal WHO standards. Keep up the good nutrition and regular check-ups.', score: 80, scoreLabel: 'Excellent ✓', color: const Color(0xFF3B6E8F)),
     };
 
 Color _statusColor(String? s) => switch ((s ?? '').toLowerCase()) {
       'healthy' || 'normal' => C.green,
-      'moderate' => const Color(0xFFF59E0B),
-      '' => const Color(0xFF6B7280),
-      _ => const Color(0xFFEF4444),
+      'moderate' => const Color(0xFFB7791F),
+      '' => const Color(0xFF66706B),
+      _ => const Color(0xFFB5452F),
     };
 
 class AIPredictionScreen extends StatelessWidget {
@@ -77,7 +77,7 @@ class AIPredictionScreen extends StatelessWidget {
               buttons,
               gap,
               Card(
-                color: const Color(0xFFEFF6FF),
+                color: const Color(0xFFE5ECF2),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Row(children: [
@@ -85,7 +85,7 @@ class AIPredictionScreen extends StatelessWidget {
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         const Text('AI PREDICTION RESULT · LAST UPDATED TODAY', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: C.muted, letterSpacing: .5)),
                         const SizedBox(height: 6),
-                        Text(m.emoji, style: const TextStyle(fontSize: 30)),
+                        glyph(m.emoji, size: 30),
                         Text(m.label, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: m.color)),
                         const SizedBox(height: 4),
                         Text(m.desc, style: const TextStyle(fontSize: 13)),
@@ -97,12 +97,12 @@ class AIPredictionScreen extends StatelessWidget {
                         width: 90,
                         height: 90,
                         child: Stack(alignment: Alignment.center, children: [
-                          SizedBox(width: 90, height: 90, child: CircularProgressIndicator(value: m.score / 100, strokeWidth: 8, color: const Color(0xFF1D4ED8), backgroundColor: const Color(0xFFBFDBFE))),
-                          Text('${m.score}\n/100', textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF1E3A8A))),
+                          SizedBox(width: 90, height: 90, child: CircularProgressIndicator(value: m.score / 100, strokeWidth: 8, color: const Color(0xFF3B6E8F), backgroundColor: const Color(0xFFD3DEE7))),
+                          Text('${m.score}\n/100', textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF35556E))),
                         ]),
                       ),
                       const SizedBox(height: 6),
-                      Text(m.scoreLabel, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF1D4ED8))),
+                      Text(m.scoreLabel, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF3B6E8F))),
                     ]),
                   ]),
                 ),
@@ -111,8 +111,8 @@ class AIPredictionScreen extends StatelessWidget {
               _Insights(insights: p.insights, error: p.error),
               for (final z in [
                 ('WAZ', 'Weight-for-Age Z-Score', p.waz, p.wazStatus, 'Reflects body weight relative to age. Indicates underweight if below -2.', C.green),
-                ('HAZ', 'Height-for-Age Z-Score', p.haz, p.hazStatus, 'Reflects linear growth. A value below -2 indicates stunting.', const Color(0xFF1D4ED8)),
-                ('WHZ', 'Weight-for-Height Z-Score', p.whz, p.whzStatus, 'Reflects acute malnutrition. A value below -2 indicates wasting.', const Color(0xFFF59E0B)),
+                ('HAZ', 'Height-for-Age Z-Score', p.haz, p.hazStatus, 'Reflects linear growth. A value below -2 indicates stunting.', const Color(0xFF3B6E8F)),
+                ('WHZ', 'Weight-for-Height Z-Score', p.whz, p.whzStatus, 'Reflects acute malnutrition. A value below -2 indicates wasting.', const Color(0xFFB7791F)),
               ])
                 Card(
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: BorderSide(color: z.$6, width: 1.5)),
@@ -135,11 +135,11 @@ class AIPredictionScreen extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.all(14),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [
-                    Text('📖 Z-Score Classification Guide', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                    Text('Z-Score Classification Guide', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
                     SizedBox(height: 8),
-                    NoticeBox("✅ Healthy (z ≥ −1) · Normal\nChild's growth is within normal WHO standards. Continue current feeding and care practices.", tone: goodTone),
-                    NoticeBox('⚠️ Moderate (−2 to −1) · Monitor\nAt-risk zone. Increase nutritious food intake, schedule ASHA follow-up, and monitor monthly.', tone: warnTone),
-                    NoticeBox('🚨 Severe (z < −2) · Urgent\nImmediate referral to PHC or NRC required. This indicates severe acute or chronic malnutrition.', tone: badTone),
+                    NoticeBox("Healthy (z ≥ −1) · Normal\nChild's growth is within normal WHO standards. Continue current feeding and care practices.", tone: goodTone),
+                    NoticeBox('Moderate (−2 to −1) · Monitor\nAt-risk zone. Increase nutritious food intake, schedule ASHA follow-up, and monitor monthly.', tone: warnTone),
+                    NoticeBox('Severe (z < −2) · Urgent\nImmediate referral to PHC or NRC required. This indicates severe acute or chronic malnutrition.', tone: badTone),
                   ]),
                 ),
               ),
@@ -147,7 +147,7 @@ class AIPredictionScreen extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.all(14),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    const Text("👨‍⚕️ Doctor's Recommendations", style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                    const Text("Doctor's Recommendations", style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
                     const SizedBox(height: 6),
                     for (final tip in tips) Padding(padding: const EdgeInsets.symmetric(vertical: 4), child: Text('• $tip')),
                   ]),
@@ -168,13 +168,13 @@ class _Insights extends StatelessWidget {
   Widget build(BuildContext context) {
     if (insights == null && error == null) return const SizedBox.shrink();
     return Card(
-      color: const Color(0xFFF3E8FF),
+      color: const Color(0xFFEEEAF3),
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('✨ AI Health Insights (Gemini)', style: TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF6B21A8))),
+          const Text('AI Health Insights (Gemini)', style: TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF5E4B7D))),
           const SizedBox(height: 8),
-          Text(insights ?? 'AI insights are unavailable right now: $error', style: TextStyle(color: insights == null ? const Color(0xFF6B7280) : C.text, height: 1.5)),
+          Text(insights ?? 'AI insights are unavailable right now: $error', style: TextStyle(color: insights == null ? const Color(0xFF66706B) : C.text, height: 1.5)),
         ]),
       ),
     );
@@ -190,7 +190,7 @@ class _GnnCard extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(14),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('🧠 Growth Prediction Network (GNN)', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+            const Text('Growth Prediction Network (GNN)', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
             const SizedBox(height: 8),
             AspectRatio(aspectRatio: 1.6, child: CustomPaint(painter: _GnnPainter(graph))),
             Text('Nodes: ${graph['nodeCount'] ?? (graph['nodes'] as List).length}   ·   Edges: ${graph['edgeCount'] ?? (graph['edges'] as List? ?? []).length}', style: const TextStyle(color: C.muted, fontSize: 12.5)),

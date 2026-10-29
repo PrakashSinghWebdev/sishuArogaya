@@ -131,8 +131,22 @@ class Api {
 
   dynamic _decode(http.Response res) {
     if (res.bodyBytes.isEmpty) return null;
-    return jsonDecode(utf8.decode(res.bodyBytes));
+    final data = jsonDecode(utf8.decode(res.bodyBytes));
+    // the app uses line icons: drop emoji the server puts in titles and messages (`icon` fields are
+    // kept, screens map them to icons; chatbot answers keep theirs, they mark alert lines)
+    return res.request?.url.path.contains('/chatbot') == true ? data : _plain(data);
   }
+
+  static final _emoji = RegExp(
+    '[\\u{1F000}-\\u{1FAFF}\\u{2600}-\\u{27BF}\\u{2B00}-\\u{2BFF}\\u{2300}-\\u{23FF}\\u{FE0F}\\u{200D}]\\s?',
+    unicode: true,
+  );
+  static dynamic _plain(dynamic v, [String? key]) => switch (v) {
+    String s when key != 'icon' && key != 'emoji' && _emoji.hasMatch(s) => s.replaceAll(_emoji, '').trim(),
+    List l => [for (final x in l) _plain(x)],
+    Map m => {for (final e in m.entries) e.key: _plain(e.value, '${e.key}')},
+    _ => v,
+  };
 
   Future<dynamic> get(String path, [Map<String, dynamic>? query]) async =>
       _decode(await _send('GET', path, query: query));

@@ -55,10 +55,10 @@ class ReferralCard extends StatelessWidget {
               child: InkWell(
                 onTap: admin ? null : () => Navigator.pushNamed(context, mother != null ? '/asha/pregnancy' : '/asha/child', arguments: {'id': (mother ?? child)?['_id']}),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(mother != null ? '🤰 ${mother['womanName']}' : '${child?['name'] ?? '—'}', style: const TextStyle(fontWeight: FontWeight.w800, color: C.dark, fontSize: 15)),
+                  Text(mother != null ? '${mother['womanName']}' : '${child?['name'] ?? '—'}', style: const TextStyle(fontWeight: FontWeight.w800, color: C.dark, fontSize: 15)),
                   Text('${r['reason'] ?? ''}'),
                   Text(
-                    '${r['facility'] != null ? '🏥 ${r['facility']} · ' : ''}${t('referredOn', 'Referred on')} ${fmtDate(r['createdAt'])}${follow != null ? ' · ${t('followUpDate', 'Follow-up')}: ${fmtDate(r['followUpDate'])}' : ''}',
+                    '${r['facility'] != null ? '${r['facility']} · ' : ''}${t('referredOn', 'Referred on')} ${fmtDate(r['createdAt'])}${follow != null ? ' · ${t('followUpDate', 'Follow-up')}: ${fmtDate(r['followUpDate'])}' : ''}',
                     style: TextStyle(fontSize: 12.5, color: overdue ? C.red : C.muted, fontWeight: overdue ? FontWeight.w700 : null),
                   ),
                   if (admin && asha != null)
@@ -73,7 +73,7 @@ class ReferralCard extends StatelessWidget {
               Badge2(t('urgency${'${r['urgency'] ?? 'routine'}'[0].toUpperCase()}${'${r['urgency'] ?? 'routine'}'.substring(1)}', '${r['urgency']}'), tone: urg),
               const SizedBox(height: 4),
               Badge2(t(stLabel), tone: stTone),
-              if (r['escalatedAt'] != null) Padding(padding: const EdgeInsets.only(top: 4), child: Badge2(t('escalated', 'Escalated'), tone: const Tone(Color(0xFF5B21B6), Color(0xFFEDE9FE)))),
+              if (r['escalatedAt'] != null) Padding(padding: const EdgeInsets.only(top: 4), child: Badge2(t('escalated', 'Escalated'), tone: const Tone(Color(0xFF5E4B7D), Color(0xFFEEEAF3)))),
             ]),
           ]),
           if (history.isNotEmpty) ...[
@@ -206,13 +206,13 @@ class _ReferralFormState extends State<_ReferralForm> {
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(title: Text(t('newReferral', 'New referral')), backgroundColor: C.red),
         body: ListView(padding: const EdgeInsets.all(16), children: [
-          NoticeBox('⚠️ ${t('referralSafetyNote', 'For danger signs, arrange transport first and call 108.')}', tone: warnTone),
+          NoticeBox(t('referralSafetyNote', 'For danger signs, arrange transport first and call 108.'), tone: warnTone),
           Pick<String>(
             label: '${t('whoIsReferred', 'Who is referred?')} *',
             value: target.isEmpty ? null : target,
             items: [
               for (final c in children) ('child:${c['_id']}', '${c['name']}${c['motherName'] != null ? ' (${c['motherName']})' : ''}'),
-              for (final m in mothers) ('mother:${m['_id']}', '🤰 ${m['womanName']}${m['village'] != null ? ' (${m['village']})' : ''}'),
+              for (final m in mothers) ('mother:${m['_id']}', '${m['womanName']}${m['village'] != null ? ' (${m['village']})' : ''}'),
             ],
             onChanged: (v) => setState(() => target = v ?? ''),
           ),
@@ -241,7 +241,7 @@ class _ReferralFormState extends State<_ReferralForm> {
           DateField(label: t('followUpDate', 'Follow-up date'), value: followUp, first: DateTime.now(), onChanged: (v) => setState(() => followUp = v)),
           if (urgency == 'emergency') ...[
             gap,
-            Card(color: const Color(0xFFFEE2E2), child: ListTile(leading: const Text('🚨'), title: Text(t('emergencyCallFirst', 'Emergency: call an ambulance first')), trailing: FilledButton(style: FilledButton.styleFrom(backgroundColor: C.red), onPressed: () => callPhone('108'), child: const Text('108')))),
+            Card(color: badTone.bg, child: ListTile(leading: const Icon(Icons.emergency_outlined, color: C.red), title: Text(t('emergencyCallFirst', 'Emergency: call an ambulance first')), trailing: FilledButton(style: FilledButton.styleFrom(backgroundColor: C.red), onPressed: () => callPhone('108'), child: const Text('108')))),
           ],
           const SizedBox(height: 16),
           FilledButton(
@@ -336,7 +336,7 @@ class _RegisterChildScreenState extends State<RegisterChildScreen> {
           gap,
           SegmentedButton<String>(
             emptySelectionAllowed: true,
-            segments: [ButtonSegment(value: 'female', label: Text('♀ ${t('girl', 'Girl')}')), ButtonSegment(value: 'male', label: Text('♂ ${t('boy', 'Boy')}'))],
+            segments: [ButtonSegment(value: 'female', label: Text(t('girl', 'Girl'))), ButtonSegment(value: 'male', label: Text(t('boy', 'Boy')))],
             selected: gender.isEmpty ? {} : {gender},
             onSelectionChanged: (s) => setState(() {
               gender = s.isEmpty ? '' : s.first;
@@ -353,7 +353,7 @@ class _RegisterChildScreenState extends State<RegisterChildScreen> {
           Pick<String>(label: t('bloodGroup', 'Blood group'), value: blood, items: [for (final b in ['Unknown', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']) (b, b)], onChanged: (v) => setState(() => blood = v ?? 'Unknown')),
           if (duplicate != null)
             Card(
-              color: const Color(0xFFFFFBEB),
+              color: const Color(0xFFFBEFD9),
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

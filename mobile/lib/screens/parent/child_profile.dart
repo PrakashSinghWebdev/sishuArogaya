@@ -66,7 +66,7 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
                   child: Padding(
                     padding: const EdgeInsets.all(24),
                     child: Column(children: [
-                      const Text('👶', style: TextStyle(fontSize: 56)),
+                      glyph('👶', size: 56),
                       Text(t('noRecords', 'No records'), style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w700)),
                       const SizedBox(height: 8),
                       Text('${t('addChild')} ${t('myChild').toLowerCase()} to start tracking ${t('growth').toLowerCase()}, ${t('vaccines').toLowerCase()}, and ${t('reports').toLowerCase()}.', textAlign: TextAlign.center, style: const TextStyle(color: C.muted)),
@@ -96,7 +96,7 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(borderRadius: BorderRadius.circular(18), gradient: const LinearGradient(colors: [C.dark, C.primary])),
                 child: Row(children: [
-                  const CircleAvatar(radius: 34, backgroundColor: Colors.white24, child: Text('👶', style: TextStyle(fontSize: 34))),
+                  const CircleAvatar(radius: 34, backgroundColor: Colors.white24, child: Icon(Icons.child_care_outlined, color: Colors.white, size: 36)),
                   const SizedBox(width: 14),
                   Expanded(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -117,7 +117,7 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
                     onPressed: () async {
                       if (await showRecordGrowth(context, child)) {
                         if (!context.mounted) return;
-                        toast(context, '✅ Growth record saved!');
+                        toast(context, 'Growth record saved!');
                         setState(() => growthVersion++);
                         reload(); // recording growth updates the child's current weight / status
                       }
@@ -140,16 +140,16 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
                 child: Padding(
                   padding: const EdgeInsets.all(14),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text('📋 ${t('childInfoTitle', 'Child Information')}', style: const TextStyle(fontWeight: FontWeight.w700, color: C.dark, fontSize: 16)),
+                    Text(t('childInfoTitle', 'Child Information'), style: const TextStyle(fontWeight: FontWeight.w700, color: C.dark, fontSize: 16)),
                     const SizedBox(height: 8),
-                    InfoRow('🎂 ${t('dateOfBirth', 'Date of Birth')}', fmtDate(child['dob'])),
-                    InfoRow('⏳ ${t('age', 'Age')}', _calcAge(child['dob'])),
-                    InfoRow('👤 ${t('gender', 'Gender')}', str(child['gender'])),
-                    InfoRow('🩸 ${t('bloodGroup', 'Blood Group')}', str(child['bloodGroup'])),
-                    InfoRow('📍 ${t('address', 'Address')}', str(child['location'] ?? child['village'])),
-                    InfoRow("👩 Mother's Name", str(child['motherName'])),
-                    InfoRow("👨 Father's Name", str(child['parentId'] is Map ? child['parentId']['name'] : child['fatherName'])),
-                    InfoRow('📞 Contact', str(child['contactPhone'])),
+                    InfoRow(t('dateOfBirth', 'Date of Birth'), fmtDate(child['dob'])),
+                    InfoRow(t('age', 'Age'), _calcAge(child['dob'])),
+                    InfoRow(t('gender', 'Gender'), str(child['gender'])),
+                    InfoRow(t('bloodGroup', 'Blood Group'), str(child['bloodGroup'])),
+                    InfoRow(t('address', 'Address'), str(child['location'] ?? child['village'])),
+                    InfoRow("Mother's Name", str(child['motherName'])),
+                    InfoRow("Father's Name", str(child['parentId'] is Map ? child['parentId']['name'] : child['fatherName'])),
+                    InfoRow('Contact', str(child['contactPhone'])),
                   ]),
                 ),
               ),
@@ -157,18 +157,18 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
                 child: Padding(
                   padding: const EdgeInsets.all(14),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    const Text('👩‍⚕️ Assigned ASHA Worker', style: TextStyle(fontWeight: FontWeight.w700, color: C.dark, fontSize: 16)),
+                    const Text('Assigned ASHA Worker', style: TextStyle(fontWeight: FontWeight.w700, color: C.dark, fontSize: 16)),
                     const SizedBox(height: 8),
                     if (asha != null)
                       ListTile(
                         contentPadding: EdgeInsets.zero,
-                        leading: const CircleAvatar(backgroundColor: Color(0xFFCFFAFE), child: Text('👩‍⚕️')),
+                        leading: const IconWell(Icons.health_and_safety_outlined),
                         title: Text('${ashaUser?['name'] ?? 'ASHA Worker'}', style: const TextStyle(fontWeight: FontWeight.w700)),
                         subtitle: Text('ID: ${asha['ashaId']} · ${asha['block'] ?? ''}${asha['village'] != null ? ', ${asha['village']}' : ''}'),
                         trailing: ashaUser?['phone'] == null ? null : FilledButton.icon(onPressed: () => callPhone(ashaUser!['phone']), icon: const Icon(Icons.call, size: 16), label: const Text('Call')),
                       )
                     else
-                      const NoticeBox('⚠️ No ASHA Worker Assigned\nAn ASHA worker will be assigned by your health centre admin.', tone: Tone(Color(0xFFC2410C), Color(0xFFFFF7ED))),
+                      const NoticeBox('No ASHA Worker Assigned\nAn ASHA worker will be assigned by your health centre admin.', tone: Tone(Color(0xFFA4541E), Color(0xFFFBEFD9))),
                   ]),
                 ),
               ),
@@ -177,11 +177,11 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
                   padding: const EdgeInsets.all(14),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Row(children: [
-                      const Expanded(child: Text('💉 Upcoming Vaccines', style: TextStyle(fontWeight: FontWeight.w700, color: C.dark, fontSize: 16))),
+                      const Expanded(child: Text('Upcoming Vaccines', style: TextStyle(fontWeight: FontWeight.w700, color: C.dark, fontSize: 16))),
                       TextButton(onPressed: () => Navigator.pushReplacementNamed(context, '/parent/vaccination'), child: Text(d.vaccines.isEmpty ? 'View all →' : '$done/${d.vaccines.length} done →')),
                     ]),
                     if (next.isEmpty)
-                      Text(d.vaccines.isNotEmpty ? '✅ All vaccines given' : 'No schedule yet.', style: const TextStyle(color: C.muted))
+                      Text(d.vaccines.isNotEmpty ? 'All vaccines given' : 'No schedule yet.', style: const TextStyle(color: C.muted))
                     else
                       for (final v in next.take(4))
                         ListTile(dense: true, contentPadding: EdgeInsets.zero, title: Text('${v['vaccineName']}', style: const TextStyle(fontWeight: FontWeight.w600)), subtitle: Text(fmtDate(v['dueDate'])), trailing: VaccineBadge(v['status'])),
@@ -194,7 +194,7 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
                     padding: const EdgeInsets.all(14),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Row(children: [
-                        const Expanded(child: Text('🥗 Feeding Now', style: TextStyle(fontWeight: FontWeight.w700, color: C.dark, fontSize: 16))),
+                        const Expanded(child: Text('Feeding Now', style: TextStyle(fontWeight: FontWeight.w700, color: C.dark, fontSize: 16))),
                         TextButton(onPressed: () => Navigator.pushReplacementNamed(context, '/parent/diet-plan'), child: const Text('Full plan →')),
                       ]),
                       for (var i = 0; i < feedNow.length; i++)
@@ -213,7 +213,7 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
                       for (final tip in ((d.plan?['tips'] as List?) ?? []).take(3)) Padding(padding: const EdgeInsets.only(top: 4), child: Text('• $tip', style: const TextStyle(fontSize: 12.5))),
                       if (((d.plan?['avoidFoods'] as List?) ?? []).isNotEmpty) ...[
                         const SizedBox(height: 10),
-                        const Text('🚫 Avoid', style: TextStyle(fontWeight: FontWeight.w700, color: Color(0xFFB91C1C), fontSize: 12)),
+                        const Text('Avoid', style: TextStyle(fontWeight: FontWeight.w700, color: Color(0xFFB5452F), fontSize: 12)),
                         const SizedBox(height: 6),
                         Wrap(spacing: 6, runSpacing: 6, children: [for (final f in d.plan!['avoidFoods']) Badge2('$f', tone: badTone)]),
                       ],
@@ -272,7 +272,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('➕ Register New Child')),
+        appBar: AppBar(title: const Text('Register New Child')),
         body: ListView(padding: const EdgeInsets.all(16), children: [
           if (error.isNotEmpty) ErrorBox(error),
           TextField(controller: name, decoration: const InputDecoration(labelText: 'Child Name *', hintText: 'Full name')),

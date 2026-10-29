@@ -4,6 +4,7 @@ import 'core/api.dart';
 import 'core/auth.dart';
 import 'core/i18n.dart';
 import 'core/ui.dart';
+import 'widgets/logo.dart';
 
 class NavItem {
   const NavItem(this.route, this.icon, this.key, this.fallback);
@@ -94,14 +95,14 @@ class RoleShell extends StatelessWidget {
         title: Text(title ?? current?.label ?? 'Shishu Aarogya', overflow: TextOverflow.ellipsis),
         actions: [
           ...?actions,
-          IconButton(tooltip: 'Health assistant', icon: const Icon(Icons.chat_bubble_outline), onPressed: () => Navigator.pushNamed(context, '/chat')),
+          IconButton(tooltip: 'Shop', icon: const Icon(Icons.shopping_bag_outlined), onPressed: () => Navigator.pushNamed(context, '/shop')),
           if (auth.role == 'asha') IconButton(tooltip: t('search', 'Search'), icon: const Icon(Icons.search), onPressed: () => Navigator.pushNamed(context, '/asha/search')),
           if (auth.role != 'admin') _Bell(route: '/${auth.role}/notifications'),
         ],
       ),
       drawer: canPop ? null : _Menu(items: items, current: current?.route),
       body: SafeArea(child: child),
-      floatingActionButton: fab,
+      floatingActionButton: fab ?? const ChatFab(),
       bottomNavigationBar: isTop && tabs.length == 4
           ? Builder(builder: (context) => NavigationBar(
               height: 64,
@@ -122,6 +123,18 @@ class RoleShell extends StatelessWidget {
           : null,
     );
   }
+}
+
+/// Button that opens the health assistant, like the website's chat bubble.
+class ChatFab extends StatelessWidget {
+  const ChatFab({super.key});
+  @override
+  Widget build(BuildContext context) => FloatingActionButton(
+    heroTag: 'chat',
+    tooltip: 'Ask a health question',
+    onPressed: () => Navigator.pushNamed(context, '/chat'),
+    child: const Icon(Icons.chat_bubble_outline_rounded),
+  );
 }
 
 class _Bell extends StatefulWidget {
@@ -156,20 +169,39 @@ class _Menu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const portal = {'parent': 'Parent Portal', 'asha': 'ASHA Portal', 'admin': 'Admin Portal'};
+    const portal = {'parent': 'Parent', 'asha': 'ASHA worker', 'admin': 'Administrator'};
+    Widget tile(IconData icon, String label, VoidCallback onTap, {bool selected = false, Color? color}) => Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 1),
+          child: ListTile(
+            dense: true,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            leading: Icon(icon, color: color ?? (selected ? C.primary : C.muted), size: 22),
+            title: Text(label, style: TextStyle(fontSize: 14.5, color: color ?? C.text, fontWeight: selected ? FontWeight.w700 : FontWeight.w500)),
+            selected: selected,
+            selectedTileColor: C.soft,
+            onTap: onTap,
+          ),
+        );
     return Drawer(
-      child: Column(children: [
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Padding(
+          padding: EdgeInsets.fromLTRB(24, MediaQuery.of(context).padding.top + 20, 16, 16),
+          child: const Logo(size: 30),
+        ),
         Container(
-          width: double.infinity,
-          color: C.dark,
-          padding: EdgeInsets.fromLTRB(16, MediaQuery.of(context).padding.top + 16, 16, 16),
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: C.border)),
           child: Row(children: [
-            CircleAvatar(backgroundColor: Colors.white, child: Text(auth.name.isEmpty ? 'U' : auth.name[0].toUpperCase(), style: const TextStyle(color: C.dark, fontWeight: FontWeight.w800))),
+            CircleAvatar(
+              backgroundColor: C.soft,
+              child: Text(auth.name.isEmpty ? 'U' : auth.name[0].toUpperCase(), style: const TextStyle(color: C.primary, fontWeight: FontWeight.w700)),
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(auth.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 16), overflow: TextOverflow.ellipsis),
-                Text(portal[auth.role] ?? '', style: const TextStyle(color: Colors.white70, fontSize: 12.5)),
+                Text(auth.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15), overflow: TextOverflow.ellipsis),
+                Text(portal[auth.role] ?? '', style: const TextStyle(color: C.muted, fontSize: 12.5)),
               ]),
             ),
           ]),
@@ -177,37 +209,30 @@ class _Menu extends StatelessWidget {
         Expanded(
           child: ListView(padding: EdgeInsets.zero, children: [
             for (final item in items)
-              ListTile(
-                dense: true,
-                leading: Icon(item.icon, color: item.route == current ? C.dark : C.muted),
-                title: Text(item.label, style: TextStyle(fontWeight: item.route == current ? FontWeight.w700 : FontWeight.w500)),
-                selected: item.route == current,
-                selectedTileColor: const Color(0xFFE0F7FA),
-                onTap: () {
-                  Navigator.pop(context);
-                  if (item.route != current) Navigator.pushReplacementNamed(context, item.route);
-                },
-              ),
+              tile(item.icon, item.label, selected: item.route == current, () {
+                Navigator.pop(context);
+                if (item.route != current) Navigator.pushReplacementNamed(context, item.route);
+              }),
+            const Padding(padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8), child: Divider()),
+            tile(Icons.chat_bubble_outline_rounded, 'Ask a health question', () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/chat');
+            }),
+            tile(Icons.shopping_bag_outlined, 'Shop', () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/shop');
+            }),
+            tile(Icons.translate, lang.languages.where((l) => l.code == lang.language).firstOrNull?.label ?? lang.language, () {
+              Navigator.pop(context);
+              showLanguagePicker(context);
+            }),
+            tile(Icons.logout, lang.plain('logout', 'Log out'), color: C.red, () async {
+              Navigator.pop(context);
+              await auth.logout();
+            }),
           ]),
         ),
-        const Divider(height: 1),
-        ListTile(
-          leading: const Icon(Icons.translate, color: C.muted),
-          title: Text(lang.languages.where((l) => l.code == lang.language).firstOrNull?.label ?? lang.language),
-          onTap: () {
-            Navigator.pop(context);
-            showLanguagePicker(context);
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.logout, color: C.red),
-          title: Text(lang.plain('logout', 'Logout'), style: const TextStyle(color: C.red)),
-          onTap: () async {
-            Navigator.pop(context);
-            await auth.logout();
-          },
-        ),
-        SizedBox(height: MediaQuery.of(context).padding.bottom),
+        SizedBox(height: MediaQuery.of(context).padding.bottom + 8),
       ]),
     );
   }
@@ -220,7 +245,7 @@ Future<void> showLanguagePicker(BuildContext context) => showModalBottomSheet(
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('🌐 Choose your language', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700, color: C.text)),
+            const Text('Choose your language', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700, color: C.text)),
             const Text('अपनी भाषा चुनें', style: TextStyle(color: C.muted)),
             const SizedBox(height: 12),
             Flexible(
